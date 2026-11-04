@@ -1,5 +1,4 @@
 using System;
-using System.Data;
 using System.Data.SQLite;
 using System.Drawing;
 using System.IO;
@@ -13,6 +12,8 @@ namespace RockolaKaraoke.Interfaz
     public class FormularioReproductor : Form
     {
         private readonly ListView biblioteca = new ListView();
+        private readonly ListView cola = new ListView();
+        private readonly Label etiquetaCola = new Label();
         private readonly VideoView pantalla = new VideoView();
         private readonly Label tituloActual = new Label();
         private readonly Label tiempo = new Label();
@@ -62,11 +63,11 @@ namespace RockolaKaraoke.Interfaz
 
             FlowLayoutPanel controles = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 58, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(12, 5, 12, 3), BackColor = Color.FromArgb(20, 25, 44) };
             anterior.Text = "⏮ ANTERIOR"; reproducir.Text = "▶ REPRODUCIR"; siguiente.Text = "SIGUIENTE ⏭"; detener.Text = "■ DETENER";
-            foreach (Button b in new Button[] { anterior, reproducir, siguiente, detener }) { b.Size = new Size(155, 43); Estilizar(b); controles.Controls.Add(b); }
-            Label etiquetaVolumen = new Label { Text = "VOLUMEN", Width = 85, Height = 40, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White };
-            volumen.Minimum = 0; volumen.Maximum = 100; volumen.Value = 70; volumen.Width = 150; volumen.Height = 42; volumen.TickFrequency = 10;
+            foreach (Button b in new Button[] { anterior, reproducir, siguiente, detener }) { b.Size = new Size(145, 43); Estilizar(b); controles.Controls.Add(b); }
+            Label etiquetaVolumen = new Label { Text = "VOLUMEN", Width = 75, Height = 40, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White };
+            volumen.Minimum = 0; volumen.Maximum = 100; volumen.Value = 70; volumen.Width = 130; volumen.Height = 42; volumen.TickFrequency = 10;
             controles.Controls.Add(etiquetaVolumen); controles.Controls.Add(volumen);
-            anterior.Click += delegate { ReproducirIndice(biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] - 1 : 0); };
+            anterior.Click += delegate { ReproducirAnterior(); };
             siguiente.Click += delegate { ReproducirSiguiente(); };
             reproducir.Click += delegate
             {
@@ -95,12 +96,46 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.HideSelection = false; biblioteca.BackColor = Color.FromArgb(20, 25, 44); biblioteca.ForeColor = Color.White;
             biblioteca.Columns.Add("CANCIÓN", 190); biblioteca.Columns.Add("ARTISTA", 125);
             biblioteca.DoubleClick += delegate { ReproducirSeleccion(); };
+
             Panel lado = new Panel { Dock = DockStyle.Fill };
             Button actualizar = new Button { Text = "ACTUALIZAR BIBLIOTECA", Dock = DockStyle.Top, Height = 45 };
             Estilizar(actualizar); actualizar.Click += delegate { CargarBiblioteca(); };
-            lado.Controls.Add(biblioteca); lado.Controls.Add(actualizar);
-            pantalla.Dock = DockStyle.Fill; pantalla.BackColor = Color.Black;
-            division.Panel1.Controls.Add(lado); division.Panel2.Controls.Add(pantalla);
+            Button agregar = new Button { Text = "＋ AGREGAR A LA COLA", Dock = DockStyle.Top, Height = 43 };
+            Estilizar(agregar); agregar.Click += delegate { AgregarSeleccionALaCola(); };
+            Button ahora = new Button { Text = "▶ REPRODUCIR AHORA", Dock = DockStyle.Top, Height = 43 };
+            Estilizar(ahora); ahora.Click += delegate { ReproducirSeleccion(); };
+            lado.Controls.Add(biblioteca); lado.Controls.Add(agregar); lado.Controls.Add(ahora); lado.Controls.Add(actualizar);
+
+            Panel panelDerecho = new Panel { Dock = DockStyle.Fill, BackColor = Color.Black };
+            Panel panelCola = new Panel { Dock = DockStyle.Bottom, Height = 190, BackColor = Color.FromArgb(20, 25, 44) };
+            etiquetaCola.Text = "COLA DE REPRODUCCIÓN (0)";
+            etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 28; etiquetaCola.TextAlign = ContentAlignment.MiddleLeft;
+            etiquetaCola.Padding = new Padding(10, 0, 0, 0); etiquetaCola.ForeColor = Color.DeepSkyBlue;
+            cola.Dock = DockStyle.Fill; cola.View = View.Details; cola.FullRowSelect = true; cola.GridLines = false;
+            cola.HideSelection = false; cola.BackColor = Color.FromArgb(20, 25, 44); cola.ForeColor = Color.White;
+            cola.Columns.Add("SIGUIENTE CANCIÓN", 300); cola.Columns.Add("ARTISTA", 190);
+            cola.DoubleClick += delegate { ReproducirElementoDeCola(); };
+
+            FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 39, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(5, 2, 5, 2) };
+            Button quitar = new Button { Text = "QUITAR", Width = 95, Height = 32 };
+            Button subir = new Button { Text = "SUBIR ▲", Width = 105, Height = 32 };
+            Button bajar = new Button { Text = "BAJAR ▼", Width = 105, Height = 32 };
+            Button vaciar = new Button { Text = "VACIAR COLA", Width = 115, Height = 32 };
+            foreach (Button b in new Button[] { quitar, subir, bajar, vaciar }) { Estilizar(b); accionesCola.Controls.Add(b); }
+            quitar.Click += delegate { QuitarDeLaCola(); };
+            subir.Click += delegate { MoverEnCola(-1); };
+            bajar.Click += delegate { MoverEnCola(1); };
+            vaciar.Click += delegate { cola.Items.Clear(); ActualizarContadorCola(); };
+
+            panelCola.Controls.Add(cola);
+            panelCola.Controls.Add(accionesCola);
+            panelCola.Controls.Add(etiquetaCola);
+            pantalla.Dock = DockStyle.Fill;
+            pantalla.BackColor = Color.Black;
+            panelDerecho.Controls.Add(pantalla);
+            panelDerecho.Controls.Add(panelCola);
+            division.Panel1.Controls.Add(lado);
+            division.Panel2.Controls.Add(panelDerecho);
 
             Controls.Add(division); Controls.Add(inferior); Controls.Add(encabezado);
         }
@@ -175,27 +210,129 @@ namespace RockolaKaraoke.Interfaz
 
         private void ReproducirIndice(int indice)
         {
-            if (reproductor == null) { MessageBox.Show(this, "El motor multimedia no está disponible. Revisa la instalación.", "Reproductor"); return; }
             if (indice < 0 || indice >= biblioteca.Items.Count) return;
             ListViewItem elemento = biblioteca.Items[indice];
-            string ruta = Convert.ToString(elemento.Tag);
-            if (!File.Exists(ruta)) { MessageBox.Show(this, "El archivo ya no está disponible:\n" + ruta, "Archivo no encontrado", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            ReproducirArchivo(Convert.ToString(elemento.Tag), elemento.Text, elemento.SubItems[1].Text);
+            if (biblioteca.Items[indice].Selected)
+            {
+                biblioteca.Items[indice].EnsureVisible();
+            }
+            else
+            {
+                biblioteca.SelectedItems.Clear();
+                biblioteca.Items[indice].Selected = true;
+                biblioteca.Items[indice].EnsureVisible();
+            }
+        }
+
+        private void ReproducirArchivo(string ruta, string titulo, string artista)
+        {
+            if (reproductor == null) { MessageBox.Show(this, "El motor multimedia no está disponible. Revisa la instalación.", "Reproductor"); return; }
+            if (string.IsNullOrWhiteSpace(ruta) || !File.Exists(ruta)) { MessageBox.Show(this, "El archivo ya no está disponible:\n" + ruta, "Archivo no encontrado", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             try
             {
                 reproductor.Stop();
                 if (medioActual != null) medioActual.Dispose();
                 medioActual = new Media(motor, new Uri(Path.GetFullPath(ruta)));
                 if (!reproductor.Play(medioActual)) throw new InvalidOperationException("VLC no pudo iniciar la reproducción.");
-                biblioteca.Items[indice].Selected = true;
-                biblioteca.Items[indice].EnsureVisible();
-                tituloActual.Text = elemento.Text + "  —  " + elemento.SubItems[1].Text;
+                tituloActual.Text = titulo + "  —  " + artista;
                 reproducir.Text = "Ⅱ PAUSAR";
             }
             catch (Exception ex) { MessageBox.Show(this, "No se pudo reproducir el archivo.\n" + ex.Message, "Error de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
 
+        private void AgregarSeleccionALaCola()
+        {
+            if (biblioteca.SelectedIndices.Count == 0)
+            {
+                MessageBox.Show(this, "Primero selecciona una canción o video de la biblioteca.", "Cola de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            ListViewItem origen = biblioteca.SelectedItems[0];
+            ListViewItem nuevo = new ListViewItem(origen.Text);
+            nuevo.SubItems.Add(origen.SubItems[1].Text);
+            nuevo.Tag = Convert.ToString(origen.Tag);
+            cola.Items.Add(nuevo);
+            ActualizarContadorCola();
+        }
+
+        private void ReproducirElementoDeCola()
+        {
+            if (cola.SelectedIndices.Count == 0) return;
+            int indice = cola.SelectedIndices[0];
+            ListViewItem elemento = cola.Items[indice];
+            string ruta = Convert.ToString(elemento.Tag);
+            string titulo = elemento.Text;
+            string artista = elemento.SubItems[1].Text;
+            cola.Items.RemoveAt(indice);
+            ActualizarContadorCola();
+            ReproducirArchivo(ruta, titulo, artista);
+            SeleccionarEnBiblioteca(ruta);
+        }
+
+        private void QuitarDeLaCola()
+        {
+            if (cola.SelectedIndices.Count == 0) return;
+            cola.Items.RemoveAt(cola.SelectedIndices[0]);
+            ActualizarContadorCola();
+        }
+
+        private void MoverEnCola(int desplazamiento)
+        {
+            if (cola.SelectedIndices.Count == 0) return;
+            int indice = cola.SelectedIndices[0];
+            int destino = indice + desplazamiento;
+            if (destino < 0 || destino >= cola.Items.Count) return;
+            ListViewItem elemento = (ListViewItem)cola.Items[indice].Clone();
+            cola.Items.RemoveAt(indice);
+            cola.Items.Insert(destino, elemento);
+            elemento.Selected = true;
+            elemento.EnsureVisible();
+            ActualizarContadorCola();
+        }
+
+        private void ActualizarContadorCola()
+        {
+            etiquetaCola.Text = "COLA DE REPRODUCCIÓN (" + cola.Items.Count + ")";
+        }
+
+        private void SeleccionarEnBiblioteca(string ruta)
+        {
+            biblioteca.SelectedItems.Clear();
+            for (int i = 0; i < biblioteca.Items.Count; i++)
+            {
+                if (string.Equals(Convert.ToString(biblioteca.Items[i].Tag), ruta, StringComparison.OrdinalIgnoreCase))
+                {
+                    biblioteca.Items[i].Selected = true;
+                    biblioteca.Items[i].EnsureVisible();
+                    return;
+                }
+            }
+        }
+
+        private void ReproducirAnterior()
+        {
+            if (biblioteca.SelectedIndices.Count == 0) return;
+            int indice = biblioteca.SelectedIndices[0] - 1;
+            if (indice < 0) indice = biblioteca.Items.Count - 1;
+            ReproducirIndice(indice);
+        }
+
         private void ReproducirSiguiente()
         {
+            if (cola.Items.Count > 0)
+            {
+                ListViewItem elemento = cola.Items[0];
+                string ruta = Convert.ToString(elemento.Tag);
+                string titulo = elemento.Text;
+                string artista = elemento.SubItems[1].Text;
+                cola.Items.RemoveAt(0);
+                ActualizarContadorCola();
+                ReproducirArchivo(ruta, titulo, artista);
+                SeleccionarEnBiblioteca(ruta);
+                return;
+            }
+
             if (biblioteca.Items.Count == 0) return;
             int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] + 1 : 0;
             if (indice >= biblioteca.Items.Count) indice = 0;
@@ -216,15 +353,12 @@ namespace RockolaKaraoke.Interfaz
 
         private static string FormatearTiempo(long milisegundos)
         {
-            // Evita TimeSpan.ToString con formatos personalizados, que provocaba FormatException.
             long segundosTotales = Math.Max(0L, milisegundos) / 1000L;
             long horas = segundosTotales / 3600L;
             long minutos = (segundosTotales % 3600L) / 60L;
             long segundos = segundosTotales % 60L;
-
             if (horas > 0)
                 return string.Format(CultureInfo.InvariantCulture, "{0:00}:{1:00}:{2:00}", horas, minutos, segundos);
-
             return string.Format(CultureInfo.InvariantCulture, "{0:00}:{1:00}", minutos, segundos);
         }
 
