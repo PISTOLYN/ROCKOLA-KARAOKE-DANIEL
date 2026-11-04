@@ -243,7 +243,8 @@ namespace RockolaKaraoke.Interfaz
             Button btnSiguienteRockola = new Button { Text = "▶|", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
             Button btnSubirRockola = new Button { Text = "▲", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
             Button btnBajarRockola = new Button { Text = "▼", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
-            Button btnBuscarRockola = new Button { Text = "ARC\nBUSCAR", Width = 62, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Button btnAyudaRockola = new Button { Text = "Q\nAYUDA", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Button btnFullRockola = new Button { Text = "FULL", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            Button btnBuscarRockola = new Button { Text = "ARC\nBUSCAR", Width = 62, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            Button btnAyudaRockola = new Button { Text = "Q\nAYUDA", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Button btnFullRockola = new Button { Text = "FULL", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
             foreach (Button b in new Button[] { btnAnteriorRockola, btnPlayRockola, btnSiguienteRockola, btnSubirRockola, btnBajarRockola, btnBuscarRockola, btnAyudaRockola, btnFullRockola })
             {
                 Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); b.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 245);
@@ -254,7 +255,9 @@ namespace RockolaKaraoke.Interfaz
             btnSiguienteRockola.Click += delegate { ReproducirSiguiente(); };
             btnSubirRockola.Click += delegate { MoverSeleccionCancion(-1); };
             btnBajarRockola.Click += delegate { MoverSeleccionCancion(1); };
-            btnBuscarRockola.Click += delegate { busquedaMosaico.Focus(); };\n            btnAyudaRockola.Click += delegate { MessageBox.Show(this, "Selecciona un álbum y después una canción. Usa PLAY para reproducir y ARC para buscar.", "Ayuda - Rockola", MessageBoxButtons.OK, MessageBoxIcon.Information); };\n            btnFullRockola.Click += delegate { if (WindowState == FormWindowState.Maximized) WindowState = FormWindowState.Normal; else WindowState = FormWindowState.Maximized; };
+            btnBuscarRockola.Click += delegate { busquedaMosaico.Focus(); };
+            btnAyudaRockola.Click += delegate { MessageBox.Show(this, "Selecciona un álbum y después una canción. Usa PLAY para reproducir y ARC para buscar.", "Ayuda - Rockola", MessageBoxButtons.OK, MessageBoxIcon.Information); };
+            btnFullRockola.Click += delegate { if (WindowState == FormWindowState.Maximized) WindowState = FormWindowState.Normal; else WindowState = FormWindowState.Maximized; };
 
             Panel panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 25) };
             etiquetaCola.Text = "NO HAY TEMAS EN ESPERA"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 28;
