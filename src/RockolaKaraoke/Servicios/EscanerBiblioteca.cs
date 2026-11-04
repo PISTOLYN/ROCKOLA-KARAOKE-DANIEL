@@ -22,7 +22,7 @@ namespace RockolaKaraoke.Servicios
             ".mp4", ".mkv", ".avi", ".wmv", ".mov", ".mpeg", ".mpg"
         };
 
-        public static ResultadoEscanear Escanear(IEnumerable<string> carpetas)
+        public static ResultadoEscaneo Escanear(IEnumerable<string> carpetas)
         {
             ResultadoEscaneo resultado = new ResultadoEscaneo();
             using (SQLiteConnection conexion = Datos.BaseDatos.CrearConexion())
