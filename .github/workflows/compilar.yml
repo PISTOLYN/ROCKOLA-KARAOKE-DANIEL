@@ -20,8 +20,8 @@ jobs:
         run: |
           nuget restore src/RockolaKaraoke/packages.config -PackagesDirectory packages -NonInteractive
           $sqlite = "packages/Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0/lib/net46/System.Data.SQLite.dll"
-          $vlc = "packages/LibVLCSharp.3.8.5/lib/netstandard2.0/LibVLCSharp.dll"
-          $vlcForms = "packages/LibVLCSharp.WinForms.3.8.5/lib/netstandard2.0/LibVLCSharp.WinForms.dll"
+          $vlc = "packages/LibVLCSharp.3.8.5/lib/net471/LibVLCSharp.dll"
+          $vlcForms = "packages/LibVLCSharp.WinForms.3.8.5/lib/net40/LibVLCSharp.WinForms.dll"
           if (!(Test-Path $sqlite)) { throw "Falta System.Data.SQLite.dll: $sqlite" }
           if (!(Test-Path $vlc)) { throw "Falta LibVLCSharp.dll: $vlc" }
           if (!(Test-Path $vlcForms)) { throw "Falta LibVLCSharp.WinForms.dll: $vlcForms" }
