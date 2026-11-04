@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
 using LibVLCSharp.WinForms;
+using RockolaKaraoke.Servicios;
 
 namespace RockolaKaraoke.Interfaz
 {
@@ -40,6 +41,7 @@ namespace RockolaKaraoke.Interfaz
             Font = new Font("Segoe UI", 10F);
 
             CrearInterfaz();
+            Load += delegate { ConfiguracionSkin.Aplicar(this); };
             Load += delegate { InicializarMotor(); CargarBiblioteca(); };
             FormClosing += delegate { LiberarMotor(); };
             reloj.Interval = 500;
