@@ -13,6 +13,7 @@ namespace RockolaKaraoke.Interfaz
     public class FormularioReproductor : Form
     {
         private readonly ListView biblioteca = new ListView();
+        private readonly System.Collections.Generic.List<ListViewItem> todosLosElementos = new System.Collections.Generic.List<ListViewItem>();
         private readonly FlowLayoutPanel mosaico = new FlowLayoutPanel();
         private readonly TextBox busquedaMosaico = new TextBox();
         private string filtroTipo = "Todos";
@@ -113,6 +114,7 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.OwnerDraw = true;
             biblioteca.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e) { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(0, 175, 205)), e.Bounds); TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 10F, FontStyle.Bold), e.Bounds, Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left); };
             biblioteca.DrawItem += delegate(object sender, DrawListViewItemEventArgs e) { e.DrawDefault = true; };
+            biblioteca.DoubleClick += delegate { AgregarSeleccionALaCola(); };
             biblioteca.DrawSubItem += delegate(object sender, DrawListViewSubItemEventArgs e)
             {
                 Color fondo = e.Item.Selected ? Color.FromArgb(245, 195, 0) : (e.ItemIndex % 2 == 0 ? Color.FromArgb(5, 15, 30) : Color.FromArgb(10, 22, 39));
@@ -146,12 +148,13 @@ namespace RockolaKaraoke.Interfaz
             cola.Columns.Clear(); cola.Columns.Add("SIGUIENTE CANCIÓN", 220); cola.Columns.Add("ARTISTA", 130);
             cola.DoubleClick += delegate { ReproducirElementoDeCola(); };
             FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(2) };
+            Button agregar = new Button { Text = "+ AGREGAR", Width = 92, Height = 32 };
             Button quitar = new Button { Text = "QUITAR", Width = 78, Height = 32 };
             Button subir = new Button { Text = "▲", Width = 42, Height = 32 };
             Button bajar = new Button { Text = "▼", Width = 42, Height = 32 };
             Button vaciar = new Button { Text = "VACIAR", Width = 78, Height = 32 };
-            foreach (Button b in new Button[] { quitar, subir, bajar, vaciar }) { Estilizar(b); accionesCola.Controls.Add(b); }
-            quitar.Click += delegate { QuitarDeLaCola(); }; subir.Click += delegate { MoverEnCola(-1); };
+            foreach (Button b in new Button[] { agregar, quitar, subir, bajar, vaciar }) { Estilizar(b); accionesCola.Controls.Add(b); }
+            agregar.Click += delegate { AgregarSeleccionALaCola(); }; quitar.Click += delegate { QuitarDeLaCola(); }; subir.Click += delegate { MoverEnCola(-1); };
             bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { cola.Items.Clear(); ActualizarContadorCola(); };
             panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
             panelDerecho.Controls.Add(panelCola); panelDerecho.Controls.Add(botonesModo); panelDerecho.Controls.Add(panelPublicidad);
@@ -167,7 +170,7 @@ namespace RockolaKaraoke.Interfaz
             string texto = busquedaMosaico.Text == "Buscar canción o artista..." ? "" : busquedaMosaico.Text.Trim();
             System.Collections.Generic.Dictionary<string, ListViewItem> albumes = new System.Collections.Generic.Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (ListViewItem elemento in biblioteca.Items)
+            foreach (ListViewItem elemento in todosLosElementos)
             {
                 string tipo = Convert.ToString(elemento.ToolTipText);
                 if (filtroTipo != "Todos" && !tipo.Equals(filtroTipo, StringComparison.OrdinalIgnoreCase)) continue;
@@ -184,7 +187,7 @@ namespace RockolaKaraoke.Interfaz
                 ListViewItem primerTema = album.Value;
                 string carpeta = Path.GetDirectoryName(Convert.ToString(primerTema.Tag));
                 int cantidad = 0;
-                foreach (ListViewItem tema in biblioteca.Items)
+                foreach (ListViewItem tema in todosLosElementos)
                 {
                     if (String.Equals(Path.GetDirectoryName(Convert.ToString(tema.Tag)), carpeta, StringComparison.OrdinalIgnoreCase)) cantidad++;
                 }
@@ -211,7 +214,7 @@ namespace RockolaKaraoke.Interfaz
                 Label nombre = new Label { Text = album.Key, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 11F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
                 Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 23, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
                 tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
-                EventHandler elegir = delegate { SeleccionarElemento(primerTema); };
+                EventHandler elegir = delegate { MostrarCancionesDeAlbum(carpeta); };
                 tarjeta.Click += elegir; portada.Click += elegir; nombre.Click += elegir; total.Click += elegir;
                 mosaico.Controls.Add(tarjeta);
             }
@@ -249,10 +252,29 @@ namespace RockolaKaraoke.Interfaz
 
         private void SeleccionarElemento(ListViewItem elemento)
         {
-            LimpiarSeleccionBiblioteca();
-            elemento.Selected = true;
-            elemento.Focused = true;
-            elemento.EnsureVisible();
+            if (elemento == null) return;
+            MostrarCancionesDeAlbum(Path.GetDirectoryName(Convert.ToString(elemento.Tag)));
+        }
+
+        private void MostrarCancionesDeAlbum(string carpeta)
+        {
+            biblioteca.BeginUpdate();
+            biblioteca.Items.Clear();
+            foreach (ListViewItem original in todosLosElementos)
+            {
+                if (String.Equals(Path.GetDirectoryName(Convert.ToString(original.Tag)), carpeta, StringComparison.OrdinalIgnoreCase))
+                {
+                    ListViewItem copia = (ListViewItem)original.Clone();
+                    biblioteca.Items.Add(copia);
+                }
+            }
+            biblioteca.EndUpdate();
+            if (biblioteca.Items.Count > 0)
+            {
+                biblioteca.Items[0].Selected = true;
+                biblioteca.Items[0].Focused = true;
+                biblioteca.Items[0].EnsureVisible();
+            }
         }
 
         private static void Estilizar(Button boton)
@@ -293,6 +315,7 @@ namespace RockolaKaraoke.Interfaz
         private void CargarBiblioteca()
         {
             biblioteca.Items.Clear();
+            todosLosElementos.Clear();
             try
             {
                 using (SQLiteConnection conexion = Datos.BaseDatos.CrearConexion())
@@ -309,6 +332,7 @@ namespace RockolaKaraoke.Interfaz
                             elemento.Tag = Convert.ToString(lector[2]);
                             elemento.ToolTipText = Convert.ToString(lector[3]);
                             biblioteca.Items.Add(elemento);
+                            todosLosElementos.Add(elemento);
                         }
                     }
                 }
@@ -361,7 +385,7 @@ namespace RockolaKaraoke.Interfaz
         {
             if (biblioteca.SelectedIndices.Count == 0)
             {
-                MessageBox.Show(this, "Primero selecciona una canción o video de la biblioteca.", "Cola de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, "Primero selecciona una canción de la lista. Haz doble clic o usa + AGREGAR.", "Cola de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             ListViewItem origen = biblioteca.SelectedItems[0];
