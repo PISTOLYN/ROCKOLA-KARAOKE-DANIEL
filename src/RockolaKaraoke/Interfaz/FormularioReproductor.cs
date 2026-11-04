@@ -216,7 +216,7 @@ namespace RockolaKaraoke.Interfaz
         private static string FormatearTiempo(long milisegundos)
         {
             TimeSpan t = TimeSpan.FromMilliseconds(Math.Max(0, milisegundos));
-            return t.TotalHours >= 1 ? t.ToString(@"h:mm:ss") : t.ToString(@"mm:ss");
+            return t.TotalHours >= 1 ? t.ToString(@"h\\:mm\\:ss") : t.ToString(@"mm\\:ss");
         }
 
         private void LiberarMotor()
