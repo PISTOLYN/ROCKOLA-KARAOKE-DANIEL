@@ -44,11 +44,63 @@ namespace RockolaKaraoke.Interfaz
             ForeColor = Color.White;
             Font = new Font("Segoe UI", 10F);
 
+            KeyPreview = true;
             CrearInterfaz();
+            KeyDown += delegate(object sender, KeyEventArgs e)
+            {
+                if (e.KeyCode == Keys.F12)
+                {
+                    e.SuppressKeyPress = true;
+                    MostrarAdministracion();
+                }
+            };
             Load += delegate { InicializarMotor(); CargarBiblioteca(); };
             FormClosing += delegate { LiberarMotor(); };
             reloj.Interval = 500;
             reloj.Tick += Reloj_Tick;
+        }
+
+        private void MostrarAdministracion()
+        {
+            using (Form menu = new Form())
+            {
+                menu.Text = "Administración - Rockola Karaoke Daniel";
+                menu.StartPosition = FormStartPosition.CenterParent;
+                menu.FormBorderStyle = FormBorderStyle.FixedDialog;
+                menu.MaximizeBox = false;
+                menu.MinimizeBox = false;
+                menu.ClientSize = new Size(430, 260);
+                menu.BackColor = Color.FromArgb(5, 14, 32);
+                menu.ForeColor = Color.White;
+
+                Label titulo = new Label { Text = "PANEL DE ADMINISTRACIÓN", Dock = DockStyle.Top, Height = 55, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 16F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 220, 235) };
+                Button bibliotecaAdmin = new Button { Text = "BIBLIOTECA Y ESCANEO DE MÚSICA", Width = 340, Height = 45, Left = 45, Top = 75 };
+                Button skinAdmin = new Button { Text = "CONFIGURAR SKIN", Width = 340, Height = 45, Left = 45, Top = 130 };
+                Button cerrar = new Button { Text = "CERRAR", Width = 340, Height = 38, Left = 45, Top = 190 };
+                foreach (Button b in new Button[] { bibliotecaAdmin, skinAdmin, cerrar })
+                {
+                    Estilizar(b);
+                    b.BackColor = Color.FromArgb(0, 100, 165);
+                    b.ForeColor = Color.White;
+                }
+                bibliotecaAdmin.Click += delegate
+                {
+                    using (FormularioBiblioteca ventana = new FormularioBiblioteca())
+                        ventana.ShowDialog(menu);
+                    CargarBiblioteca();
+                };
+                skinAdmin.Click += delegate
+                {
+                    using (FormularioSkin ventana = new FormularioSkin())
+                        ventana.ShowDialog(menu);
+                };
+                cerrar.Click += delegate { menu.Close(); };
+                menu.Controls.Add(titulo);
+                menu.Controls.Add(bibliotecaAdmin);
+                menu.Controls.Add(skinAdmin);
+                menu.Controls.Add(cerrar);
+                menu.ShowDialog(this);
+            }
         }
 
         private void CrearInterfaz()
