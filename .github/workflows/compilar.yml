@@ -15,51 +15,58 @@ jobs:
       - name: Configurar MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Restaurar paquete SQLite
+      - name: Restaurar paquetes NuGet
         shell: pwsh
         run: |
           nuget restore src/RockolaKaraoke/packages.config -PackagesDirectory packages -NonInteractive
-          $dll = "packages/Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0/lib/net46/System.Data.SQLite.dll"
-          if (!(Test-Path $dll)) {
-            Write-Host "No se encontró System.Data.SQLite.dll en la ruta esperada: $dll"
-            Write-Host "Archivos SQLite encontrados en paquetes:"
-            Get-ChildItem packages -Recurse -Filter System.Data.SQLite.dll | Select-Object -ExpandProperty FullName
-            throw "Falta el ensamblado administrado de SQLite"
-            exit 1
-          }
+          $sqlite = "packages/Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0/lib/net46/System.Data.SQLite.dll"
+          $vlc = "packages/LibVLCSharp.3.8.5/lib/netstandard2.0/LibVLCSharp.dll"
+          $vlcForms = "packages/LibVLCSharp.WinForms.3.8.5/lib/netstandard2.0/LibVLCSharp.WinForms.dll"
+          if (!(Test-Path $sqlite)) { throw "Falta System.Data.SQLite.dll: $sqlite" }
+          if (!(Test-Path $vlc)) { throw "Falta LibVLCSharp.dll: $vlc" }
+          if (!(Test-Path $vlcForms)) { throw "Falta LibVLCSharp.WinForms.dll: $vlcForms" }
 
       - name: Compilar Release
         run: msbuild RockolaKaraoke.sln /m /p:Configuration=Release /p:Platform="Any CPU" /verbosity:minimal
 
-      - name: Incluir componentes nativos de SQLite
+      - name: Incluir componentes nativos SQLite
         shell: pwsh
         run: |
           $salida = "src/RockolaKaraoke/bin/Release"
           $nativos = Get-ChildItem "packages" -Recurse -Filter "SQLite.Interop.dll"
-          if (!$nativos) {
-            Write-Host "No se encontró SQLite.Interop.dll dentro de los paquetes restaurados."
-            Get-ChildItem packages -Recurse | Where-Object { $_.Name -match "SQLite|Interop" } | Select-Object -ExpandProperty FullName
-            throw "Falta SQLite.Interop.dll"
-          }
+          if (!$nativos) { throw "Falta SQLite.Interop.dll" }
           foreach ($archivo in $nativos) {
-            if ($archivo.FullName -match "[\\/]x86[\\/]") {
-              $arquitectura = "x86"
-            } elseif ($archivo.FullName -match "[\\/]x64[\\/]") {
-              $arquitectura = "x64"
-            } else {
-              continue
-            }
+            if ($archivo.FullName -match "[\\/]x86[\\/]") { $arquitectura = "x86" }
+            elseif ($archivo.FullName -match "[\\/]x64[\\/]") { $arquitectura = "x64" }
+            else { continue }
             $destino = Join-Path $salida $arquitectura
             New-Item -ItemType Directory -Force -Path $destino | Out-Null
             Copy-Item $archivo.FullName (Join-Path $destino "SQLite.Interop.dll") -Force
-            Write-Host "SQLite nativo copiado: $arquitectura"
           }
-          if (!(Test-Path "$salida/x86/SQLite.Interop.dll") -or !(Test-Path "$salida/x64/SQLite.Interop.dll")) {
-            Get-ChildItem packages -Recurse -Filter "SQLite.Interop.dll" | Select-Object -ExpandProperty FullName
-            throw "No se incluyeron las dos arquitecturas nativas de SQLite."
+          if (!(Test-Path "$salida/x86/SQLite.Interop.dll") -or !(Test-Path "$salida/x64/SQLite.Interop.dll")) { throw "No se incluyeron las dos arquitecturas nativas de SQLite." }
+
+      - name: Incluir motor multimedia VLC
+        shell: pwsh
+        run: |
+          $salida = "src/RockolaKaraoke/bin/Release/VLC"
+          $paquete = Get-ChildItem "packages" -Directory | Where-Object { $_.Name -like "VideoLAN.LibVLC.Windows*" } | Select-Object -First 1
+          if (!$paquete) { throw "No se restauró VideoLAN.LibVLC.Windows." }
+          $bibliotecas = Get-ChildItem $paquete.FullName -Recurse -Filter "libvlc.dll"
+          foreach ($biblioteca in $bibliotecas) {
+            $ruta = $biblioteca.FullName
+            if ($ruta -match "[\\/]x86[\\/]") { $arquitectura = "x86" }
+            elseif ($ruta -match "[\\/]x64[\\/]") { $arquitectura = "x64" }
+            elseif ($ruta -match "win-x86") { $arquitectura = "x86" }
+            elseif ($ruta -match "win-x64") { $arquitectura = "x64" }
+            else { continue }
+            $destino = Join-Path $salida $arquitectura
+            New-Item -ItemType Directory -Force -Path $destino | Out-Null
+            Copy-Item (Join-Path $biblioteca.Directory.FullName "*") $destino -Recurse -Force
+            Write-Host "Motor VLC incluido: $arquitectura"
           }
-          if (!(Test-Path "$salida/System.Data.SQLite.dll")) {
-            throw "No se copió System.Data.SQLite.dll al directorio de salida."
+          if (!(Test-Path "$salida/x86/libvlc.dll") -or !(Test-Path "$salida/x64/libvlc.dll")) {
+            Get-ChildItem $paquete.FullName -Recurse -Filter "libvlc.dll" | Select-Object -ExpandProperty FullName
+            throw "No se encontraron los motores VLC x86 y x64 en el paquete NuGet."
           }
 
       - name: Guardar archivos compilados
