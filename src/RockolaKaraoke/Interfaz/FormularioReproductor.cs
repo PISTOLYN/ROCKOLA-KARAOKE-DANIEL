@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.SQLite;
 using System.Drawing;
 using System.IO;
+using System.Globalization;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
 using LibVLCSharp.WinForms;
@@ -215,8 +216,16 @@ namespace RockolaKaraoke.Interfaz
 
         private static string FormatearTiempo(long milisegundos)
         {
-            TimeSpan t = TimeSpan.FromMilliseconds(Math.Max(0, milisegundos));
-            return t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss") : t.ToString(@"mm\:ss");
+            // Evita TimeSpan.ToString con formatos personalizados, que provocaba FormatException.
+            long segundosTotales = Math.Max(0L, milisegundos) / 1000L;
+            long horas = segundosTotales / 3600L;
+            long minutos = (segundosTotales % 3600L) / 60L;
+            long segundos = segundosTotales % 60L;
+
+            if (horas > 0)
+                return string.Format(CultureInfo.InvariantCulture, "{0:00}:{1:00}:{2:00}", horas, minutos, segundos);
+
+            return string.Format(CultureInfo.InvariantCulture, "{0:00}:{1:00}", minutos, segundos);
         }
 
         private void LiberarMotor()
