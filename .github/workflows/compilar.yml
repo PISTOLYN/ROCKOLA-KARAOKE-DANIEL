@@ -19,7 +19,7 @@ jobs:
         shell: pwsh
         run: |
           nuget restore src/RockolaKaraoke/packages.config -PackagesDirectory packages -NonInteractive
-          $dll = "packages/Stub.System.Data.SQLite.Core.NetFramework.1.0.118/lib/net46/System.Data.SQLite.dll"
+          $dll = "packages/Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0/lib/net46/System.Data.SQLite.dll"
           if (!(Test-Path $dll)) {
             Write-Host "No se encontró System.Data.SQLite.dll en la ruta esperada: $dll"
             Write-Host "Archivos SQLite encontrados en paquetes:"
