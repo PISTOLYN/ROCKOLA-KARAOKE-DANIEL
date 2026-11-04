@@ -153,7 +153,7 @@ namespace RockolaKaraoke.Interfaz
             mosaico.BackColor = Color.FromArgb(3, 10, 27);
 
             FlowLayoutPanel filtros = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, Padding = new Padding(8, 5, 8, 3), WrapContents = false, BackColor = Color.FromArgb(0, 185, 205) };
-            foreach (string tipo in new string[] { "Todos", "Karaoke", "Musica", "Video" })
+            foreach (string tipo in new string[] { "Karaoke", "Musica", "Video" })
             {
                 string etiqueta = tipo == "Musica" ? "MÚSICA" : tipo.ToUpperInvariant();
                 Button filtro = new Button { Text = etiqueta, Tag = tipo, Width = 132, Height = 36 };
@@ -173,7 +173,7 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.FullRowSelect = true; biblioteca.HideSelection = false; biblioteca.GridLines = false;
             biblioteca.BackColor = Color.FromArgb(2, 7, 17); biblioteca.ForeColor = Color.White;
             biblioteca.Font = new Font("Segoe UI", 13F, FontStyle.Bold);
-            biblioteca.Columns.Clear(); biblioteca.Columns.Add("LISTA DE CANCIONES", 620); biblioteca.Columns.Add("ARTISTA", 260);
+            biblioteca.Columns.Clear(); biblioteca.Columns.Add("[ÁLBUM SELECCIONADO]  •  1 DE 15", 620); biblioteca.Columns.Add("ARTISTA", 260);
             biblioteca.OwnerDraw = true;
             biblioteca.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e) { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(0, 175, 205)), e.Bounds); TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 10F, FontStyle.Bold), e.Bounds, Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left); };
             biblioteca.DrawItem += delegate(object sender, DrawListViewItemEventArgs e) { e.DrawDefault = true; };
@@ -195,17 +195,17 @@ namespace RockolaKaraoke.Interfaz
             Panel cuadroEstilos = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 15, 35), Padding = new Padding(5), Margin = new Padding(3) };
             AplicarMarcoNeon(cuadroPortadas);
             AplicarMarcoNeon(cuadroEstilos);
-            Label tituloPortadas = new Label { Text = "PORTADAS  •  SELECCIONA TU ÁLBUM", Dock = DockStyle.Top, Height = 31, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 11F, FontStyle.Bold) };
+            Label tituloPortadas = new Label { Text = "MINIATURAS DE ÁLBUMES  •  7 DE 54  •  GÉNERO 2 DE 4", Dock = DockStyle.Top, Height = 31, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 11F, FontStyle.Bold) };
             FlowLayoutPanel navegacionPortadas = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(4, 2, 2, 2) };
-            Button portadaAnterior = new Button { Text = "◀ PORTADA", Width = 112, Height = 32 };
-            Button portadaSiguiente = new Button { Text = "PORTADA ▶", Width = 112, Height = 32 };
+            Button portadaAnterior = new Button { Text = "◀ PORTADA", Width = 58, Height = 32 };
+            Button portadaSiguiente = new Button { Text = "▶", Width = 112, Height = 32 };
             foreach (Button b in new Button[] { portadaAnterior, portadaSiguiente }) { Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); navegacionPortadas.Controls.Add(b); }
             portadaAnterior.Click += delegate { DesplazarPortadas(-1); };
             portadaSiguiente.Click += delegate { DesplazarPortadas(1); };
             cuadroPortadas.Controls.Add(mosaico);
             cuadroPortadas.Controls.Add(navegacionPortadas);
             cuadroPortadas.Controls.Add(tituloPortadas);
-            Label tituloEstilos = new Label { Text = "ESTILO", Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 14F, FontStyle.Bold) };
+            Label tituloEstilos = new Label { Text = "CATEGORÍA", Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 14F, FontStyle.Bold) };
             FlowLayoutPanel listaEstilos = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(3) };
             foreach (string tipoEstilo in new string[] { "Todos", "Karaoke", "Musica", "Video" })
             {
@@ -225,7 +225,7 @@ namespace RockolaKaraoke.Interfaz
             Panel panelDerecho = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 7, 17), Padding = new Padding(7) };
             Panel panelPublicidad = new Panel { Dock = DockStyle.Top, Height = 245, BackColor = Color.Black, BorderStyle = BorderStyle.FixedSingle };
             pantalla.Dock = DockStyle.Fill; pantalla.BackColor = Color.Black;
-            Label publicidad = new Label { Text = "AGREGUE PUBLICIDAD AQUÍ", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 13F, FontStyle.Bold) };
+            Label publicidad = new Label { Text = "AGREGUE PUBLICIDAD ACA", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 13F, FontStyle.Bold) };
             panelPublicidad.Controls.Add(pantalla); panelPublicidad.Controls.Add(publicidad);
             FlowLayoutPanel botonesModo = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 52, Padding = new Padding(2, 6, 2, 2), WrapContents = false, BackColor = Color.FromArgb(0, 175, 200) };
             foreach (string modo in new string[] { "AUDIO", "VIDEO", "KARAOKE" })
@@ -243,8 +243,8 @@ namespace RockolaKaraoke.Interfaz
             Button btnSiguienteRockola = new Button { Text = "▶|", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
             Button btnSubirRockola = new Button { Text = "▲", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
             Button btnBajarRockola = new Button { Text = "▼", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
-            Button btnBuscarRockola = new Button { Text = "⌕", Width = 48, Height = 38, Font = new Font("Segoe UI", 19F, FontStyle.Bold) };
-            foreach (Button b in new Button[] { btnAnteriorRockola, btnPlayRockola, btnSiguienteRockola, btnSubirRockola, btnBajarRockola, btnBuscarRockola })
+            Button btnBuscarRockola = new Button { Text = "ARC\nBUSCAR", Width = 62, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Button btnAyudaRockola = new Button { Text = "Q\nAYUDA", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Button btnFullRockola = new Button { Text = "FULL", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            foreach (Button b in new Button[] { btnAnteriorRockola, btnPlayRockola, btnSiguienteRockola, btnSubirRockola, btnBajarRockola, btnBuscarRockola, btnAyudaRockola, btnFullRockola })
             {
                 Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); b.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 245);
                 controlesRockola.Controls.Add(b);
@@ -254,10 +254,10 @@ namespace RockolaKaraoke.Interfaz
             btnSiguienteRockola.Click += delegate { ReproducirSiguiente(); };
             btnSubirRockola.Click += delegate { MoverSeleccionCancion(-1); };
             btnBajarRockola.Click += delegate { MoverSeleccionCancion(1); };
-            btnBuscarRockola.Click += delegate { busquedaMosaico.Focus(); };
+            btnBuscarRockola.Click += delegate { busquedaMosaico.Focus(); };\n            btnAyudaRockola.Click += delegate { MessageBox.Show(this, "Selecciona un álbum y después una canción. Usa PLAY para reproducir y ARC para buscar.", "Ayuda - Rockola", MessageBoxButtons.OK, MessageBoxIcon.Information); };\n            btnFullRockola.Click += delegate { if (WindowState == FormWindowState.Maximized) WindowState = FormWindowState.Normal; else WindowState = FormWindowState.Maximized; };
 
             Panel panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 25) };
-            etiquetaCola.Text = "TEMAS EN ESPERA (0)"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 28;
+            etiquetaCola.Text = "NO HAY TEMAS EN ESPERA"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 28;
             etiquetaCola.TextAlign = ContentAlignment.MiddleLeft; etiquetaCola.Padding = new Padding(7, 0, 0, 0); etiquetaCola.ForeColor = Color.Gold;
             cola.Dock = DockStyle.Fill; cola.View = View.Details; cola.FullRowSelect = true; cola.GridLines = false;
             cola.HideSelection = false; cola.BackColor = Color.FromArgb(4, 12, 25); cola.ForeColor = Color.White;
@@ -279,8 +279,8 @@ namespace RockolaKaraoke.Interfaz
             filaInferior.Controls.Add(distribucionInferior);
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
-            Controls.Add(centro); Controls.Add(inferior); Controls.Add(encabezado);
-            Shown += delegate { mosaico.Height = Math.Max(190, marcoSuperior.ClientSize.Height - 80); };
+            Panel barraEstado = new Panel { Dock = DockStyle.Bottom, Height = 27, BackColor = Color.FromArgb(0, 105, 145) };\n            Label estadoIzquierdo = new Label { Text = "NO HAY TEMAS EN ESPERA", Dock = DockStyle.Left, Width = 300, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(10, 0, 0, 0), ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Label estadoCentro = new Label { Text = "VENTA AL 2223699949", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Label estadoDerecho = new Label { Text = "KARAOKE GRATIS", Dock = DockStyle.Right, Width = 180, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            barraEstado.Controls.Add(estadoCentro); barraEstado.Controls.Add(estadoDerecho); barraEstado.Controls.Add(estadoIzquierdo);\n            Controls.Add(centro); Controls.Add(barraEstado); Controls.Add(inferior); Controls.Add(encabezado);
+            Shown += delegate { mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80); };
         }
 
         private void DesplazarPortadas(int direccion)
@@ -321,13 +321,13 @@ namespace RockolaKaraoke.Interfaz
                     if (String.Equals(Path.GetDirectoryName(Convert.ToString(tema.Tag)), carpeta, StringComparison.OrdinalIgnoreCase)) cantidad++;
                 }
 
-                Panel tarjeta = new Panel { Width = 292, Height = 310, Margin = new Padding(9, 5, 9, 5), BackColor = Color.FromArgb(0, 62, 125), Cursor = Cursors.Hand, Tag = primerTema };
+                Panel tarjeta = new Panel { Width = 178, Height = 205, Margin = new Padding(9, 5, 9, 5), BackColor = Color.FromArgb(0, 62, 125), Cursor = Cursors.Hand, Tag = primerTema };
                 tarjeta.Paint += delegate(object sender, PaintEventArgs e)
                 {
                     Panel p = (Panel)sender;
                     using (Pen borde = new Pen(Color.FromArgb(0, 220, 245), 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
                 };
-                PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 238, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
+                PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 143, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
                 Image imagen = BuscarPortada(carpeta);
                 if (imagen != null) portada.Image = imagen;
                 else
@@ -336,11 +336,11 @@ namespace RockolaKaraoke.Interfaz
                     {
                         Rectangle r = ((PictureBox)sender).ClientRectangle;
                         using (System.Drawing.Drawing2D.LinearGradientBrush grad = new System.Drawing.Drawing2D.LinearGradientBrush(r, Color.FromArgb(18, 38, 105), Color.FromArgb(135, 25, 115), 35F)) e.Graphics.FillRectangle(grad, r);
-                        using (Font f = new Font("Segoe UI Symbol", 76F, FontStyle.Bold))
-                        using (SolidBrush b = new SolidBrush(Color.White)) e.Graphics.DrawString("♫", f, b, 92, 56);
+                        using (Font f = new Font("Segoe UI Symbol", 48F, FontStyle.Bold))
+                        using (SolidBrush b = new SolidBrush(Color.White)) e.Graphics.DrawString("♫", f, b, 58, 28);
                     };
                 }
-                Label nombre = new Label { Text = album.Key, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 13F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
+                Label nombre = new Label { Text = album.Key, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 9F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
                 Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 23, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
                 tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
                 EventHandler elegir = delegate { MostrarCancionesDeAlbum(carpeta); };
