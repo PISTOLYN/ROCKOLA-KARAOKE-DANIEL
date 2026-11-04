@@ -244,7 +244,8 @@ namespace RockolaKaraoke.Interfaz
             Button btnSubirRockola = new Button { Text = "▲", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
             Button btnBajarRockola = new Button { Text = "▼", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
             Button btnBuscarRockola = new Button { Text = "ARC\nBUSCAR", Width = 62, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
-            Button btnAyudaRockola = new Button { Text = "Q\nAYUDA", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Button btnFullRockola = new Button { Text = "FULL", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            Button btnAyudaRockola = new Button { Text = "Q\nAYUDA", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            Button btnFullRockola = new Button { Text = "FULL", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
             foreach (Button b in new Button[] { btnAnteriorRockola, btnPlayRockola, btnSiguienteRockola, btnSubirRockola, btnBajarRockola, btnBuscarRockola, btnAyudaRockola, btnFullRockola })
             {
                 Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); b.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 245);
@@ -282,7 +283,12 @@ namespace RockolaKaraoke.Interfaz
             filaInferior.Controls.Add(distribucionInferior);
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
-            Panel barraEstado = new Panel { Dock = DockStyle.Bottom, Height = 27, BackColor = Color.FromArgb(0, 105, 145) };\n            Label estadoIzquierdo = new Label { Text = "NO HAY TEMAS EN ESPERA", Dock = DockStyle.Left, Width = 300, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(10, 0, 0, 0), ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Label estadoCentro = new Label { Text = "VENTA AL 2223699949", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            Label estadoDerecho = new Label { Text = "KARAOKE GRATIS", Dock = DockStyle.Right, Width = 180, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };\n            barraEstado.Controls.Add(estadoCentro); barraEstado.Controls.Add(estadoDerecho); barraEstado.Controls.Add(estadoIzquierdo);\n            Controls.Add(centro); Controls.Add(barraEstado); Controls.Add(inferior); Controls.Add(encabezado);
+            Panel barraEstado = new Panel { Dock = DockStyle.Bottom, Height = 27, BackColor = Color.FromArgb(0, 105, 145) };
+            Label estadoIzquierdo = new Label { Text = "NO HAY TEMAS EN ESPERA", Dock = DockStyle.Left, Width = 300, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(10, 0, 0, 0), ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            Label estadoCentro = new Label { Text = "VENTA AL 2223699949", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            Label estadoDerecho = new Label { Text = "KARAOKE GRATIS", Dock = DockStyle.Right, Width = 180, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            barraEstado.Controls.Add(estadoCentro); barraEstado.Controls.Add(estadoDerecho); barraEstado.Controls.Add(estadoIzquierdo);
+            Controls.Add(centro); Controls.Add(barraEstado); Controls.Add(inferior); Controls.Add(encabezado);
             Shown += delegate { mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80); };
         }
 
