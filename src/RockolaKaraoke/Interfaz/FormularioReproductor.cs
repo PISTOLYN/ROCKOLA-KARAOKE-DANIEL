@@ -33,6 +33,12 @@ namespace RockolaKaraoke.Interfaz
         private MediaPlayer reproductor;
         private Media medioActual;
         private bool moviendoProgreso;
+        private readonly Timer relojLetrero = new Timer();
+        private string textoLetrero = "ROCKOLA KARAOKE  •  ELIGE TU MÚSICA FAVORITA";
+        private int posicionLetrero;
+        private int velocidadLetrero = 180;
+        private Label letreroLed;
+        private string ArchivoLetrero { get { return Path.Combine(Application.UserAppDataPath, "letrero-led.txt"); } }
 
         public FormularioReproductor()
         {
@@ -48,7 +54,12 @@ namespace RockolaKaraoke.Interfaz
             CrearInterfaz();
             KeyDown += delegate(object sender, KeyEventArgs e)
             {
-                if (e.KeyCode == Keys.F12)
+                if (e.KeyCode == Keys.M)
+                {
+                    e.SuppressKeyPress = true;
+                    MostrarMenuEdicion();
+                }
+                else if (e.KeyCode == Keys.F12)
                 {
                     e.SuppressKeyPress = true;
                     MostrarAdministracion();
@@ -58,6 +69,10 @@ namespace RockolaKaraoke.Interfaz
             FormClosing += delegate { LiberarMotor(); };
             reloj.Interval = 500;
             reloj.Tick += Reloj_Tick;
+            CargarConfiguracionLetrero();
+            relojLetrero.Interval = velocidadLetrero;
+            relojLetrero.Tick += delegate { AvanzarLetrero(); };
+            relojLetrero.Start();
         }
 
         private void MostrarAdministracion()
@@ -105,9 +120,10 @@ namespace RockolaKaraoke.Interfaz
 
         private void CrearInterfaz()
         {
-            Panel encabezado = new Panel { Dock = DockStyle.Top, Height = 54, BackColor = Color.FromArgb(0, 190, 210) };
-            Label marca = new Label { Text = "ROCKOLA KARAOKE  •  ELIGE TU MÚSICA FAVORITA", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 19F, FontStyle.Bold) };
-            encabezado.Controls.Add(marca);
+            Panel encabezado = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = Color.FromArgb(2, 5, 12), Padding = new Padding(8, 5, 8, 5) };
+            letreroLed = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(255, 35, 35), BackColor = Color.FromArgb(5, 5, 8), Font = new Font("Consolas", 20F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(8, 0, 0, 0) };
+            letreroLed.Text = textoLetrero;
+            encabezado.Controls.Add(letreroLed);
 
             Panel inferior = new Panel { Dock = DockStyle.Bottom, Height = 78, BackColor = Color.FromArgb(5, 10, 24) };
             tituloActual.Text = "No hay tema en reproducción";
@@ -290,6 +306,94 @@ namespace RockolaKaraoke.Interfaz
             barraEstado.Controls.Add(estadoCentro); barraEstado.Controls.Add(estadoDerecho); barraEstado.Controls.Add(estadoIzquierdo);
             Controls.Add(centro); Controls.Add(barraEstado); Controls.Add(inferior); Controls.Add(encabezado);
             Shown += delegate { mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80); };
+        }
+
+        private void CargarConfiguracionLetrero()
+        {
+            try
+            {
+                if (!File.Exists(ArchivoLetrero)) return;
+                string[] lineas = File.ReadAllLines(ArchivoLetrero);
+                if (lineas.Length > 0 && !String.IsNullOrWhiteSpace(lineas[0])) textoLetrero = lineas[0];
+                int velocidad;
+                if (lineas.Length > 1 && Int32.TryParse(lineas[1], out velocidad))
+                    velocidadLetrero = Math.Max(60, Math.Min(500, velocidad));
+            }
+            catch { }
+        }
+
+        private void GuardarConfiguracionLetrero()
+        {
+            try
+            {
+                string carpeta = Path.GetDirectoryName(ArchivoLetrero);
+                if (!Directory.Exists(carpeta)) Directory.CreateDirectory(carpeta);
+                File.WriteAllLines(ArchivoLetrero, new string[] { textoLetrero, velocidadLetrero.ToString(CultureInfo.InvariantCulture) });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "No se pudo guardar el letrero: " + ex.Message, "Letrero LED", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void AvanzarLetrero()
+        {
+            if (letreroLed == null || letreroLed.IsDisposed || String.IsNullOrEmpty(textoLetrero)) return;
+            string recorrido = textoLetrero + "     •     ";
+            if (posicionLetrero >= recorrido.Length) posicionLetrero = 0;
+            string desplazado = recorrido.Substring(posicionLetrero) + recorrido.Substring(0, posicionLetrero);
+            int anchoCaracter = Math.Max(8, TextRenderer.MeasureText("M", letreroLed.Font).Width);
+            int caracteres = Math.Max(12, (letreroLed.ClientSize.Width - 24) / anchoCaracter);
+            letreroLed.Text = desplazado.Length > caracteres ? desplazado.Substring(0, caracteres) : desplazado;
+            posicionLetrero++;
+        }
+
+        private void MostrarMenuEdicion()
+        {
+            using (Form menu = new Form())
+            {
+                menu.Text = "MENÚ DE EDICIÓN - ROCKOLA KARAOKE";
+                menu.StartPosition = FormStartPosition.CenterParent;
+                menu.FormBorderStyle = FormBorderStyle.FixedDialog;
+                menu.MaximizeBox = false;
+                menu.MinimizeBox = false;
+                menu.ClientSize = new Size(520, 300);
+                menu.BackColor = Color.FromArgb(5, 14, 32);
+                menu.ForeColor = Color.White;
+
+                Label encabezado = new Label { Text = "CONFIGURAR LETRERO LED", Dock = DockStyle.Top, Height = 48, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
+                Label instruccion = new Label { Text = "Texto que aparecerá desplazándose en la parte superior:", Left = 22, Top = 62, Width = 470, Height = 28, ForeColor = Color.White };
+                TextBox texto = new TextBox { Left = 22, Top = 94, Width = 470, Height = 32, Text = textoLetrero, Font = new Font("Segoe UI", 11F) };
+                Label velocidadTexto = new Label { Text = "Velocidad (milisegundos por avance):", Left = 22, Top = 143, Width = 300, Height = 25, ForeColor = Color.White };
+                NumericUpDown velocidad = new NumericUpDown { Left = 330, Top = 140, Width = 100, Minimum = 60, Maximum = 500, Increment = 10, Value = velocidadLetrero };
+                Button guardar = new Button { Text = "GUARDAR CAMBIOS", Left = 22, Top = 205, Width = 220, Height = 42 };
+                Button cerrar = new Button { Text = "CERRAR", Left = 270, Top = 205, Width = 220, Height = 42 };
+                foreach (Button b in new Button[] { guardar, cerrar }) { Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); }
+                guardar.Click += delegate
+                {
+                    if (String.IsNullOrWhiteSpace(texto.Text))
+                    {
+                        MessageBox.Show(menu, "Escribe el texto que deseas mostrar.", "Letrero LED");
+                        return;
+                    }
+                    textoLetrero = texto.Text.Trim();
+                    velocidadLetrero = Decimal.ToInt32(velocidad.Value);
+                    posicionLetrero = 0;
+                    relojLetrero.Interval = velocidadLetrero;
+                    GuardarConfiguracionLetrero();
+                    AvanzarLetrero();
+                    MessageBox.Show(menu, "El letrero LED se actualizó y quedó guardado.", "Letrero LED", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                };
+                cerrar.Click += delegate { menu.Close(); };
+                menu.Controls.Add(encabezado);
+                menu.Controls.Add(instruccion);
+                menu.Controls.Add(texto);
+                menu.Controls.Add(velocidadTexto);
+                menu.Controls.Add(velocidad);
+                menu.Controls.Add(guardar);
+                menu.Controls.Add(cerrar);
+                menu.ShowDialog(this);
+            }
         }
 
         private void DesplazarPortadas(int direccion)
@@ -671,6 +775,7 @@ namespace RockolaKaraoke.Interfaz
         private void LiberarMotor()
         {
             reloj.Stop();
+            relojLetrero.Stop();
             if (reproductor != null) { reproductor.Stop(); reproductor.Dispose(); reproductor = null; }
             if (medioActual != null) { medioActual.Dispose(); medioActual = null; }
             if (motor != null) { motor.Dispose(); motor = null; }
