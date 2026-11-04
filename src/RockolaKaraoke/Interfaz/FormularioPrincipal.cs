@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using RockolaKaraoke.Servicios;
@@ -6,6 +7,8 @@ namespace RockolaKaraoke.Interfaz
 {
     public class FormularioPrincipal : Form
     {
+        private readonly Label titulo = new Label();
+        private readonly Label bienvenida = new Label();
         public FormularioPrincipal()
         {
             Text = "ROCKOLA KARAOKE DANIEL";
@@ -16,10 +19,10 @@ namespace RockolaKaraoke.Interfaz
             ForeColor = Color.White;
             Font = new Font("Segoe UI", 11F);
 
-            Label titulo = new Label { Text = "ROCKOLA  •  KARAOKE", Dock = DockStyle.Top, Height = 100, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 28F, FontStyle.Bold), ForeColor = Color.DeepSkyBlue };
+            titulo = new Label { Text = "ROCKOLA  •  KARAOKE", Dock = DockStyle.Top, Height = 100, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 28F, FontStyle.Bold), ForeColor = Color.DeepSkyBlue };
             titulo.Font = new Font("Segoe UI", ConfiguracionSkin.TamanoTitulo, FontStyle.Bold);
             Controls.Add(titulo);
-            Label bienvenida = new Label { Text = "¡Elige tu música favorita!", Dock = DockStyle.Top, Height = 65, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 20F, FontStyle.Bold) };
+            bienvenida = new Label { Text = "¡Elige tu música favorita!", Dock = DockStyle.Top, Height = 65, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 20F, FontStyle.Bold) };
             Controls.Add(bienvenida);
             Label estado = new Label { Text = "Sistema iniciado • Base de datos local preparada", Dock = DockStyle.Bottom, Height = 45, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.LightGray };
             Controls.Add(estado);
