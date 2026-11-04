@@ -53,113 +53,112 @@ namespace RockolaKaraoke.Interfaz
 
         private void CrearInterfaz()
         {
-            Panel encabezado = new Panel { Dock = DockStyle.Top, Height = 66, BackColor = Color.FromArgb(23, 30, 53) };
-            Label marca = new Label { Text = "ROCKOLA  •  REPRODUCTOR MULTIMEDIA", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.DeepSkyBlue, Font = new Font("Segoe UI", 20F, FontStyle.Bold) };
+            Panel encabezado = new Panel { Dock = DockStyle.Top, Height = 54, BackColor = Color.FromArgb(0, 190, 210) };
+            Label marca = new Label { Text = "ROCKOLA KARAOKE  •  ELIGE TU MÚSICA FAVORITA", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 19F, FontStyle.Bold) };
             encabezado.Controls.Add(marca);
 
-            Panel inferior = new Panel { Dock = DockStyle.Bottom, Height = 145, BackColor = Color.FromArgb(20, 25, 44) };
-            tituloActual.Text = "Selecciona una canción de la biblioteca";
-            tituloActual.Dock = DockStyle.Top; tituloActual.Height = 30; tituloActual.TextAlign = ContentAlignment.MiddleCenter;
-            tituloActual.ForeColor = Color.White; tituloActual.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-
-            progreso.Dock = DockStyle.Top; progreso.Minimum = 0; progreso.Maximum = 1000; progreso.TickStyle = TickStyle.None; progreso.Height = 28;
+            Panel inferior = new Panel { Dock = DockStyle.Bottom, Height = 78, BackColor = Color.FromArgb(5, 10, 24) };
+            tituloActual.Text = "No hay tema en reproducción";
+            tituloActual.Dock = DockStyle.Top; tituloActual.Height = 22; tituloActual.TextAlign = ContentAlignment.MiddleLeft;
+            tituloActual.Padding = new Padding(12, 0, 0, 0); tituloActual.ForeColor = Color.White; tituloActual.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            progreso.Dock = DockStyle.Top; progreso.Minimum = 0; progreso.Maximum = 1000; progreso.TickStyle = TickStyle.None; progreso.Height = 15;
             progreso.Scroll += delegate { if (reproductor != null && reproductor.IsSeekable && reproductor.Length > 0) reproductor.Position = progreso.Value / 1000f; };
-            tiempo.Text = "00:00 / 00:00"; tiempo.Dock = DockStyle.Top; tiempo.Height = 20; tiempo.TextAlign = ContentAlignment.MiddleCenter; tiempo.ForeColor = Color.LightGray;
-
-            FlowLayoutPanel controles = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 58, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(12, 5, 12, 3), BackColor = Color.FromArgb(20, 25, 44) };
-            anterior.Text = "⏮ ANTERIOR"; reproducir.Text = "▶ REPRODUCIR"; siguiente.Text = "SIGUIENTE ⏭"; detener.Text = "■ DETENER";
-            foreach (Button b in new Button[] { anterior, reproducir, siguiente, detener }) { b.Size = new Size(145, 43); Estilizar(b); controles.Controls.Add(b); }
-            Label etiquetaVolumen = new Label { Text = "VOLUMEN", Width = 75, Height = 40, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White };
-            volumen.Minimum = 0; volumen.Maximum = 100; volumen.Value = 70; volumen.Width = 130; volumen.Height = 42; volumen.TickFrequency = 10;
+            tiempo.Text = "00:00 / 00:00"; tiempo.Dock = DockStyle.Right; tiempo.Width = 110; tiempo.TextAlign = ContentAlignment.MiddleCenter; tiempo.ForeColor = Color.LightGray;
+            FlowLayoutPanel controles = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(10, 2, 5, 2), BackColor = Color.FromArgb(5, 10, 24) };
+            anterior.Text = "◀ ANTERIOR"; reproducir.Text = "▶ REPRODUCIR"; siguiente.Text = "SIGUIENTE ▶"; detener.Text = "■ DETENER";
+            foreach (Button b in new Button[] { anterior, reproducir, siguiente, detener }) { b.Size = new Size(132, 36); Estilizar(b); controles.Controls.Add(b); }
+            Label etiquetaVolumen = new Label { Text = "VOLUMEN", Width = 72, Height = 36, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White };
+            volumen.Minimum = 0; volumen.Maximum = 100; volumen.Value = 70; volumen.Width = 115; volumen.Height = 36; volumen.TickFrequency = 10;
             controles.Controls.Add(etiquetaVolumen); controles.Controls.Add(volumen);
             anterior.Click += delegate { ReproducirAnterior(); };
             siguiente.Click += delegate { ReproducirSiguiente(); };
             reproducir.Click += delegate
             {
-                if (reproductor != null && reproductor.State == VLCState.Playing)
-                {
-                    reproductor.Pause();
-                    reproducir.Text = "▶ CONTINUAR";
-                }
-                else if (reproductor != null && reproductor.State == VLCState.Paused)
-                {
-                    reproductor.Pause();
-                    reproducir.Text = "Ⅱ PAUSAR";
-                }
-                else
-                {
-                    ReproducirSeleccion();
-                }
+                if (reproductor != null && reproductor.State == VLCState.Playing) { reproductor.Pause(); reproducir.Text = "▶ CONTINUAR"; }
+                else if (reproductor != null && reproductor.State == VLCState.Paused) { reproductor.Pause(); reproducir.Text = "Ⅱ PAUSAR"; }
+                else ReproducirSeleccion();
             };
             detener.Click += delegate { if (reproductor != null) reproductor.Stop(); reproducir.Text = "▶ REPRODUCIR"; };
             volumen.Scroll += delegate { if (reproductor != null) reproductor.Volume = volumen.Value; };
-
             inferior.Controls.Add(controles); inferior.Controls.Add(tiempo); inferior.Controls.Add(progreso); inferior.Controls.Add(tituloActual);
 
-            SplitContainer division = new SplitContainer { Dock = DockStyle.Fill, SplitterDistance = 340, BackColor = Color.FromArgb(12, 16, 31), FixedPanel = FixedPanel.Panel1 };
-            biblioteca.Dock = DockStyle.None; biblioteca.Visible = false;
-            biblioteca.View = View.Details; biblioteca.FullRowSelect = true;
-            biblioteca.Columns.Add("CANCIÓN", 190); biblioteca.Columns.Add("ARTISTA", 125);
-            mosaico.Dock = DockStyle.Fill; mosaico.AutoScroll = true; mosaico.WrapContents = true;
-            mosaico.FlowDirection = FlowDirection.LeftToRight; mosaico.Padding = new Padding(14);
-            mosaico.BackColor = Color.FromArgb(12, 16, 31);
-            busquedaMosaico.Dock = DockStyle.Top; busquedaMosaico.Height = 38;
-            busquedaMosaico.Font = new Font("Segoe UI", 13F); busquedaMosaico.Margin = new Padding(12);
+            SplitContainer division = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, SplitterDistance = 900, BackColor = Color.Black, FixedPanel = FixedPanel.Panel2, SplitterWidth = 7 };
+            Panel lado = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 30) };
+
+            mosaico.Dock = DockStyle.Top; mosaico.Height = 224; mosaico.AutoScroll = true; mosaico.WrapContents = false;
+            mosaico.FlowDirection = FlowDirection.LeftToRight; mosaico.Padding = new Padding(8, 7, 8, 5);
+            mosaico.BackColor = Color.FromArgb(3, 10, 27);
+
+            FlowLayoutPanel filtros = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, Padding = new Padding(8, 5, 8, 3), WrapContents = false, BackColor = Color.FromArgb(0, 185, 205) };
+            foreach (string tipo in new string[] { "Todos", "Karaoke", "Musica", "Video" })
+            {
+                string etiqueta = tipo == "Musica" ? "MÚSICA" : tipo.ToUpperInvariant();
+                Button filtro = new Button { Text = etiqueta, Tag = tipo, Width = 132, Height = 36 };
+                Estilizar(filtro); filtro.BackColor = tipo == "Karaoke" ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 115, 190);
+                filtro.ForeColor = Color.White;
+                filtro.Click += delegate(object sender, EventArgs e) { filtroTipo = Convert.ToString(((Button)sender).Tag); ConstruirMosaico(); };
+                filtros.Controls.Add(filtro);
+            }
+            busquedaMosaico.Dock = DockStyle.Top; busquedaMosaico.Height = 34;
+            busquedaMosaico.Font = new Font("Segoe UI", 11F); busquedaMosaico.Margin = new Padding(8);
             busquedaMosaico.ForeColor = Color.DimGray; busquedaMosaico.Text = "Buscar canción o artista...";
             busquedaMosaico.GotFocus += delegate { if (busquedaMosaico.Text == "Buscar canción o artista...") { busquedaMosaico.Text = ""; busquedaMosaico.ForeColor = Color.Black; } };
             busquedaMosaico.LostFocus += delegate { if (String.IsNullOrWhiteSpace(busquedaMosaico.Text)) { busquedaMosaico.Text = "Buscar canción o artista..."; busquedaMosaico.ForeColor = Color.DimGray; } };
             busquedaMosaico.TextChanged += delegate { ConstruirMosaico(); };
 
-            Panel lado = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(12, 16, 31) };
-            FlowLayoutPanel filtros = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, Padding = new Padding(8, 5, 8, 4), WrapContents = false };
-            foreach (string tipo in new string[] { "Todos", "Musica", "Video", "Karaoke" })
+            biblioteca.Visible = true; biblioteca.Dock = DockStyle.Fill; biblioteca.View = View.Details;
+            biblioteca.FullRowSelect = true; biblioteca.HideSelection = false; biblioteca.GridLines = false;
+            biblioteca.BackColor = Color.FromArgb(2, 7, 17); biblioteca.ForeColor = Color.White;
+            biblioteca.Font = new Font("Segoe UI", 13F, FontStyle.Bold);
+            biblioteca.Columns.Clear(); biblioteca.Columns.Add("LISTA DE CANCIONES", 620); biblioteca.Columns.Add("ARTISTA", 260);
+            biblioteca.OwnerDraw = true;
+            biblioteca.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e) { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(0, 175, 205)), e.Bounds); TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 10F, FontStyle.Bold), e.Bounds, Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left); };
+            biblioteca.DrawItem += delegate(object sender, DrawListViewItemEventArgs e) { e.DrawDefault = true; };
+            biblioteca.DrawSubItem += delegate(object sender, DrawListViewSubItemEventArgs e)
             {
-                Button filtro = new Button { Text = tipo == "Musica" ? "MÚSICA" : tipo.ToUpperInvariant(), Tag = tipo, Width = 105, Height = 36 };
-                Estilizar(filtro);
-                filtro.Click += delegate(object sender, EventArgs e) { filtroTipo = Convert.ToString(((Button)sender).Tag); ConstruirMosaico(); };
-                filtros.Controls.Add(filtro);
+                Color fondo = e.Item.Selected ? Color.FromArgb(245, 195, 0) : (e.ItemIndex % 2 == 0 ? Color.FromArgb(5, 15, 30) : Color.FromArgb(10, 22, 39));
+                Color tinta = e.Item.Selected ? Color.Black : Color.White;
+                using (SolidBrush b = new SolidBrush(fondo)) e.Graphics.FillRectangle(b, e.Bounds);
+                TextRenderer.DrawText(e.Graphics, e.SubItem.Text, biblioteca.Font, e.Bounds, tinta, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+            };
+
+            lado.Controls.Add(biblioteca); lado.Controls.Add(filtros); lado.Controls.Add(busquedaMosaico); lado.Controls.Add(mosaico);
+
+            Panel panelDerecho = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 7, 17), Padding = new Padding(7) };
+            Panel panelPublicidad = new Panel { Dock = DockStyle.Top, Height = 245, BackColor = Color.Black, BorderStyle = BorderStyle.FixedSingle };
+            pantalla.Dock = DockStyle.Fill; pantalla.BackColor = Color.Black;
+            Label publicidad = new Label { Text = "AGREGUE PUBLICIDAD AQUÍ", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 13F, FontStyle.Bold) };
+            panelPublicidad.Controls.Add(pantalla); panelPublicidad.Controls.Add(publicidad);
+            FlowLayoutPanel botonesModo = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 54, Padding = new Padding(2, 7, 2, 2), WrapContents = false, BackColor = Color.FromArgb(0, 175, 200) };
+            foreach (string modo in new string[] { "AUDIO", "VIDEO", "KARAOKE", "BUSCAR" })
+            {
+                Button b = new Button { Text = modo, Width = 88, Height = 38 };
+                Estilizar(b); b.BackColor = modo == "KARAOKE" ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 105, 175);
+                botonesModo.Controls.Add(b);
+                if (modo == "BUSCAR") b.Click += delegate { busquedaMosaico.Focus(); };
+                else b.Click += delegate { filtroTipo = modo == "AUDIO" ? "Musica" : modo == "VIDEO" ? "Video" : "Karaoke"; ConstruirMosaico(); };
             }
-            Button actualizar = new Button { Text = "ACTUALIZAR BIBLIOTECA", Dock = DockStyle.Top, Height = 42 };
-            Estilizar(actualizar); actualizar.Click += delegate { CargarBiblioteca(); };
-            Button agregar = new Button { Text = "＋ AGREGAR A LA COLA", Dock = DockStyle.Top, Height = 42 };
-            Estilizar(agregar); agregar.Click += delegate { AgregarSeleccionALaCola(); };
-            Button ahora = new Button { Text = "▶ REPRODUCIR AHORA", Dock = DockStyle.Top, Height = 42 };
-            Estilizar(ahora); ahora.Click += delegate { ReproducirSeleccion(); };
-            lado.Controls.Add(mosaico); lado.Controls.Add(filtros); lado.Controls.Add(busquedaMosaico);
-            lado.Controls.Add(agregar); lado.Controls.Add(ahora); lado.Controls.Add(actualizar); lado.Controls.Add(biblioteca);
 
-            Panel panelDerecho = new Panel { Dock = DockStyle.Fill, BackColor = Color.Black };
-            Panel panelCola = new Panel { Dock = DockStyle.Bottom, Height = 190, BackColor = Color.FromArgb(20, 25, 44) };
-            etiquetaCola.Text = "COLA DE REPRODUCCIÓN (0)";
-            etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 28; etiquetaCola.TextAlign = ContentAlignment.MiddleLeft;
-            etiquetaCola.Padding = new Padding(10, 0, 0, 0); etiquetaCola.ForeColor = Color.DeepSkyBlue;
+            Panel panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 25) };
+            etiquetaCola.Text = "TEMAS EN ESPERA (0)"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 28;
+            etiquetaCola.TextAlign = ContentAlignment.MiddleLeft; etiquetaCola.Padding = new Padding(7, 0, 0, 0); etiquetaCola.ForeColor = Color.Gold;
             cola.Dock = DockStyle.Fill; cola.View = View.Details; cola.FullRowSelect = true; cola.GridLines = false;
-            cola.HideSelection = false; cola.BackColor = Color.FromArgb(20, 25, 44); cola.ForeColor = Color.White;
-            cola.Columns.Add("SIGUIENTE CANCIÓN", 300); cola.Columns.Add("ARTISTA", 190);
+            cola.HideSelection = false; cola.BackColor = Color.FromArgb(4, 12, 25); cola.ForeColor = Color.White;
+            cola.Columns.Clear(); cola.Columns.Add("SIGUIENTE CANCIÓN", 220); cola.Columns.Add("ARTISTA", 130);
             cola.DoubleClick += delegate { ReproducirElementoDeCola(); };
-
-            FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 39, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(5, 2, 5, 2) };
-            Button quitar = new Button { Text = "QUITAR", Width = 95, Height = 32 };
-            Button subir = new Button { Text = "SUBIR ▲", Width = 105, Height = 32 };
-            Button bajar = new Button { Text = "BAJAR ▼", Width = 105, Height = 32 };
-            Button vaciar = new Button { Text = "VACIAR COLA", Width = 115, Height = 32 };
+            FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(2) };
+            Button quitar = new Button { Text = "QUITAR", Width = 78, Height = 32 };
+            Button subir = new Button { Text = "▲", Width = 42, Height = 32 };
+            Button bajar = new Button { Text = "▼", Width = 42, Height = 32 };
+            Button vaciar = new Button { Text = "VACIAR", Width = 78, Height = 32 };
             foreach (Button b in new Button[] { quitar, subir, bajar, vaciar }) { Estilizar(b); accionesCola.Controls.Add(b); }
-            quitar.Click += delegate { QuitarDeLaCola(); };
-            subir.Click += delegate { MoverEnCola(-1); };
-            bajar.Click += delegate { MoverEnCola(1); };
-            vaciar.Click += delegate { cola.Items.Clear(); ActualizarContadorCola(); };
-
-            panelCola.Controls.Add(cola);
-            panelCola.Controls.Add(accionesCola);
-            panelCola.Controls.Add(etiquetaCola);
-            pantalla.Dock = DockStyle.Fill;
-            pantalla.BackColor = Color.Black;
-            panelDerecho.Controls.Add(pantalla);
-            panelDerecho.Controls.Add(panelCola);
-            division.Panel1.Controls.Add(lado);
-            division.Panel2.Controls.Add(panelDerecho);
-
+            quitar.Click += delegate { QuitarDeLaCola(); }; subir.Click += delegate { MoverEnCola(-1); };
+            bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { cola.Items.Clear(); ActualizarContadorCola(); };
+            panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
+            panelDerecho.Controls.Add(panelCola); panelDerecho.Controls.Add(botonesModo); panelDerecho.Controls.Add(panelPublicidad);
+            division.Panel1.Controls.Add(lado); division.Panel2.Controls.Add(panelDerecho);
             Controls.Add(division); Controls.Add(inferior); Controls.Add(encabezado);
+            Shown += delegate { try { division.SplitterDistance = Math.Max(650, (int)(ClientSize.Width * 0.70)); } catch { } };
         }
 
         private void ConstruirMosaico()
@@ -167,6 +166,7 @@ namespace RockolaKaraoke.Interfaz
             mosaico.SuspendLayout();
             mosaico.Controls.Clear();
             string texto = busquedaMosaico.Text == "Buscar canción o artista..." ? "" : busquedaMosaico.Text.Trim();
+            System.Collections.Generic.Dictionary<string, ListViewItem> albumes = new System.Collections.Generic.Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
 
             foreach (ListViewItem elemento in biblioteca.Items)
             {
@@ -174,116 +174,78 @@ namespace RockolaKaraoke.Interfaz
                 if (filtroTipo != "Todos" && !tipo.Equals(filtroTipo, StringComparison.OrdinalIgnoreCase)) continue;
                 if (texto.Length > 0 && elemento.Text.IndexOf(texto, StringComparison.OrdinalIgnoreCase) < 0 &&
                     elemento.SubItems[1].Text.IndexOf(texto, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                string ruta = Convert.ToString(elemento.Tag);
+                string carpeta = Path.GetDirectoryName(ruta);
+                string nombreAlbum = String.IsNullOrWhiteSpace(carpeta) ? "MI COLECCIÓN" : new DirectoryInfo(carpeta).Name;
+                if (!albumes.ContainsKey(nombreAlbum)) albumes.Add(nombreAlbum, elemento);
+            }
 
-                // Tarjeta cuadrada provisional: posteriormente se conectará la portada real del álbum.
-                Panel tarjeta = new Panel
+            foreach (System.Collections.Generic.KeyValuePair<string, ListViewItem> album in albumes)
+            {
+                ListViewItem primerTema = album.Value;
+                string carpeta = Path.GetDirectoryName(Convert.ToString(primerTema.Tag));
+                int cantidad = 0;
+                foreach (ListViewItem tema in biblioteca.Items)
                 {
-                    Width = 218,
-                    Height = 218,
-                    Margin = new Padding(10),
-                    BackColor = Color.FromArgb(17, 23, 42),
-                    Cursor = Cursors.Hand,
-                    Tag = elemento
-                };
+                    if (String.Equals(Path.GetDirectoryName(Convert.ToString(tema.Tag)), carpeta, StringComparison.OrdinalIgnoreCase)) cantidad++;
+                }
+
+                Panel tarjeta = new Panel { Width = 226, Height = 202, Margin = new Padding(7, 3, 7, 3), BackColor = Color.FromArgb(0, 62, 125), Cursor = Cursors.Hand, Tag = primerTema };
                 tarjeta.Paint += delegate(object sender, PaintEventArgs e)
                 {
                     Panel p = (Panel)sender;
-                    using (Pen borde = new Pen(Color.FromArgb(35, 145, 220), 2F))
-                        e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
+                    using (Pen borde = new Pen(Color.FromArgb(0, 220, 245), 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
                 };
-
-                Panel portada = new Panel
+                PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 145, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
+                Image imagen = BuscarPortada(carpeta);
+                if (imagen != null) portada.Image = imagen;
+                else
                 {
-                    Dock = DockStyle.Fill,
-                    BackColor = Color.FromArgb(22, 55, 95),
-                    Cursor = Cursors.Hand
-                };
-                portada.Paint += delegate(object sender, PaintEventArgs e)
-                {
-                    Panel p = (Panel)sender;
-                    Rectangle area = p.ClientRectangle;
-                    using (System.Drawing.Drawing2D.LinearGradientBrush fondo = new System.Drawing.Drawing2D.LinearGradientBrush(
-                        area, Color.FromArgb(8, 30, 65), Color.FromArgb(75, 24, 105), 40F))
-                        e.Graphics.FillRectangle(fondo, area);
-
-                    using (System.Drawing.Drawing2D.LinearGradientBrush brillo = new System.Drawing.Drawing2D.LinearGradientBrush(
-                        area, Color.FromArgb(0, 0, 190, 255), Color.FromArgb(85, 0, 190, 255), 90F))
-                        e.Graphics.FillEllipse(brillo, -35, -55, 180, 180);
-
-                    string simbolo = tipo.Equals("Video", StringComparison.OrdinalIgnoreCase) ? "▶" : "♫";
-                    using (Font fuente = new Font("Segoe UI Symbol", 66F, FontStyle.Bold))
-                    using (SolidBrush pincel = new SolidBrush(Color.FromArgb(235, 255, 255, 255)))
+                    portada.Paint += delegate(object sender, PaintEventArgs e)
                     {
-                        SizeF medida = e.Graphics.MeasureString(simbolo, fuente);
-                        e.Graphics.DrawString(simbolo, fuente, pincel,
-                            (area.Width - medida.Width) / 2F, (area.Height - medida.Height) / 2F - 12F);
-                    }
-                };
-
-                Panel franja = new Panel
-                {
-                    Dock = DockStyle.Bottom,
-                    Height = 64,
-                    BackColor = Color.FromArgb(235, 7, 12, 27),
-                    Cursor = Cursors.Hand
-                };
-                Label nombre = new Label
-                {
-                    Text = elemento.Text,
-                    Dock = DockStyle.Top,
-                    Height = 36,
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    AutoEllipsis = true,
-                    Padding = new Padding(5, 0, 5, 0),
-                    Cursor = Cursors.Hand
-                };
-                Label artista = new Label
-                {
-                    Text = elemento.SubItems[1].Text,
-                    Dock = DockStyle.Fill,
-                    ForeColor = Color.FromArgb(80, 205, 255),
-                    Font = new Font("Segoe UI", 8.5F),
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    AutoEllipsis = true,
-                    Cursor = Cursors.Hand
-                };
-                franja.Controls.Add(artista);
-                franja.Controls.Add(nombre);
-
-                Button sumar = new Button
-                {
-                    Text = "+",
-                    Width = 34,
-                    Height = 34,
-                    Top = 7,
-                    Left = 174,
-                    Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = Color.FromArgb(0, 155, 220),
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 17F, FontStyle.Bold),
-                    Cursor = Cursors.Hand,
-                    TabStop = false
-                };
-                sumar.FlatAppearance.BorderSize = 0;
-                sumar.Click += delegate { SeleccionarElemento(elemento); AgregarSeleccionALaCola(); };
-
-                EventHandler reproducirTarjeta = delegate { SeleccionarElemento(elemento); ReproducirSeleccion(); };
-                tarjeta.Click += reproducirTarjeta;
-                portada.Click += reproducirTarjeta;
-                franja.Click += reproducirTarjeta;
-                nombre.Click += reproducirTarjeta;
-                artista.Click += reproducirTarjeta;
-
-                tarjeta.Controls.Add(portada);
-                tarjeta.Controls.Add(franja);
-                tarjeta.Controls.Add(sumar);
+                        Rectangle r = ((PictureBox)sender).ClientRectangle;
+                        using (System.Drawing.Drawing2D.LinearGradientBrush grad = new System.Drawing.Drawing2D.LinearGradientBrush(r, Color.FromArgb(18, 38, 105), Color.FromArgb(135, 25, 115), 35F)) e.Graphics.FillRectangle(grad, r);
+                        using (Font f = new Font("Segoe UI Symbol", 52F, FontStyle.Bold))
+                        using (SolidBrush b = new SolidBrush(Color.White)) e.Graphics.DrawString("♫", f, b, 68, 28);
+                    };
+                }
+                Label nombre = new Label { Text = album.Key, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 11F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
+                Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 23, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+                tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
+                EventHandler elegir = delegate { SeleccionarElemento(primerTema); };
+                tarjeta.Click += elegir; portada.Click += elegir; nombre.Click += elegir; total.Click += elegir;
                 mosaico.Controls.Add(tarjeta);
             }
-
             mosaico.ResumeLayout();
+        }
+
+        private Image BuscarPortada(string carpeta)
+        {
+            try
+            {
+                if (String.IsNullOrWhiteSpace(carpeta) || !Directory.Exists(carpeta)) return null;
+                string[] nombres = new string[] { "cover.jpg", "cover.png", "folder.jpg", "folder.png", "front.jpg", "front.png", "caratula.jpg", "caratula.png", "album.jpg", "album.png" };
+                foreach (string nombre in nombres)
+                {
+                    string archivo = Path.Combine(carpeta, nombre);
+                    if (File.Exists(archivo))
+                    {
+                        using (FileStream fs = new FileStream(archivo, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        using (Image original = Image.FromStream(fs)) return new Bitmap(original);
+                    }
+                }
+                foreach (string archivo in Directory.GetFiles(carpeta))
+                {
+                    string ext = Path.GetExtension(archivo).ToLowerInvariant();
+                    if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp")
+                    {
+                        using (FileStream fs = new FileStream(archivo, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        using (Image original = Image.FromStream(fs)) return new Bitmap(original);
+                    }
+                }
+            }
+            catch { }
+            return null;
         }
 
         private void SeleccionarElemento(ListViewItem elemento)
