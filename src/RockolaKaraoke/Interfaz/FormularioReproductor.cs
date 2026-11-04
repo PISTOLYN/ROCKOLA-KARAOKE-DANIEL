@@ -189,11 +189,6 @@ namespace RockolaKaraoke.Interfaz
             lado.Controls.Add(biblioteca); lado.Controls.Add(filtros); lado.Controls.Add(busquedaMosaico);
             marcoSuperior.Controls.Add(mosaico);
             distribucionInferior.Controls.Add(lado, 0, 0);
-            distribucionInferior.Controls.Add(panelDerecho, 1, 0);
-            filaInferior.Controls.Add(distribucionInferior);
-            centro.Controls.Add(marcoSuperior, 0, 0);
-            centro.Controls.Add(filaInferior, 0, 1);
-
             Panel panelDerecho = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 7, 17), Padding = new Padding(7) };
             Panel panelPublicidad = new Panel { Dock = DockStyle.Top, Height = 245, BackColor = Color.Black, BorderStyle = BorderStyle.FixedSingle };
             pantalla.Dock = DockStyle.Fill; pantalla.BackColor = Color.Black;
@@ -246,6 +241,11 @@ namespace RockolaKaraoke.Interfaz
             bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { cola.Items.Clear(); ActualizarContadorCola(); };
             panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
             panelDerecho.Controls.Add(panelCola); panelDerecho.Controls.Add(controlesRockola); panelDerecho.Controls.Add(botonesModo); panelDerecho.Controls.Add(panelPublicidad);
+            distribucionInferior.Controls.Add(lado, 0, 0);
+            distribucionInferior.Controls.Add(panelDerecho, 1, 0);
+            filaInferior.Controls.Add(distribucionInferior);
+            centro.Controls.Add(marcoSuperior, 0, 0);
+            centro.Controls.Add(filaInferior, 0, 1);
             Controls.Add(centro); Controls.Add(inferior); Controls.Add(encabezado);
             Shown += delegate { mosaico.Height = Math.Max(190, marcoSuperior.ClientSize.Height - 10); };
         }
