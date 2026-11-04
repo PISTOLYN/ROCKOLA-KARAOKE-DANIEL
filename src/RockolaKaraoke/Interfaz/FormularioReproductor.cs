@@ -67,7 +67,7 @@ namespace RockolaKaraoke.Interfaz
             controles.Controls.Add(etiquetaVolumen); controles.Controls.Add(volumen);
             anterior.Click += delegate { ReproducirIndice(biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] - 1 : 0); };
             siguiente.Click += delegate { ReproducirSiguiente(); };
-            reproducir.Click += delegate { ReproducirSeleccion(); };
+            reproducir.Click += delegate\n            {\n                if (reproductor != null && reproductor.State == VLCState.Playing) { reproductor.Pause(); reproducir.Text = "▶ CONTINUAR"; }\n                else if (reproductor != null && reproductor.State == VLCState.Paused) { reproductor.Pause(); reproducir.Text = "Ⅱ PAUSAR"; }\n                else ReproducirSeleccion();\n            };
             detener.Click += delegate { if (reproductor != null) reproductor.Stop(); reproducir.Text = "▶ REPRODUCIR"; };
             volumen.Scroll += delegate { if (reproductor != null) reproductor.Volume = volumen.Value; };
 
