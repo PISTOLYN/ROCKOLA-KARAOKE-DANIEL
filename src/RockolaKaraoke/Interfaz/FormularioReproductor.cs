@@ -54,7 +54,7 @@ namespace RockolaKaraoke.Interfaz
             CrearInterfaz();
             KeyDown += delegate(object sender, KeyEventArgs e)
             {
-                if (e.KeyCode == Keys.M)
+                if (e.KeyCode == Keys.M && !(ActiveControl is TextBoxBase))
                 {
                     e.SuppressKeyPress = true;
                     MostrarMenuEdicion();
