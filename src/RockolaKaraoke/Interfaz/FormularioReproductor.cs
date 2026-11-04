@@ -219,7 +219,7 @@ namespace RockolaKaraoke.Interfaz
             }
             else
             {
-                biblioteca.SelectedItems.Clear();
+                LimpiarSeleccionBiblioteca();
                 biblioteca.Items[indice].Selected = true;
                 biblioteca.Items[indice].EnsureVisible();
             }
@@ -296,9 +296,15 @@ namespace RockolaKaraoke.Interfaz
             etiquetaCola.Text = "COLA DE REPRODUCCIÓN (" + cola.Items.Count + ")";
         }
 
+        private void LimpiarSeleccionBiblioteca()
+        {
+            foreach (ListViewItem elemento in biblioteca.Items)
+                elemento.Selected = false;
+        }
+
         private void SeleccionarEnBiblioteca(string ruta)
         {
-            biblioteca.SelectedItems.Clear();
+            LimpiarSeleccionBiblioteca();
             for (int i = 0; i < biblioteca.Items.Count; i++)
             {
                 if (string.Equals(Convert.ToString(biblioteca.Items[i].Tag), ruta, StringComparison.OrdinalIgnoreCase))
