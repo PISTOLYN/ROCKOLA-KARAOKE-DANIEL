@@ -1,0 +1,24 @@
+name: Compilar Rockola Karaoke
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  compilar:
+    runs-on: windows-2022
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+      - name: Configurar MSBuild
+        uses: microsoft/setup-msbuild@v2
+      - name: Restaurar NuGet
+        run: nuget restore RockolaKaraoke.sln
+      - name: Compilar Release
+        run: msbuild RockolaKaraoke.sln /m /p:Configuration=Release /p:Platform="Any CPU"
+      - name: Guardar archivos compilados
+        uses: actions/upload-artifact@v4
+        with:
+          name: RockolaKaraoke-Windows
+          path: src/RockolaKaraoke/bin/Release/
