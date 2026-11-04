@@ -130,15 +130,34 @@ namespace RockolaKaraoke.Interfaz
             pantalla.Dock = DockStyle.Fill; pantalla.BackColor = Color.Black;
             Label publicidad = new Label { Text = "AGREGUE PUBLICIDAD AQUÍ", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 13F, FontStyle.Bold) };
             panelPublicidad.Controls.Add(pantalla); panelPublicidad.Controls.Add(publicidad);
-            FlowLayoutPanel botonesModo = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 54, Padding = new Padding(2, 7, 2, 2), WrapContents = false, BackColor = Color.FromArgb(0, 175, 200) };
-            foreach (string modo in new string[] { "AUDIO", "VIDEO", "KARAOKE", "BUSCAR" })
+            FlowLayoutPanel botonesModo = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 52, Padding = new Padding(2, 6, 2, 2), WrapContents = false, BackColor = Color.FromArgb(0, 175, 200) };
+            foreach (string modo in new string[] { "AUDIO", "VIDEO", "KARAOKE" })
             {
-                Button b = new Button { Text = modo, Width = 88, Height = 38 };
+                Button b = new Button { Text = modo, Width = 96, Height = 38 };
                 Estilizar(b); b.BackColor = modo == "KARAOKE" ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 105, 175);
                 botonesModo.Controls.Add(b);
-                if (modo == "BUSCAR") b.Click += delegate { busquedaMosaico.Focus(); };
-                else b.Click += delegate { filtroTipo = modo == "AUDIO" ? "Musica" : modo == "VIDEO" ? "Video" : "Karaoke"; ConstruirMosaico(); };
+                b.Click += delegate { filtroTipo = modo == "AUDIO" ? "Musica" : modo == "VIDEO" ? "Video" : "Karaoke"; ConstruirMosaico(); };
             }
+
+            // Controles de navegación y reproducción al estilo de la rockola de referencia.
+            FlowLayoutPanel controlesRockola = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 92, Padding = new Padding(5, 5, 2, 2), WrapContents = true, BackColor = Color.FromArgb(3, 10, 24) };
+            Button btnAnteriorRockola = new Button { Text = "◀", Width = 48, Height = 38, Font = new Font("Segoe UI", 17F, FontStyle.Bold) };
+            Button btnPlayRockola = new Button { Text = "▶", Width = 58, Height = 38, Font = new Font("Segoe UI", 17F, FontStyle.Bold) };
+            Button btnSiguienteRockola = new Button { Text = "▶|", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
+            Button btnSubirRockola = new Button { Text = "▲", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
+            Button btnBajarRockola = new Button { Text = "▼", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
+            Button btnBuscarRockola = new Button { Text = "⌕", Width = 48, Height = 38, Font = new Font("Segoe UI", 19F, FontStyle.Bold) };
+            foreach (Button b in new Button[] { btnAnteriorRockola, btnPlayRockola, btnSiguienteRockola, btnSubirRockola, btnBajarRockola, btnBuscarRockola })
+            {
+                Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); b.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 245);
+                controlesRockola.Controls.Add(b);
+            }
+            btnAnteriorRockola.Click += delegate { ReproducirAnterior(); };
+            btnPlayRockola.Click += delegate { reproducir.PerformClick(); btnPlayRockola.Text = reproductor != null && reproductor.State == VLCState.Playing ? "Ⅱ" : "▶"; };
+            btnSiguienteRockola.Click += delegate { ReproducirSiguiente(); };
+            btnSubirRockola.Click += delegate { MoverSeleccionCancion(-1); };
+            btnBajarRockola.Click += delegate { MoverSeleccionCancion(1); };
+            btnBuscarRockola.Click += delegate { busquedaMosaico.Focus(); };
 
             Panel panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 25) };
             etiquetaCola.Text = "TEMAS EN ESPERA (0)"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 28;
@@ -157,7 +176,7 @@ namespace RockolaKaraoke.Interfaz
             agregar.Click += delegate { AgregarSeleccionALaCola(); }; quitar.Click += delegate { QuitarDeLaCola(); }; subir.Click += delegate { MoverEnCola(-1); };
             bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { cola.Items.Clear(); ActualizarContadorCola(); };
             panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
-            panelDerecho.Controls.Add(panelCola); panelDerecho.Controls.Add(botonesModo); panelDerecho.Controls.Add(panelPublicidad);
+            panelDerecho.Controls.Add(panelCola); panelDerecho.Controls.Add(controlesRockola); panelDerecho.Controls.Add(botonesModo); panelDerecho.Controls.Add(panelPublicidad);
             division.Panel1.Controls.Add(lado); division.Panel2.Controls.Add(panelDerecho);
             Controls.Add(division); Controls.Add(inferior); Controls.Add(encabezado);
             Shown += delegate { try { division.SplitterDistance = Math.Max(650, (int)(ClientSize.Width * 0.70)); } catch { } };
@@ -340,6 +359,17 @@ namespace RockolaKaraoke.Interfaz
                 ConstruirMosaico();
             }
             catch (Exception ex) { MessageBox.Show(this, "No se pudo cargar la biblioteca.\n" + ex.Message, "Biblioteca", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+
+        private void MoverSeleccionCancion(int desplazamiento)
+        {
+            if (biblioteca.Items.Count == 0) return;
+            int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] : 0;
+            indice = Math.Max(0, Math.Min(biblioteca.Items.Count - 1, indice + desplazamiento));
+            LimpiarSeleccionBiblioteca();
+            biblioteca.Items[indice].Selected = true;
+            biblioteca.Items[indice].Focused = true;
+            biblioteca.Items[indice].EnsureVisible();
         }
 
         private void ReproducirSeleccion()
