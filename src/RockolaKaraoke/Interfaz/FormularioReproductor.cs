@@ -148,7 +148,7 @@ namespace RockolaKaraoke.Interfaz
             AplicarMarcoNeon(marcoSuperior);
             AplicarMarcoNeon(lado);
 
-            mosaico.Dock = DockStyle.Top; mosaico.Height = 224; mosaico.AutoScroll = true; mosaico.WrapContents = false;
+            mosaico.Dock = DockStyle.Fill; mosaico.AutoScroll = true; mosaico.WrapContents = false;
             mosaico.FlowDirection = FlowDirection.LeftToRight; mosaico.Padding = new Padding(8, 7, 8, 5);
             mosaico.BackColor = Color.FromArgb(3, 10, 27);
 
@@ -187,7 +187,40 @@ namespace RockolaKaraoke.Interfaz
             };
 
             lado.Controls.Add(biblioteca); lado.Controls.Add(filtros); lado.Controls.Add(busquedaMosaico);
-            marcoSuperior.Controls.Add(mosaico);
+            // Dos recuadros superiores: cartelera de PORTADAS y selector de ESTILO.
+            TableLayoutPanel zonaSuperior = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, BackColor = Color.FromArgb(2, 8, 24), Padding = new Padding(4) };
+            zonaSuperior.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 78F));
+            zonaSuperior.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22F));
+            Panel cuadroPortadas = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(3, 10, 27), Padding = new Padding(4), Margin = new Padding(3) };
+            Panel cuadroEstilos = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 15, 35), Padding = new Padding(5), Margin = new Padding(3) };
+            AplicarMarcoNeon(cuadroPortadas);
+            AplicarMarcoNeon(cuadroEstilos);
+            Label tituloPortadas = new Label { Text = "PORTADAS  •  SELECCIONA TU ÁLBUM", Dock = DockStyle.Top, Height = 31, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 11F, FontStyle.Bold) };
+            FlowLayoutPanel navegacionPortadas = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(4, 2, 2, 2) };
+            Button portadaAnterior = new Button { Text = "◀ PORTADA", Width = 112, Height = 32 };
+            Button portadaSiguiente = new Button { Text = "PORTADA ▶", Width = 112, Height = 32 };
+            foreach (Button b in new Button[] { portadaAnterior, portadaSiguiente }) { Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); navegacionPortadas.Controls.Add(b); }
+            portadaAnterior.Click += delegate { DesplazarPortadas(-1); };
+            portadaSiguiente.Click += delegate { DesplazarPortadas(1); };
+            cuadroPortadas.Controls.Add(mosaico);
+            cuadroPortadas.Controls.Add(navegacionPortadas);
+            cuadroPortadas.Controls.Add(tituloPortadas);
+            Label tituloEstilos = new Label { Text = "ESTILO", Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 14F, FontStyle.Bold) };
+            FlowLayoutPanel listaEstilos = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(3) };
+            foreach (string tipoEstilo in new string[] { "Todos", "Karaoke", "Musica", "Video" })
+            {
+                string nombreEstilo = tipoEstilo == "Musica" ? "MÚSICA" : tipoEstilo.ToUpperInvariant();
+                Button estilo = new Button { Text = nombreEstilo, Tag = tipoEstilo, Width = 180, Height = 43, Margin = new Padding(3, 5, 3, 5) };
+                Estilizar(estilo); estilo.BackColor = Color.FromArgb(0, 95, 165);
+                estilo.FlatAppearance.BorderSize = 1; estilo.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 240);
+                estilo.Click += delegate(object sender, EventArgs e) { filtroTipo = Convert.ToString(((Button)sender).Tag); ConstruirMosaico(); };
+                listaEstilos.Controls.Add(estilo);
+            }
+            cuadroEstilos.Controls.Add(listaEstilos);
+            cuadroEstilos.Controls.Add(tituloEstilos);
+            zonaSuperior.Controls.Add(cuadroPortadas, 0, 0);
+            zonaSuperior.Controls.Add(cuadroEstilos, 1, 0);
+            marcoSuperior.Controls.Add(zonaSuperior);
             distribucionInferior.Controls.Add(lado, 0, 0);
             Panel panelDerecho = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 7, 17), Padding = new Padding(7) };
             Panel panelPublicidad = new Panel { Dock = DockStyle.Top, Height = 245, BackColor = Color.Black, BorderStyle = BorderStyle.FixedSingle };
@@ -247,7 +280,16 @@ namespace RockolaKaraoke.Interfaz
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
             Controls.Add(centro); Controls.Add(inferior); Controls.Add(encabezado);
-            Shown += delegate { mosaico.Height = Math.Max(190, marcoSuperior.ClientSize.Height - 10); };
+            Shown += delegate { mosaico.Height = Math.Max(190, marcoSuperior.ClientSize.Height - 80); };
+        }
+
+        private void DesplazarPortadas(int direccion)
+        {
+            if (mosaico.Controls.Count == 0) return;
+            int paso = Math.Max(220, mosaico.ClientSize.Width / 2);
+            int maximo = Math.Max(0, mosaico.HorizontalScroll.Maximum - mosaico.HorizontalScroll.LargeChange + 1);
+            int destino = Math.Max(0, Math.Min(maximo, mosaico.HorizontalScroll.Value + (direccion * paso)));
+            mosaico.AutoScrollPosition = new Point(destino, 0);
         }
 
         private void ConstruirMosaico()
