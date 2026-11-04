@@ -37,6 +37,7 @@ namespace RockolaKaraoke.Interfaz
         private string textoLetrero = "ROCKOLA KARAOKE  •  ELIGE TU MÚSICA FAVORITA";
         private int posicionLetrero;
         private int velocidadLetrero = 180;
+        private Color colorLetrero = Color.FromArgb(255, 35, 35);
         private Label letreroLed;
         private string ArchivoLetrero { get { return Path.Combine(Application.UserAppDataPath, "letrero-led.txt"); } }
 
@@ -121,7 +122,7 @@ namespace RockolaKaraoke.Interfaz
         private void CrearInterfaz()
         {
             Panel encabezado = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = Color.FromArgb(2, 5, 12), Padding = new Padding(8, 5, 8, 5) };
-            letreroLed = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(255, 35, 35), BackColor = Color.FromArgb(5, 5, 8), Font = new Font("Consolas", 20F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(8, 0, 0, 0) };
+            letreroLed = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, ForeColor = colorLetrero, BackColor = Color.FromArgb(5, 5, 8), Font = new Font("Consolas", 20F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(8, 0, 0, 0) };
             letreroLed.Text = textoLetrero;
             encabezado.Controls.Add(letreroLed);
 
@@ -318,6 +319,11 @@ namespace RockolaKaraoke.Interfaz
                 int velocidad;
                 if (lineas.Length > 1 && Int32.TryParse(lineas[1], out velocidad))
                     velocidadLetrero = Math.Max(60, Math.Min(500, velocidad));
+                if (lineas.Length > 2)
+                {
+                    try { colorLetrero = ColorTranslator.FromHtml(lineas[2]); }
+                    catch { colorLetrero = Color.FromArgb(255, 35, 35); }
+                }
             }
             catch { }
         }
@@ -328,7 +334,7 @@ namespace RockolaKaraoke.Interfaz
             {
                 string carpeta = Path.GetDirectoryName(ArchivoLetrero);
                 if (!Directory.Exists(carpeta)) Directory.CreateDirectory(carpeta);
-                File.WriteAllLines(ArchivoLetrero, new string[] { textoLetrero, velocidadLetrero.ToString(CultureInfo.InvariantCulture) });
+                File.WriteAllLines(ArchivoLetrero, new string[] { textoLetrero, velocidadLetrero.ToString(CultureInfo.InvariantCulture), ColorTranslator.ToHtml(colorLetrero) });
             }
             catch (Exception ex)
             {
@@ -339,12 +345,12 @@ namespace RockolaKaraoke.Interfaz
         private void AvanzarLetrero()
         {
             if (letreroLed == null || letreroLed.IsDisposed || String.IsNullOrEmpty(textoLetrero)) return;
-            string recorrido = textoLetrero + "     •     ";
-            if (posicionLetrero >= recorrido.Length) posicionLetrero = 0;
-            string desplazado = recorrido.Substring(posicionLetrero) + recorrido.Substring(0, posicionLetrero);
             int anchoCaracter = Math.Max(8, TextRenderer.MeasureText("M", letreroLed.Font).Width);
             int caracteres = Math.Max(12, (letreroLed.ClientSize.Width - 24) / anchoCaracter);
-            letreroLed.Text = desplazado.Length > caracteres ? desplazado.Substring(0, caracteres) : desplazado;
+            string recorrido = new string(' ', caracteres) + textoLetrero + "     ";
+            int ultimaPosicion = Math.Max(0, recorrido.Length - caracteres);
+            if (posicionLetrero > ultimaPosicion) posicionLetrero = 0;
+            letreroLed.Text = recorrido.Substring(posicionLetrero, Math.Min(caracteres, recorrido.Length - posicionLetrero));
             posicionLetrero++;
         }
 
@@ -357,27 +363,34 @@ namespace RockolaKaraoke.Interfaz
                 menu.FormBorderStyle = FormBorderStyle.FixedDialog;
                 menu.MaximizeBox = false;
                 menu.MinimizeBox = false;
-                menu.ClientSize = new Size(520, 300);
+                menu.ClientSize = new Size(520, 350);
                 menu.BackColor = Color.FromArgb(5, 14, 32);
                 menu.ForeColor = Color.White;
-
                 Label encabezado = new Label { Text = "CONFIGURAR LETRERO LED", Dock = DockStyle.Top, Height = 48, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
                 Label instruccion = new Label { Text = "Texto que aparecerá desplazándose en la parte superior:", Left = 22, Top = 62, Width = 470, Height = 28, ForeColor = Color.White };
                 TextBox texto = new TextBox { Left = 22, Top = 94, Width = 470, Height = 32, Text = textoLetrero, Font = new Font("Segoe UI", 11F) };
                 Label velocidadTexto = new Label { Text = "Velocidad (milisegundos por avance):", Left = 22, Top = 143, Width = 300, Height = 25, ForeColor = Color.White };
                 NumericUpDown velocidad = new NumericUpDown { Left = 330, Top = 140, Width = 100, Minimum = 60, Maximum = 500, Increment = 10, Value = velocidadLetrero };
-                Button guardar = new Button { Text = "GUARDAR CAMBIOS", Left = 22, Top = 205, Width = 220, Height = 42 };
-                Button cerrar = new Button { Text = "CERRAR", Left = 270, Top = 205, Width = 220, Height = 42 };
-                foreach (Button b in new Button[] { guardar, cerrar }) { Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); }
+                Label colorTexto = new Label { Text = "Color de las letras LED:", Left = 22, Top = 184, Width = 220, Height = 28, ForeColor = Color.White };
+                Panel muestraColor = new Panel { Left = 250, Top = 182, Width = 48, Height = 30, BackColor = colorLetrero, BorderStyle = BorderStyle.FixedSingle };
+                Button cambiarColor = new Button { Text = "ELEGIR COLOR", Left = 310, Top = 180, Width = 180, Height = 36 };
+                Button guardar = new Button { Text = "GUARDAR CAMBIOS", Left = 22, Top = 260, Width = 220, Height = 42 };
+                Button cerrar = new Button { Text = "CERRAR", Left = 270, Top = 260, Width = 220, Height = 42 };
+                foreach (Button b in new Button[] { guardar, cerrar, cambiarColor }) { Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); }
+                cambiarColor.Click += delegate
+                {
+                    using (ColorDialog selector = new ColorDialog { Color = muestraColor.BackColor, FullOpen = true })
+                    {
+                        if (selector.ShowDialog(menu) == DialogResult.OK) muestraColor.BackColor = selector.Color;
+                    }
+                };
                 guardar.Click += delegate
                 {
-                    if (String.IsNullOrWhiteSpace(texto.Text))
-                    {
-                        MessageBox.Show(menu, "Escribe el texto que deseas mostrar.", "Letrero LED");
-                        return;
-                    }
+                    if (String.IsNullOrWhiteSpace(texto.Text)) { MessageBox.Show(menu, "Escribe el texto que deseas mostrar.", "Letrero LED"); return; }
                     textoLetrero = texto.Text.Trim();
                     velocidadLetrero = Decimal.ToInt32(velocidad.Value);
+                    colorLetrero = muestraColor.BackColor;
+                    letreroLed.ForeColor = colorLetrero;
                     posicionLetrero = 0;
                     relojLetrero.Interval = velocidadLetrero;
                     GuardarConfiguracionLetrero();
@@ -385,13 +398,9 @@ namespace RockolaKaraoke.Interfaz
                     MessageBox.Show(menu, "El letrero LED se actualizó y quedó guardado.", "Letrero LED", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 };
                 cerrar.Click += delegate { menu.Close(); };
-                menu.Controls.Add(encabezado);
-                menu.Controls.Add(instruccion);
-                menu.Controls.Add(texto);
-                menu.Controls.Add(velocidadTexto);
-                menu.Controls.Add(velocidad);
-                menu.Controls.Add(guardar);
-                menu.Controls.Add(cerrar);
+                menu.Controls.Add(encabezado); menu.Controls.Add(instruccion); menu.Controls.Add(texto);
+                menu.Controls.Add(velocidadTexto); menu.Controls.Add(velocidad); menu.Controls.Add(colorTexto);
+                menu.Controls.Add(muestraColor); menu.Controls.Add(cambiarColor); menu.Controls.Add(guardar); menu.Controls.Add(cerrar);
                 menu.ShowDialog(this);
             }
         }
