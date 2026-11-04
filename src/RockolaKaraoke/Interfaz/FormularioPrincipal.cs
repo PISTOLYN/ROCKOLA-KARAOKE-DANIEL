@@ -9,6 +9,8 @@ namespace RockolaKaraoke.Interfaz
     {
         private readonly Label titulo = new Label();
         private readonly Label bienvenida = new Label();
+        private readonly Timer temporizadorMensajes = new Timer();
+        private int indiceMensaje = 0;
         public FormularioPrincipal()
         {
             Text = "ROCKOLA KARAOKE DANIEL";
@@ -42,7 +44,9 @@ namespace RockolaKaraoke.Interfaz
             skin.Click += delegate { using (FormularioSkin ventana = new FormularioSkin()) { if (ventana.ShowDialog(this) == DialogResult.OK) AplicarSkin(); } };
             Controls.Add(skin);
 
-            Load += delegate { AplicarSkin(); };
+            temporizadorMensajes.Interval = 5000;
+            temporizadorMensajes.Tick += delegate { MostrarSiguienteMensaje(); };
+            Load += delegate { AplicarSkin(); temporizadorMensajes.Start(); };
             Resize += delegate
             {
                 reproductor.Left = (ClientSize.Width - reproductor.Width) / 2;
@@ -58,12 +62,20 @@ namespace RockolaKaraoke.Interfaz
             titulo.Font = new Font("Segoe UI", ConfiguracionSkin.TamanoTitulo, FontStyle.Bold);
             bienvenida.ForeColor = ConfiguracionSkin.Texto;
             string[] lineas = ConfiguracionSkin.Mensajes.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-            if (lineas.Length > 0) bienvenida.Text = lineas[0];
+            if (lineas.Length > 0) bienvenida.Text = lineas[indiceMensaje % lineas.Length];
             foreach (Control control in Controls)
             {
                 Button boton = control as Button;
                 if (boton != null) { boton.BackColor = ConfiguracionSkin.Acento; boton.ForeColor = ConfiguracionSkin.Texto; }
             }
+        }
+
+        private void MostrarSiguienteMensaje()
+        {
+            string[] lineas = ConfiguracionSkin.Mensajes.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+            if (lineas.Length == 0) return;
+            indiceMensaje = (indiceMensaje + 1) % lineas.Length;
+            bienvenida.Text = lineas[indiceMensaje];
         }
 
         private Button CrearBoton(string texto, int ancho)
