@@ -31,6 +31,37 @@ jobs:
       - name: Compilar Release
         run: msbuild RockolaKaraoke.sln /m /p:Configuration=Release /p:Platform="Any CPU" /verbosity:minimal
 
+      - name: Incluir componentes nativos de SQLite
+        shell: pwsh
+        run: |
+          $salida = "src/RockolaKaraoke/bin/Release"
+          $nativos = Get-ChildItem "packages" -Recurse -Filter "SQLite.Interop.dll"
+          if (!$nativos) {
+            Write-Host "No se encontró SQLite.Interop.dll dentro de los paquetes restaurados."
+            Get-ChildItem packages -Recurse | Where-Object { $_.Name -match "SQLite|Interop" } | Select-Object -ExpandProperty FullName
+            throw "Falta SQLite.Interop.dll"
+          }
+          foreach ($archivo in $nativos) {
+            if ($archivo.FullName -match "[\\/]x86[\\/]") {
+              $arquitectura = "x86"
+            } elseif ($archivo.FullName -match "[\\/]x64[\\/]") {
+              $arquitectura = "x64"
+            } else {
+              continue
+            }
+            $destino = Join-Path $salida $arquitectura
+            New-Item -ItemType Directory -Force -Path $destino | Out-Null
+            Copy-Item $archivo.FullName (Join-Path $destino "SQLite.Interop.dll") -Force
+            Write-Host "SQLite nativo copiado: $arquitectura"
+          }
+          if (!(Test-Path "$salida/x86/SQLite.Interop.dll") -or !(Test-Path "$salida/x64/SQLite.Interop.dll")) {
+            Get-ChildItem packages -Recurse -Filter "SQLite.Interop.dll" | Select-Object -ExpandProperty FullName
+            throw "No se incluyeron las dos arquitecturas nativas de SQLite."
+          }
+          if (!(Test-Path "$salida/System.Data.SQLite.dll")) {
+            throw "No se copió System.Data.SQLite.dll al directorio de salida."
+          }
+
       - name: Guardar archivos compilados
         uses: actions/upload-artifact@v4
         with:
