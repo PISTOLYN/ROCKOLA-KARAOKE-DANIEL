@@ -36,7 +36,7 @@ namespace RockolaKaraoke.Interfaz
         public FormularioReproductor()
         {
             Text = "Reproductor multimedia - Rockola Karaoke Daniel";
-            StartPosition = FormStartPosition.CenterParent;
+            StartPosition = FormStartPosition.CenterScreen;
             WindowState = FormWindowState.Maximized;
             MinimumSize = new Size(1050, 680);
             BackColor = Color.FromArgb(12, 16, 31);
@@ -44,7 +44,6 @@ namespace RockolaKaraoke.Interfaz
             Font = new Font("Segoe UI", 10F);
 
             CrearInterfaz();
-            Load += delegate { ConfiguracionSkin.Aplicar(this); };
             Load += delegate { InicializarMotor(); CargarBiblioteca(); };
             FormClosing += delegate { LiberarMotor(); };
             reloj.Interval = 500;
