@@ -13,6 +13,9 @@ namespace RockolaKaraoke.Interfaz
     public class FormularioReproductor : Form
     {
         private readonly ListView biblioteca = new ListView();
+        private readonly FlowLayoutPanel mosaico = new FlowLayoutPanel();
+        private readonly TextBox busquedaMosaico = new TextBox();
+        private string filtroTipo = "Todos";
         private readonly ListView cola = new ListView();
         private readonly Label etiquetaCola = new Label();
         private readonly VideoView pantalla = new VideoView();
@@ -94,19 +97,36 @@ namespace RockolaKaraoke.Interfaz
             inferior.Controls.Add(controles); inferior.Controls.Add(tiempo); inferior.Controls.Add(progreso); inferior.Controls.Add(tituloActual);
 
             SplitContainer division = new SplitContainer { Dock = DockStyle.Fill, SplitterDistance = 340, BackColor = Color.FromArgb(12, 16, 31), FixedPanel = FixedPanel.Panel1 };
-            biblioteca.Dock = DockStyle.Fill; biblioteca.View = View.Details; biblioteca.FullRowSelect = true; biblioteca.GridLines = false;
-            biblioteca.HideSelection = false; biblioteca.BackColor = Color.FromArgb(20, 25, 44); biblioteca.ForeColor = Color.White;
+            biblioteca.Dock = DockStyle.None; biblioteca.Visible = false;
+            biblioteca.View = View.Details; biblioteca.FullRowSelect = true;
             biblioteca.Columns.Add("CANCIÓN", 190); biblioteca.Columns.Add("ARTISTA", 125);
-            biblioteca.DoubleClick += delegate { ReproducirSeleccion(); };
+            mosaico.Dock = DockStyle.Fill; mosaico.AutoScroll = true; mosaico.WrapContents = true;
+            mosaico.FlowDirection = FlowDirection.LeftToRight; mosaico.Padding = new Padding(14);
+            mosaico.BackColor = Color.FromArgb(12, 16, 31);
+            busquedaMosaico.Dock = DockStyle.Top; busquedaMosaico.Height = 38;
+            busquedaMosaico.Font = new Font("Segoe UI", 13F); busquedaMosaico.Margin = new Padding(12);
+            busquedaMosaico.ForeColor = Color.DimGray; busquedaMosaico.Text = "Buscar canción o artista...";
+            busquedaMosaico.GotFocus += delegate { if (busquedaMosaico.Text == "Buscar canción o artista...") { busquedaMosaico.Text = ""; busquedaMosaico.ForeColor = Color.Black; } };
+            busquedaMosaico.LostFocus += delegate { if (String.IsNullOrWhiteSpace(busquedaMosaico.Text)) { busquedaMosaico.Text = "Buscar canción o artista..."; busquedaMosaico.ForeColor = Color.DimGray; } };
+            busquedaMosaico.TextChanged += delegate { ConstruirMosaico(); };
 
-            Panel lado = new Panel { Dock = DockStyle.Fill };
-            Button actualizar = new Button { Text = "ACTUALIZAR BIBLIOTECA", Dock = DockStyle.Top, Height = 45 };
+            Panel lado = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(12, 16, 31) };
+            FlowLayoutPanel filtros = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, Padding = new Padding(8, 5, 8, 4), WrapContents = false };
+            foreach (string tipo in new string[] { "Todos", "Musica", "Video", "Karaoke" })
+            {
+                Button filtro = new Button { Text = tipo == "Musica" ? "MÚSICA" : tipo.ToUpperInvariant(), Tag = tipo, Width = 105, Height = 36 };
+                Estilizar(filtro);
+                filtro.Click += delegate(object sender, EventArgs e) { filtroTipo = Convert.ToString(((Button)sender).Tag); ConstruirMosaico(); };
+                filtros.Controls.Add(filtro);
+            }
+            Button actualizar = new Button { Text = "ACTUALIZAR BIBLIOTECA", Dock = DockStyle.Top, Height = 42 };
             Estilizar(actualizar); actualizar.Click += delegate { CargarBiblioteca(); };
-            Button agregar = new Button { Text = "＋ AGREGAR A LA COLA", Dock = DockStyle.Top, Height = 43 };
+            Button agregar = new Button { Text = "＋ AGREGAR A LA COLA", Dock = DockStyle.Top, Height = 42 };
             Estilizar(agregar); agregar.Click += delegate { AgregarSeleccionALaCola(); };
-            Button ahora = new Button { Text = "▶ REPRODUCIR AHORA", Dock = DockStyle.Top, Height = 43 };
+            Button ahora = new Button { Text = "▶ REPRODUCIR AHORA", Dock = DockStyle.Top, Height = 42 };
             Estilizar(ahora); ahora.Click += delegate { ReproducirSeleccion(); };
-            lado.Controls.Add(biblioteca); lado.Controls.Add(agregar); lado.Controls.Add(ahora); lado.Controls.Add(actualizar);
+            lado.Controls.Add(mosaico); lado.Controls.Add(filtros); lado.Controls.Add(busquedaMosaico);
+            lado.Controls.Add(agregar); lado.Controls.Add(ahora); lado.Controls.Add(actualizar); lado.Controls.Add(biblioteca);
 
             Panel panelDerecho = new Panel { Dock = DockStyle.Fill, BackColor = Color.Black };
             Panel panelCola = new Panel { Dock = DockStyle.Bottom, Height = 190, BackColor = Color.FromArgb(20, 25, 44) };
@@ -140,6 +160,50 @@ namespace RockolaKaraoke.Interfaz
             division.Panel2.Controls.Add(panelDerecho);
 
             Controls.Add(division); Controls.Add(inferior); Controls.Add(encabezado);
+        }
+
+        private void ConstruirMosaico()
+        {
+            mosaico.SuspendLayout();
+            mosaico.Controls.Clear();
+            string texto = busquedaMosaico.Text == "Buscar canción o artista..." ? "" : busquedaMosaico.Text.Trim();
+            foreach (ListViewItem elemento in biblioteca.Items)
+            {
+                string tipo = Convert.ToString(elemento.ToolTipText);
+                if (filtroTipo != "Todos" && !tipo.Equals(filtroTipo, StringComparison.OrdinalIgnoreCase)) continue;
+                if (texto.Length > 0 && elemento.Text.IndexOf(texto, StringComparison.OrdinalIgnoreCase) < 0 &&
+                    elemento.SubItems[1].Text.IndexOf(texto, StringComparison.OrdinalIgnoreCase) < 0) continue;
+
+                Panel tarjeta = new Panel { Width = 205, Height = 238, Margin = new Padding(9), BackColor = Color.FromArgb(25, 32, 55), Cursor = Cursors.Hand, Tag = elemento };
+                Panel portada = new Panel { Dock = DockStyle.Top, Height = 155, BackColor = Color.FromArgb(24, 70, 115), Cursor = Cursors.Hand };
+                portada.Paint += delegate(object sender, PaintEventArgs e)
+                {
+                    Panel p = (Panel)sender;
+                    using (System.Drawing.Drawing2D.LinearGradientBrush brocha = new System.Drawing.Drawing2D.LinearGradientBrush(p.ClientRectangle, Color.FromArgb(18, 55, 100), Color.FromArgb(115, 35, 125), 35F))
+                        e.Graphics.FillRectangle(brocha, p.ClientRectangle);
+                    using (Font fuente = new Font("Segoe UI Symbol", 58F, FontStyle.Bold))
+                    using (SolidBrush pincel = new SolidBrush(Color.FromArgb(220, 255, 255, 255)))
+                        e.Graphics.DrawString(tipo.Equals("Video", StringComparison.OrdinalIgnoreCase) ? "▶" : "♫", fuente, pincel, new PointF(62, 30));
+                };
+                Label nombre = new Label { Text = elemento.Text, Dock = DockStyle.Top, Height = 43, ForeColor = Color.White, Font = new Font("Segoe UI", 10F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, AutoEllipsis = true, Cursor = Cursors.Hand };
+                Label artista = new Label { Text = elemento.SubItems[1].Text, Dock = DockStyle.Top, Height = 25, ForeColor = Color.LightSkyBlue, Font = new Font("Segoe UI", 9F), TextAlign = ContentAlignment.MiddleCenter, AutoEllipsis = true, Cursor = Cursors.Hand };
+                Button sumar = new Button { Text = "＋ A LA COLA", Dock = DockStyle.Bottom, Height = 32, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(30, 105, 170), ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold), Cursor = Cursors.Hand };
+                sumar.FlatAppearance.BorderSize = 0;
+                sumar.Click += delegate { SeleccionarElemento(elemento); AgregarSeleccionALaCola(); };
+                EventHandler reproducirTarjeta = delegate { SeleccionarElemento(elemento); ReproducirSeleccion(); };
+                tarjeta.Click += reproducirTarjeta; portada.Click += reproducirTarjeta; nombre.Click += reproducirTarjeta; artista.Click += reproducirTarjeta;
+                tarjeta.Controls.Add(sumar); tarjeta.Controls.Add(artista); tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(portada);
+                mosaico.Controls.Add(tarjeta);
+            }
+            mosaico.ResumeLayout();
+        }
+
+        private void SeleccionarElemento(ListViewItem elemento)
+        {
+            LimpiarSeleccionBiblioteca();
+            elemento.Selected = true;
+            elemento.Focused = true;
+            elemento.EnsureVisible();
         }
 
         private static void Estilizar(Button boton)
@@ -200,6 +264,7 @@ namespace RockolaKaraoke.Interfaz
                     }
                 }
                 tituloActual.Text = "Biblioteca cargada: " + biblioteca.Items.Count + " canciones y videos";
+                ConstruirMosaico();
             }
             catch (Exception ex) { MessageBox.Show(this, "No se pudo cargar la biblioteca.\n" + ex.Message, "Biblioteca", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
