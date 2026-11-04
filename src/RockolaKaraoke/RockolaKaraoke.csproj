@@ -34,6 +34,8 @@
     <Compile Include="Interfaz\FormularioPrincipal.cs" />
     <Compile Include="Interfaz\FormularioBiblioteca.cs" />
     <Compile Include="Interfaz\FormularioReproductor.cs" />
+    <Compile Include="Interfaz\FormularioSkin.cs" />
+    <Compile Include="Servicios\ConfiguracionSkin.cs" />
     <Compile Include="Servicios\EscanerBiblioteca.cs" />
     <Compile Include="Datos\BaseDatos.cs" />
   </ItemGroup>
