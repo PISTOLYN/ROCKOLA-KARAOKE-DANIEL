@@ -19,9 +19,10 @@ jobs:
         shell: pwsh
         run: |
           nuget restore src/RockolaKaraoke/packages.config -PackagesDirectory packages -NonInteractive
-          if (!(Test-Path "packages/System.Data.SQLite.Core.1.0.118.0/lib/net46/System.Data.SQLite.dll")) {
-            Write-Error "No se encontró System.Data.SQLite.dll después de restaurar NuGet."
-            Get-ChildItem packages -Recurse | Select-Object -ExpandProperty FullName
+          $dll = "packages/System.Data.SQLite.Core.1.0.118/lib/net46/System.Data.SQLite.dll"
+          if (!(Test-Path $dll)) {
+            Write-Error "No se encontró System.Data.SQLite.dll en la ruta esperada: $dll"
+            Get-ChildItem packages -Recurse -Filter System.Data.SQLite.dll | Select-Object -ExpandProperty FullName
             exit 1
           }
 
