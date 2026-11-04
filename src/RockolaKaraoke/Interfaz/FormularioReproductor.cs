@@ -167,6 +167,7 @@ namespace RockolaKaraoke.Interfaz
             mosaico.SuspendLayout();
             mosaico.Controls.Clear();
             string texto = busquedaMosaico.Text == "Buscar canción o artista..." ? "" : busquedaMosaico.Text.Trim();
+
             foreach (ListViewItem elemento in biblioteca.Items)
             {
                 string tipo = Convert.ToString(elemento.ToolTipText);
@@ -174,27 +175,114 @@ namespace RockolaKaraoke.Interfaz
                 if (texto.Length > 0 && elemento.Text.IndexOf(texto, StringComparison.OrdinalIgnoreCase) < 0 &&
                     elemento.SubItems[1].Text.IndexOf(texto, StringComparison.OrdinalIgnoreCase) < 0) continue;
 
-                Panel tarjeta = new Panel { Width = 205, Height = 238, Margin = new Padding(9), BackColor = Color.FromArgb(25, 32, 55), Cursor = Cursors.Hand, Tag = elemento };
-                Panel portada = new Panel { Dock = DockStyle.Top, Height = 155, BackColor = Color.FromArgb(24, 70, 115), Cursor = Cursors.Hand };
+                // Tarjeta cuadrada provisional: posteriormente se conectará la portada real del álbum.
+                Panel tarjeta = new Panel
+                {
+                    Width = 218,
+                    Height = 218,
+                    Margin = new Padding(10),
+                    BackColor = Color.FromArgb(17, 23, 42),
+                    Cursor = Cursors.Hand,
+                    Tag = elemento
+                };
+                tarjeta.Paint += delegate(object sender, PaintEventArgs e)
+                {
+                    Panel p = (Panel)sender;
+                    using (Pen borde = new Pen(Color.FromArgb(35, 145, 220), 2F))
+                        e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
+                };
+
+                Panel portada = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.FromArgb(22, 55, 95),
+                    Cursor = Cursors.Hand
+                };
                 portada.Paint += delegate(object sender, PaintEventArgs e)
                 {
                     Panel p = (Panel)sender;
-                    using (System.Drawing.Drawing2D.LinearGradientBrush brocha = new System.Drawing.Drawing2D.LinearGradientBrush(p.ClientRectangle, Color.FromArgb(18, 55, 100), Color.FromArgb(115, 35, 125), 35F))
-                        e.Graphics.FillRectangle(brocha, p.ClientRectangle);
-                    using (Font fuente = new Font("Segoe UI Symbol", 58F, FontStyle.Bold))
-                    using (SolidBrush pincel = new SolidBrush(Color.FromArgb(220, 255, 255, 255)))
-                        e.Graphics.DrawString(tipo.Equals("Video", StringComparison.OrdinalIgnoreCase) ? "▶" : "♫", fuente, pincel, new PointF(62, 30));
+                    Rectangle area = p.ClientRectangle;
+                    using (System.Drawing.Drawing2D.LinearGradientBrush fondo = new System.Drawing.Drawing2D.LinearGradientBrush(
+                        area, Color.FromArgb(8, 30, 65), Color.FromArgb(75, 24, 105), 40F))
+                        e.Graphics.FillRectangle(fondo, area);
+
+                    using (System.Drawing.Drawing2D.LinearGradientBrush brillo = new System.Drawing.Drawing2D.LinearGradientBrush(
+                        area, Color.FromArgb(0, 0, 190, 255), Color.FromArgb(85, 0, 190, 255), 90F))
+                        e.Graphics.FillEllipse(brillo, -35, -55, 180, 180);
+
+                    string simbolo = tipo.Equals("Video", StringComparison.OrdinalIgnoreCase) ? "▶" : "♫";
+                    using (Font fuente = new Font("Segoe UI Symbol", 66F, FontStyle.Bold))
+                    using (SolidBrush pincel = new SolidBrush(Color.FromArgb(235, 255, 255, 255)))
+                    {
+                        SizeF medida = e.Graphics.MeasureString(simbolo, fuente);
+                        e.Graphics.DrawString(simbolo, fuente, pincel,
+                            (area.Width - medida.Width) / 2F, (area.Height - medida.Height) / 2F - 12F);
+                    }
                 };
-                Label nombre = new Label { Text = elemento.Text, Dock = DockStyle.Top, Height = 43, ForeColor = Color.White, Font = new Font("Segoe UI", 10F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, AutoEllipsis = true, Cursor = Cursors.Hand };
-                Label artista = new Label { Text = elemento.SubItems[1].Text, Dock = DockStyle.Top, Height = 25, ForeColor = Color.LightSkyBlue, Font = new Font("Segoe UI", 9F), TextAlign = ContentAlignment.MiddleCenter, AutoEllipsis = true, Cursor = Cursors.Hand };
-                Button sumar = new Button { Text = "＋ A LA COLA", Dock = DockStyle.Bottom, Height = 32, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(30, 105, 170), ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold), Cursor = Cursors.Hand };
+
+                Panel franja = new Panel
+                {
+                    Dock = DockStyle.Bottom,
+                    Height = 64,
+                    BackColor = Color.FromArgb(235, 7, 12, 27),
+                    Cursor = Cursors.Hand
+                };
+                Label nombre = new Label
+                {
+                    Text = elemento.Text,
+                    Dock = DockStyle.Top,
+                    Height = 36,
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    AutoEllipsis = true,
+                    Padding = new Padding(5, 0, 5, 0),
+                    Cursor = Cursors.Hand
+                };
+                Label artista = new Label
+                {
+                    Text = elemento.SubItems[1].Text,
+                    Dock = DockStyle.Fill,
+                    ForeColor = Color.FromArgb(80, 205, 255),
+                    Font = new Font("Segoe UI", 8.5F),
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    AutoEllipsis = true,
+                    Cursor = Cursors.Hand
+                };
+                franja.Controls.Add(artista);
+                franja.Controls.Add(nombre);
+
+                Button sumar = new Button
+                {
+                    Text = "+",
+                    Width = 34,
+                    Height = 34,
+                    Top = 7,
+                    Left = 174,
+                    Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(0, 155, 220),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 17F, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    TabStop = false
+                };
                 sumar.FlatAppearance.BorderSize = 0;
                 sumar.Click += delegate { SeleccionarElemento(elemento); AgregarSeleccionALaCola(); };
+
                 EventHandler reproducirTarjeta = delegate { SeleccionarElemento(elemento); ReproducirSeleccion(); };
-                tarjeta.Click += reproducirTarjeta; portada.Click += reproducirTarjeta; nombre.Click += reproducirTarjeta; artista.Click += reproducirTarjeta;
-                tarjeta.Controls.Add(sumar); tarjeta.Controls.Add(artista); tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(portada);
+                tarjeta.Click += reproducirTarjeta;
+                portada.Click += reproducirTarjeta;
+                franja.Click += reproducirTarjeta;
+                nombre.Click += reproducirTarjeta;
+                artista.Click += reproducirTarjeta;
+
+                tarjeta.Controls.Add(portada);
+                tarjeta.Controls.Add(franja);
+                tarjeta.Controls.Add(sumar);
                 mosaico.Controls.Add(tarjeta);
             }
+
             mosaico.ResumeLayout();
         }
 
