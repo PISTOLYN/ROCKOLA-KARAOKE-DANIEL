@@ -11,12 +11,23 @@ jobs:
     steps:
       - name: Descargar código
         uses: actions/checkout@v4
+
       - name: Configurar MSBuild
         uses: microsoft/setup-msbuild@v2
-      - name: Restaurar NuGet
-        run: nuget restore RockolaKaraoke.sln
+
+      - name: Restaurar paquete SQLite
+        shell: pwsh
+        run: |
+          nuget restore src/RockolaKaraoke/packages.config -PackagesDirectory packages -NonInteractive
+          if (!(Test-Path "packages/System.Data.SQLite.Core.1.0.118.0/lib/net46/System.Data.SQLite.dll")) {
+            Write-Error "No se encontró System.Data.SQLite.dll después de restaurar NuGet."
+            Get-ChildItem packages -Recurse | Select-Object -ExpandProperty FullName
+            exit 1
+          }
+
       - name: Compilar Release
-        run: msbuild RockolaKaraoke.sln /m /p:Configuration=Release /p:Platform="Any CPU"
+        run: msbuild RockolaKaraoke.sln /m /p:Configuration=Release /p:Platform="Any CPU" /verbosity:minimal
+
       - name: Guardar archivos compilados
         uses: actions/upload-artifact@v4
         with:
