@@ -18,7 +18,7 @@ namespace RockolaKaraoke.Interfaz
    Panel head=new Panel{Dock=DockStyle.Top,Height=60,BackColor=Color.FromArgb(23,30,53)};head.Controls.Add(new Label{Text="PERSONALIZAR SKIN",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleCenter,ForeColor=Color.DeepSkyBlue,Font=new Font("Segoe UI",20,FontStyle.Bold)});
    Panel body=new Panel{Dock=DockStyle.Fill,Padding=new Padding(20),AutoScroll=true};int y=10;
    Label l=new Label{Text="Colores de la interfaz",Bounds=new Rectangle(20,y,300,25)};body.Controls.Add(l);y+=32;
-   Button[] bs={fondo,panel,acento,texto};for(int i=0;i<bs.Length;i++){bs[i].SetBounds(20+i*205,y,190,42);body.Controls.Add(bs[i]);bs[i].Click+=delegate{Elegir(bs[i]);};}y+=55;
+   Button[] bs={fondo,panel,acento,texto};for(int i=0;i<bs.Length;i++){Button actual=bs[i];actual.SetBounds(20+i*205,y,190,42);body.Controls.Add(actual);actual.Click+=delegate{Elegir(actual);};}y+=55;
    body.Controls.Add(new Label{Text="Imagen de fondo",Bounds=new Rectangle(20,y,200,25)});y+=25;
    imagen.SetBounds(20,y,650,30);imagen.Text=ConfiguracionSkin.Imagen;body.Controls.Add(imagen);
    Button buscar=new Button{Text="BUSCAR",Bounds=new Rectangle(680,y,150,30)};body.Controls.Add(buscar);buscar.Click+=delegate{using(OpenFileDialog d=new OpenFileDialog{Filter="Imágenes|*.png;*.jpg;*.jpeg;*.bmp"})if(d.ShowDialog(this)==DialogResult.OK)imagen.Text=d.FileName;};y+=45;
@@ -33,7 +33,7 @@ namespace RockolaKaraoke.Interfaz
    mensaje.Dock=DockStyle.Fill;mensaje.TextAlign=ContentAlignment.MiddleCenter;mensaje.Text="¡Elige tu música favorita!";muestra.Controls.Add(mensaje);muestra.Controls.Add(titulo);body.Controls.Add(muestra);y+=132;
    Button guardar=new Button{Text="GUARDAR Y APLICAR SKIN",Bounds=new Rectangle(20,y,260,48),BackColor=Color.FromArgb(30,105,170),ForeColor=Color.White};body.Controls.Add(guardar);
    guardar.Click+=delegate{ConfiguracionSkin.GuardarTodo(fondo.BackColor,panel.BackColor,acento.BackColor,texto.BackColor,imagen.Text,resolucion.Text,mensajes.Text.Replace(Environment.NewLine,"|"),(int)tamano.Value);DialogResult=DialogResult.OK;Close();};
-   foreach(Button b in bs)b.Click+=delegate{ActualizarVista();};tamano.ValueChanged+=delegate{ActualizarVista();};mensajes.TextChanged+=delegate{ActualizarVista();};
+   tamano.ValueChanged+=delegate{ActualizarVista();};mensajes.TextChanged+=delegate{ActualizarVista();};
    Controls.Add(body);Controls.Add(head);ActualizarVista();
   }
   void Elegir(Button b){using(ColorDialog d=new ColorDialog{Color=b.BackColor,FullOpen=true})if(d.ShowDialog(this)==DialogResult.OK)b.BackColor=d.Color;ActualizarVista();}
