@@ -557,50 +557,81 @@ namespace AlexaRockola
         public List<Genre> Genres { get { return working; } }
         public GenreManagerForm(List<Genre> current)
         {
-            working=current.Select(g=>{var n=new Genre(g.Name,g.Color,g.Kind);n.Folders.AddRange(g.Folders);return n;}).ToList();
-            Text="CONFIGURAR MÚSICA"; Size=new Size(1120,720); MinimumSize=new Size(900,600);
-            StartPosition=FormStartPosition.CenterParent; FormBorderStyle=FormBorderStyle.Sizable;
-            var tabs=new TabControl{Dock=DockStyle.Fill}; Controls.Add(tabs);
-            var genresTab=new TabPage("GENEROS-ARTISTAS"); var photosTab=new TabPage("FILTRO-FOTOS");
-            var ratingTab=new TabPage("CALIFICAR KARAOKE"); var codingTab=new TabPage("CODIFICAR"); var rankingTab=new TabPage("RANKING");
-            tabs.TabPages.Add(genresTab);tabs.TabPages.Add(photosTab);tabs.TabPages.Add(ratingTab);tabs.TabPages.Add(codingTab);tabs.TabPages.Add(rankingTab);
-            var grid=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(12),ColumnCount=2,RowCount=5};
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,190));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-            grid.RowStyles.Add(new RowStyle(SizeType.Percent,100));grid.RowStyles.Add(new RowStyle(SizeType.Absolute,42));grid.RowStyles.Add(new RowStyle(SizeType.Absolute,42));grid.RowStyles.Add(new RowStyle(SizeType.Absolute,42));grid.RowStyles.Add(new RowStyle(SizeType.Absolute,52));
-            genresTab.Controls.Add(grid);
-            var actions=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false};
-            Button add=Btn("AGREGAR",155),del=Btn("BORRAR",155),edit=Btn("MODIFICAR",155),refresh=Btn("ACTUALIZAR",155);
-            actions.Controls.Add(add);actions.Controls.Add(del);actions.Controls.Add(edit);actions.Controls.Add(refresh);grid.Controls.Add(actions,0,0);
-            genreList=new ListBox{Dock=DockStyle.Fill,Font=new Font("Arial",12,FontStyle.Bold)};grid.Controls.Add(genreList,1,0);
-            grid.Controls.Add(new Label{Text="NOMBRE DEL GÉNERO MUSICAL",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft},0,1);
-            nameBox=new TextBox{Dock=DockStyle.Fill};grid.Controls.Add(nameBox,1,1);
-            grid.Controls.Add(new Label{Text="TIPO DE ARCHIVO",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft},0,2);
-            kindBox=new ComboBox{Dock=DockStyle.Fill,DropDownStyle=ComboBoxStyle.DropDownList};kindBox.Items.AddRange(new object[]{"AUDIO","KARAOKE","VIDEO","CARPETA"});kindBox.SelectedIndex=0;grid.Controls.Add(kindBox,1,2);
-            grid.Controls.Add(new Label{Text="COLOR DEL BOTÓN",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft},0,3);
-            colorBox=new ComboBox{Dock=DockStyle.Fill,DropDownStyle=ComboBoxStyle.DropDownList};colorBox.Items.AddRange(new object[]{"AMARILLO","VERDE","ROSA","AZUL","NARANJA","ROSA CLARO","CELESTE","BLANCO"});colorBox.SelectedIndex=0;grid.Controls.Add(colorBox,1,3);
-            Button save=Btn("GUARDAR CAMBIOS",230);save.BackColor=Color.LimeGreen;grid.Controls.Add(save,1,4);
-            add.Click+=delegate{AddGenre();};del.Click+=delegate{DeleteGenre();};edit.Click+=delegate{ModifyGenre();};refresh.Click+=delegate{RefreshGenres();RefreshFolders();};
-            genreList.SelectedIndexChanged+=delegate{LoadSelected();};save.Click+=delegate{DialogResult=DialogResult.OK;Close();};RefreshGenres();
-            var folderGrid=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(14),ColumnCount=1,RowCount=3};
-            folderGrid.RowStyles.Add(new RowStyle(SizeType.Absolute,44));folderGrid.RowStyles.Add(new RowStyle(SizeType.Percent,100));folderGrid.RowStyles.Add(new RowStyle(SizeType.Absolute,52));
-            folderGrid.Controls.Add(new Label{Text="CARPETAS ASIGNADAS AL GÉNERO SELECCIONADO",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,Font=new Font("Arial",11,FontStyle.Bold)},0,0);
-            folderList=new ListBox{Dock=DockStyle.Fill,Font=new Font("Arial",11)};folderGrid.Controls.Add(folderList,0,1);
-            var folderActions=new FlowLayoutPanel{Dock=DockStyle.Fill};Button addFolder=Btn("AGREGAR CARPETA",190),addSub=Btn("AGREGAR SUBCARPETA",220),removeFolder=Btn("QUITAR CARPETA",190);
-            folderActions.Controls.Add(addFolder);folderActions.Controls.Add(addSub);folderActions.Controls.Add(removeFolder);folderGrid.Controls.Add(folderActions,0,2);
-            addFolder.Click+=delegate{PickFolder();};addSub.Click+=delegate{PickFolder();};
-            removeFolder.Click+=delegate{Genre g=Selected();int i=folderList.SelectedIndex;if(g!=null&&i>=0){g.Folders.RemoveAt(i);RefreshFolders();}};
-            // La pestaña de géneros conserva la gestión de carpetas y subcarpetas en un panel lateral.
-            var mainSplit=new SplitContainer{Dock=DockStyle.Bottom,Height=220,Orientation=Orientation.Horizontal,SplitterDistance=150};
-            mainSplit.Panel1.Controls.Add(folderGrid); genresTab.Controls.Add(mainSplit);
-            onlyWithCover=new CheckBox{Text="MOSTRAR SOLAMENTE ELEMENTOS CON IMAGEN DE PORTADA",AutoSize=true,Location=new Point(24,28),Font=new Font("Arial",12,FontStyle.Bold)};
+            working = current.Select(g => { var n = new Genre(g.Name, g.Color, g.Kind); n.Folders.AddRange(g.Folders); return n; }).ToList();
+            Text = "CONFIGURAR MÚSICA";
+            Size = new Size(1120, 720); MinimumSize = new Size(900, 600);
+            StartPosition = FormStartPosition.CenterParent;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            var tabs = new TabControl { Dock = DockStyle.Fill };
+            Controls.Add(tabs);
+            var genresTab = new TabPage("GENEROS-ARTISTAS");
+            var photosTab = new TabPage("FILTRO-FOTOS");
+            var ratingTab = new TabPage("CALIFICAR KARAOKE");
+            var codingTab = new TabPage("CODIFICAR");
+            var rankingTab = new TabPage("RANKING");
+            tabs.TabPages.AddRange(new TabPage[] { genresTab, photosTab, ratingTab, codingTab, rankingTab });
+
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(10), ColumnCount = 2, RowCount = 3 };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 175));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 58));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 42));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+            genresTab.Controls.Add(layout);
+
+            var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false };
+            Button add = Btn("AGREGAR", 150), del = Btn("BORRAR", 150), edit = Btn("MODIFICAR", 150), refresh = Btn("ACTUALIZAR", 150);
+            actions.Controls.AddRange(new Control[] { add, del, edit, refresh });
+            layout.Controls.Add(actions, 0, 0);
+            layout.SetRowSpan(actions, 2);
+
+            genreList = new ListBox { Dock = DockStyle.Fill, Font = new Font("Arial", 11, FontStyle.Bold), IntegralHeight = false };
+            layout.Controls.Add(genreList, 1, 0);
+
+            var folderPanel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
+            folderPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+            folderPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            folderPanel.Controls.Add(new Label { Text = "CARPETAS DEL GÉNERO SELECCIONADO  (DOBLE CLIC PARA ABRIR)", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Arial", 9, FontStyle.Bold) }, 0, 0);
+            folderList = new ListBox { Dock = DockStyle.Fill, Font = new Font("Arial", 10), IntegralHeight = false };
+            folderList.DoubleClick += delegate { if (folderList.SelectedItem != null && Directory.Exists(folderList.SelectedItem.ToString())) System.Diagnostics.Process.Start("explorer.exe", folderList.SelectedItem.ToString()); };
+            folderPanel.Controls.Add(folderList, 0, 1);
+            layout.Controls.Add(folderPanel, 1, 1);
+
+            var editor = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, FlowDirection = FlowDirection.LeftToRight };
+            nameBox = new TextBox { Width = 210, Font = new Font("Arial", 10), Margin = new Padding(3, 8, 3, 3) };
+            kindBox = new ComboBox { Width = 120, DropDownStyle = ComboBoxStyle.DropDownList, Margin = new Padding(3, 8, 3, 3) };
+            kindBox.Items.AddRange(new object[] { "AUDIO", "KARAOKE", "VIDEO", "CARPETA" }); kindBox.SelectedIndex = 0;
+            colorBox = new ComboBox { Width = 125, DropDownStyle = ComboBoxStyle.DropDownList, Margin = new Padding(3, 8, 3, 3) };
+            colorBox.Items.AddRange(new object[] { "AMARILLO", "VERDE", "ROSA", "AZUL", "NARANJA", "ROSA CLARO", "CELESTE", "BLANCO" }); colorBox.SelectedIndex = 0;
+            Button addFolder = Btn("AGREGAR CARPETA", 145), addSub = Btn("AGREGAR SUB-CARPETA", 175), removeFolder = Btn("QUITAR", 85);
+            editor.Controls.AddRange(new Control[] { new Label { Text = "GÉNERO:", AutoSize = true, Margin = new Padding(3, 13, 0, 0) }, nameBox, kindBox, colorBox, addFolder, addSub, removeFolder });
+            layout.Controls.Add(editor, 1, 2);
+
+            add.Click += delegate { AddGenre(); };
+            del.Click += delegate { DeleteGenre(); };
+            edit.Click += delegate { ModifyGenre(); };
+            refresh.Click += delegate { RefreshGenres(); RefreshFolders(); };
+            genreList.SelectedIndexChanged += delegate { LoadSelected(); };
+            addFolder.Click += delegate { PickFolder(); };
+            addSub.Click += delegate { PickFolder(); };
+            removeFolder.Click += delegate { Genre g = Selected(); int i = folderList.SelectedIndex; if (g != null && i >= 0) { g.Folders.RemoveAt(i); RefreshFolders(); } };
+            var save = new Button { Text = "GUARDAR CAMBIOS", Dock = DockStyle.Right, Width = 210, BackColor = Color.LimeGreen, Font = new Font("Arial", 10, FontStyle.Bold) };
+            layout.Controls.Add(save, 1, 2);
+            save.BringToFront();
+            save.Click += delegate { DialogResult = DialogResult.OK; Close(); };
+            RefreshGenres();
+
+            onlyWithCover = new CheckBox { Text = "MOSTRAR SOLAMENTE ELEMENTOS CON IMAGEN DE PORTADA", AutoSize = true, Location = new Point(24, 28), Font = new Font("Arial", 11, FontStyle.Bold) };
             photosTab.Controls.Add(onlyWithCover);
-            photosTab.Controls.Add(new Label{Text="La portada predeterminada se utiliza cuando un álbum no tiene imagen propia.",AutoSize=true,Location=new Point(24,72)});
-            karaokeRating=new CheckBox{Text="ACTIVAR CALIFICACIÓN DE KARAOKE",AutoSize=true,Location=new Point(24,28),Font=new Font("Arial",12,FontStyle.Bold)};
-            ratingScale=new NumericUpDown{Minimum=1,Maximum=10,Value=10,Location=new Point(24,76),Width=90};
-            ratingTab.Controls.Add(karaokeRating);ratingTab.Controls.Add(new Label{Text="ESCALA DE CALIFICACIÓN",AutoSize=true,Location=new Point(24,80)});ratingTab.Controls.Add(ratingScale);
-            codingTab.Controls.Add(new Label{Text="FORMATOS COMPATIBLES: MP3, WAV, FLAC, M4A, AAC, OGG, WMA, MP4, MKV, AVI, MOV, WMV, MPEG Y WEBM.",AutoSize=true,Location=new Point(24,28)});
-            codingTab.Controls.Add(new Label{Text="Los archivos se leen desde las carpetas asignadas; no se convierten ni se modifican.",AutoSize=true,Location=new Point(24,65)});
-            rankingTab.Controls.Add(new Label{Text="RANKING DE REPRODUCCIONES: se habilitará cuando se guarden estadísticas de reproducción.",AutoSize=true,Location=new Point(24,28)});
+            photosTab.Controls.Add(new Label { Text = "Se utiliza la portada predeterminada cuando el álbum no contiene una imagen propia.", AutoSize = true, Location = new Point(24, 68) });
+            karaokeRating = new CheckBox { Text = "ACTIVAR CALIFICACIÓN DE KARAOKE", AutoSize = true, Location = new Point(24, 28), Font = new Font("Arial", 11, FontStyle.Bold) };
+            ratingScale = new NumericUpDown { Minimum = 1, Maximum = 10, Value = 10, Location = new Point(24, 76), Width = 90 };
+            ratingTab.Controls.Add(karaokeRating);
+            ratingTab.Controls.Add(new Label { Text = "ESCALA DE CALIFICACIÓN", AutoSize = true, Location = new Point(24, 80) });
+            ratingTab.Controls.Add(ratingScale);
+            codingTab.Controls.Add(new Label { Text = "FORMATOS LEÍDOS: MP3, WAV, FLAC, M4A, AAC, OGG, WMA, MP4, MKV, AVI, MOV, WMV, MPEG Y WEBM.", AutoSize = true, Location = new Point(24, 28) });
+            codingTab.Controls.Add(new Label { Text = "Esta versión indexa y reproduce archivos; no realiza conversiones de formato.", AutoSize = true, Location = new Point(24, 65) });
+            rankingTab.Controls.Add(new Label { Text = "El ranking se alimentará con el conteo de reproducciones de cada canción.", AutoSize = true, Location = new Point(24, 28) });
         }
         private Button Btn(string text,int width){return new Button{Text=text,Width=width,Height=35,Margin=new Padding(3),Font=new Font("Arial",9,FontStyle.Bold)};}
         private Genre Selected(){int i=genreList.SelectedIndex;return i>=0&&i<working.Count?working[i]:null;}
