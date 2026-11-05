@@ -221,8 +221,8 @@ namespace AlexaRockola
             genrePanel.Controls.Clear();
             foreach (Genre g in genres)
             {
-                var b = new Button { Text = g.Name.ToUpperInvariant(), Width = 140, Height = 48, BackColor = g.Color, ForeColor = Color.Black, FlatStyle = FlatStyle.Flat, Font = new Font("Arial", 12, FontStyle.Bold), Margin = new Padding(5, 3, 5, 3) };
-                b.FlatAppearance.BorderSize = 0;
+                var b = new Button { Text = g.Name.ToUpperInvariant(), Width = 155, Height = 54, BackColor = g.Color, ForeColor = Color.Black, FlatStyle = FlatStyle.Flat, Font = new Font("Arial", 12, FontStyle.Bold), Margin = new Padding(5) };
+                b.FlatAppearance.BorderSize = 1;
                 b.Click += delegate { activeCategory = g.Name; RefreshSongs(); };
                 genrePanel.Controls.Add(b);
             }
