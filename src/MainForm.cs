@@ -634,7 +634,7 @@ namespace AlexaRockola
         }
         private Button Btn(string text,int width){return new Button{Text=text,Width=width,Height=35,Margin=new Padding(3),Font=new Font("Arial",9,FontStyle.Bold)};}
         private Genre Selected(){int i=genreList.SelectedIndex;return i>=0&&i<working.Count?working[i]:null;}
-        private void AddGenre(){string n=nameBox.Text.Trim();if(n.Length==0||working.Any(g=>g.Name.Equals(n,StringComparison.OrdinalIgnoreCase))){MessageBox.Show("Escribe un nombre nuevo y único.");return;}working.Add(new Genre(n,SelectedColor(),kindBox.SelectedItem.ToString()));RefreshGenres();genreList.SelectedIndex=working.Count-1;nameBox.Clear();}
+        private void AddGenre(){string n=nameBox.Text.Trim();if(n.Length==0){using(var prompt=new GenreNameKeyboardForm())if(prompt.ShowDialog(this)==DialogResult.OK)n=prompt.Value;}if(n.Length==0||working.Any(g=>g.Name.Equals(n,StringComparison.OrdinalIgnoreCase))){MessageBox.Show("Escribe un nombre nuevo y único.");return;}working.Add(new Genre(n,SelectedColor(),kindBox.SelectedItem.ToString()));RefreshGenres();genreList.SelectedIndex=working.Count-1;nameBox.Clear();}
         private void DeleteGenre(){Genre g=Selected();if(g==null)return;if(new[]{"MUSICA","KARAOKES","VIDEOS"}.Contains(g.Name.ToUpperInvariant())){MessageBox.Show("Los géneros principales no se pueden borrar.");return;}working.Remove(g);RefreshGenres();}
         private void ModifyGenre(){Genre g=Selected();if(g==null)return;string n=nameBox.Text.Trim();if(n.Length==0)n=g.Name;if(working.Any(x=>x!=g&&x.Name.Equals(n,StringComparison.OrdinalIgnoreCase))){MessageBox.Show("Ese nombre ya existe.");return;}g.Name=n;g.Kind=kindBox.SelectedItem.ToString();g.Color=SelectedColor();RefreshGenres();}
         private void PickFolder(){Genre g=Selected();if(g==null){MessageBox.Show("Primero selecciona un género.");return;}using(var d=new FolderBrowserDialog{Description="PASO 5 - Selecciona la carpeta que pertenece a "+g.Name,ShowNewFolderButton=false})if(d.ShowDialog(this)==DialogResult.OK){string selected=Path.GetFullPath(d.SelectedPath);if(!g.Folders.Contains(selected,StringComparer.OrdinalIgnoreCase)){g.Folders.Add(selected);RefreshFolders();}}}
@@ -644,6 +644,45 @@ namespace AlexaRockola
         private void RefreshGenres(){int old=genreList.SelectedIndex;genreList.Items.Clear();foreach(Genre g in working)genreList.Items.Add(g.Name+" ("+g.Kind+")");if(genreList.Items.Count>0)genreList.SelectedIndex=Math.Max(0,Math.Min(old,genreList.Items.Count-1));}
         private void RefreshFolders(){if(folderList==null)return;folderList.Items.Clear();Genre g=Selected();if(g!=null)foreach(string p in g.Folders)folderList.Items.Add(p);}
     }
+    internal class GenreNameKeyboardForm : Form
+    {
+        public string Value { get { return entry.Text.Trim(); } }
+        private TextBox entry;
+        public GenreNameKeyboardForm()
+        {
+            Text = "INGRESE EL NOMBRE DEL GÉNERO MUSICAL";
+            Size = new Size(650, 390); StartPosition = FormStartPosition.CenterParent;
+            FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
+            entry = new TextBox { Dock = DockStyle.Top, Font = new Font("Arial", 18, FontStyle.Bold), Height = 42 };
+            Controls.Add(entry);
+            var keys = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 10, RowCount = 4, Padding = new Padding(8) };
+            for (int c=0;c<10;c++) keys.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,10));
+            string chars = "1234567890QWERTYUIOPASDFGHJKLÑZXCVBNM";
+            int index=0;
+            for(int r=0;r<4;r++)
+            {
+                keys.RowStyles.Add(new RowStyle(SizeType.Percent,25));
+                for(int c=0;c<10;c++)
+                {
+                    if(index>=chars.Length) break;
+                    string ch=chars[index++].ToString();
+                    var b=new Button { Text=ch, Dock=DockStyle.Fill, Margin=new Padding(2), Font=new Font("Arial",12,FontStyle.Bold) };
+                    b.Click += delegate { entry.Text += ch; entry.SelectionStart=entry.Text.Length; };
+                    keys.Controls.Add(b,c,r);
+                }
+            }
+            Controls.Add(keys);
+            var bottom=new FlowLayoutPanel { Dock=DockStyle.Bottom, Height=48, FlowDirection=FlowDirection.RightToLeft };
+            var accept=new Button { Text="ACEPTAR", Width=110, Height=34 };
+            var cancel=new Button { Text="CANCELAR", Width=110, Height=34, DialogResult=DialogResult.Cancel };
+            var erase=new Button { Text="BORRAR", Width=110, Height=34 };
+            accept.Click += delegate { if(Value.Length>0){DialogResult=DialogResult.OK;Close();} };
+            erase.Click += delegate { if(entry.Text.Length>0)entry.Text=entry.Text.Substring(0,entry.Text.Length-1); };
+            bottom.Controls.AddRange(new Control[]{accept,cancel,erase}); Controls.Add(bottom);
+            AcceptButton=accept; CancelButton=cancel;
+        }
+    }
+
     internal class KeyboardSettingsForm : Form
     {
         public Keys MenuKey { get; private set; }
@@ -681,11 +720,10 @@ namespace AlexaRockola
                 grid.Controls.Add(new Label { Text = names[i], Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Arial", 12, FontStyle.Bold) }, 0, i);
                 int index = i;
                 keyButtons[i] = new Button { Text = selectedKeys[i].ToString(), Dock = DockStyle.Fill, Font = new Font("Arial", 12, FontStyle.Bold), BackColor = Color.White };
-                keyButtons[i].Click += delegate { captureIndex = index; keyButtons[index].Text = "PRESIONA UNA TECLA"; keyButtons[index].BackColor = Color.LightYellow; Focus(); };
+                keyButtons[i].Click += delegate { captureIndex = index; keyButtons[index].Text = "PRESIONA UNA TECLA"; keyButtons[index].BackColor = Color.LightYellow; Activate(); keyButtons[index].Focus(); };
                 grid.Controls.Add(keyButtons[i], 1, i);
             }
             keyTab.Controls.Add(grid);
-            KeyDown += CaptureKey;
             rightClick = new CheckBox { Text = "EL CLIC DERECHO AGREGA LA CANCIÓN SELECCIONADA A LA LISTA", Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(24), Checked = rightAdds, Font = new Font("Arial", 11, FontStyle.Bold) };
             otherTab.Controls.Add(rightClick);
             otherTab.Controls.Add(new Label { Text = "Haz clic en el cuadro de cada función y después presiona la tecla que deseas asignar.", AutoSize = true, Location = new Point(24, 75) });
@@ -699,18 +737,26 @@ namespace AlexaRockola
             save.Click += delegate { if (captureIndex >= 0) { MessageBox.Show("Termina de asignar la tecla pendiente antes de guardar."); return; } MenuKey = selectedKeys[0]; AddKey = selectedKeys[1]; PauseKey = selectedKeys[2]; FullScreenKey = selectedKeys[3]; StopKey = selectedKeys[4]; RightClickAddsSong = rightClick.Checked; DialogResult = DialogResult.OK; Close(); };
             bottom.Controls.Add(save);
         }
-        private void CaptureKey(object sender, KeyEventArgs e)
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (captureIndex < 0) return;
-            if (e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.Menu) return;
-            for (int i = 0; i < selectedKeys.Length; i++)
-                if (i != captureIndex && selectedKeys[i] == e.KeyCode) { MessageBox.Show("Esa tecla ya está asignada a otra función."); e.SuppressKeyPress = true; e.Handled = true; return; }
-            selectedKeys[captureIndex] = e.KeyCode;
-            keyButtons[captureIndex].Text = e.KeyCode.ToString();
-            keyButtons[captureIndex].BackColor = Color.White;
-            captureIndex = -1;
-            e.SuppressKeyPress = true;
-            e.Handled = true;
+            if (captureIndex >= 0)
+            {
+                Keys pressed = keyData & Keys.KeyCode;
+                if (pressed == Keys.ShiftKey || pressed == Keys.ControlKey || pressed == Keys.Menu) return true;
+                for (int i = 0; i < selectedKeys.Length; i++)
+                    if (i != captureIndex && selectedKeys[i] == pressed)
+                    {
+                        MessageBox.Show(this, "Esa tecla ya está asignada a otra función. Elige otra.", "CONFIGURAR TECLAS", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        keyButtons[captureIndex].Focus();
+                        return true;
+                    }
+                selectedKeys[captureIndex] = pressed;
+                keyButtons[captureIndex].Text = pressed.ToString();
+                keyButtons[captureIndex].BackColor = Color.White;
+                captureIndex = -1;
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
         }
     }
 
