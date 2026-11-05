@@ -57,7 +57,8 @@ namespace AlexaRockola
             }
             catch (Exception ex)
             {
-                MessageBox.Show("No se pudo iniciar el motor multimedia VLC.\r\n" + ex.Message, "ALEXA", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("No se pudo iniciar el motor multimedia VLC.\r
+" + ex.Message, "ALEXA", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             BuildInterface();
             ScanLibrary();
@@ -111,7 +112,8 @@ namespace AlexaRockola
             var right = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, BackColor = Color.White, Margin = new Padding(4, 0, 0, 0) };
             right.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
             right.RowStyles.Add(new RowStyle(SizeType.Absolute, 205));
-            right.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));\n            right.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            right.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+            right.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             right.Controls.Add(new Label { Text = "PORTADA", Dock = DockStyle.Fill, BackColor = Color.FromArgb(20, 35, 65), ForeColor = Color.White, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Arial", 11, FontStyle.Bold) }, 0, 0);
             coverBox = new PictureBox { Dock = DockStyle.Fill, BackColor = Color.FromArgb(18, 24, 35), SizeMode = PictureBoxSizeMode.Zoom };
             string coverPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default-cover.jpg");
@@ -185,12 +187,14 @@ namespace AlexaRockola
                 add("CONFIGURACIÓN GENERAL", ShowSettings);
                 add("SKINS - VISUALIZACIÓN", delegate { MessageBox.Show("La personalización de skins se habilitará en una siguiente etapa.", "ALEXA"); });
                 add("CONFIGURAR TECLADO", delegate { MessageBox.Show("Atajos actuales: M menú, Enter agregar, Espacio pausar, F11 pantalla completa, Esc salir.", "ALEXA"); });
-                add("ESTADÍSTICAS", delegate { MessageBox.Show("Archivos detectados: " + songs.Count + "\r\nTemas en cola: " + queue.Count, "ESTADÍSTICAS"); });
+                add("ESTADÍSTICAS", delegate { MessageBox.Show("Archivos detectados: " + songs.Count + "\r
+Temas en cola: " + queue.Count, "ESTADÍSTICAS"); });
                 add("ACTIVAR PROGRAMA", delegate { MessageBox.Show("ALEXA está ejecutándose.", "ALEXA"); });
                 add("CERRAR", delegate { StopPlayback(); });
                 add("CERRAR PROGRAMA", delegate { Close(); });
                 add("APAGAR PC", delegate { MessageBox.Show("Por seguridad, el apagado del equipo no se ejecuta desde esta versión.", "ALEXA"); });
-                add("ACERCA DE...", delegate { MessageBox.Show("ALEXA - LEON ROCKOLAS\r\nRockola y karaoke para Windows.", "ACERCA DE"); });
+                add("ACERCA DE...", delegate { MessageBox.Show("ALEXA - LEON ROCKOLAS\r
+Rockola y karaoke para Windows.", "ACERCA DE"); });
                 add("RECOMENDACIONES", delegate { MessageBox.Show("Organiza tus archivos en carpetas llamadas Música, Karaokes, Videos o con el nombre de cada género.", "ALEXA"); });
                 menu.ShowDialog(this);
             }
@@ -242,7 +246,8 @@ namespace AlexaRockola
                     }
                 }
             }
-            catch (Exception ex) { MessageBox.Show("No se pudo leer toda la carpeta:\r\n" + ex.Message, "ALEXA"); }
+            catch (Exception ex) { MessageBox.Show("No se pudo leer toda la carpeta:\r
+" + ex.Message, "ALEXA"); }
             songs.Sort((a, b) => String.Compare(a.Title, b.Title, StringComparison.CurrentCultureIgnoreCase));
         }
 
@@ -345,7 +350,8 @@ namespace AlexaRockola
                 status.Text = "REPRODUCIENDO: " + song.Title;
                 if (song.IsVideo) ShowVideoWindow(); else if (videoWindow != null) videoWindow.Hide();
             }
-            catch (Exception ex) { MessageBox.Show("No se pudo reproducir el archivo:\r\n" + ex.Message, "ALEXA"); }
+            catch (Exception ex) { MessageBox.Show("No se pudo reproducir el archivo:\r
+" + ex.Message, "ALEXA"); }
         }
 
         private void ShowVideoWindow()
@@ -430,7 +436,8 @@ namespace AlexaRockola
 
                 private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.M) { ShowMainMenu(); e.Handled = true; }\n            if (e.KeyCode == Keys.Enter && songList.Focused) AddSelectedSong();
+            if (e.KeyCode == Keys.M) { ShowMainMenu(); e.Handled = true; }
+            if (e.KeyCode == Keys.Enter && songList.Focused) AddSelectedSong();
             if (e.KeyCode == Keys.Space && mediaPlayer != null) mediaPlayer.Pause();
             if (e.KeyCode == Keys.Escape) { if (WindowState == FormWindowState.Maximized) WindowState = FormWindowState.Normal; else StopPlayback(); }
             if (e.KeyCode == Keys.F11) WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized;
@@ -453,7 +460,36 @@ namespace AlexaRockola
         }
     }
 
-    internal class Genre\n    {\n        public string Name; public Color Color; public string Kind;\n        public Genre(string name, Color color, string kind) { Name = name; Color = color; Kind = kind; }\n    }\n\n    internal class GenreManagerForm : Form\n    {\n        private readonly List<Genre> source; private ListBox list; private TextBox nameBox; private ComboBox kindBox; private ComboBox colorBox;\n        public List<Genre> Genres { get; private set; }\n        public GenreManagerForm(List<Genre> current)\n        {\n            source = current; Genres = current.Select(g => new Genre(g.Name,g.Color,g.Kind)).ToList();\n            Text = "CONFIGURAR MÚSICA Y GÉNEROS"; Size = new Size(570,490); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox=false; MinimizeBox=false;\n            var p = new TableLayoutPanel { Dock=DockStyle.Fill, Padding=new Padding(12), RowCount=6, ColumnCount=1 }; p.RowStyles.Add(new RowStyle(SizeType.Percent,100)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,38)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,38)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,38)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,42)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,45)); Controls.Add(p);\n            list = new ListBox { Dock=DockStyle.Fill, Font=new Font("Arial",12,FontStyle.Bold) }; RefreshList(); p.Controls.Add(list,0,0);\n            nameBox = new TextBox { Dock=DockStyle.Fill }; p.Controls.Add(nameBox,0,1);\n            kindBox = new ComboBox { Dock=DockStyle.Fill, DropDownStyle=ComboBoxStyle.DropDownList }; kindBox.Items.AddRange(new object[] { "AUDIO", "VIDEO", "KARAOKE", "CARPETA" }); kindBox.SelectedIndex=0; p.Controls.Add(kindBox,0,2);\n            colorBox = new ComboBox { Dock=DockStyle.Fill, DropDownStyle=ComboBoxStyle.DropDownList }; colorBox.Items.AddRange(new object[] { "AMARILLO", "VERDE", "ROSA", "AZUL", "NARANJA", "CELESTE" }); colorBox.SelectedIndex=0; p.Controls.Add(colorBox,0,3);\n            var actions = new FlowLayoutPanel { Dock=DockStyle.Fill }; var add = new Button { Text="AGREGAR GÉNERO", Width=190, Dock=DockStyle.Left }; var remove = new Button { Text="ELIMINAR SELECCIONADO", Width=220 }; actions.Controls.Add(add); actions.Controls.Add(remove); p.Controls.Add(actions,0,4);\n            var save = new Button { Text="GUARDAR CAMBIOS", Dock=DockStyle.Fill, BackColor=Color.Lime, Font=new Font("Arial",12,FontStyle.Bold) }; p.Controls.Add(save,0,5);\n            add.Click += delegate { string n=nameBox.Text.Trim(); if(n.Length==0 || Genres.Any(g=>g.Name.Equals(n,StringComparison.OrdinalIgnoreCase))) { MessageBox.Show("Escribe un nombre nuevo para el género."); return; } Genres.Add(new Genre(n,SelectedColor(),kindBox.SelectedItem.ToString())); nameBox.Clear(); RefreshList(); };\n            remove.Click += delegate { int i=list.SelectedIndex; if(i>=0) { if(Genres[i].Kind=="AUDIO" || Genres[i].Kind=="VIDEO" || Genres[i].Kind=="KARAOKE") { MessageBox.Show("Los géneros principales no se pueden eliminar."); return; } Genres.RemoveAt(i); RefreshList(); } };\n            save.Click += delegate { DialogResult=DialogResult.OK; Close(); };\n        }\n        private Color SelectedColor() { switch(colorBox.SelectedIndex) { case 0:return Color.FromArgb(255,205,0); case 1:return Color.LimeGreen; case 2:return Color.HotPink; case 3:return Color.RoyalBlue; case 4:return Color.DarkOrange; default:return Color.Cyan; } }\n        private void RefreshList() { list.Items.Clear(); foreach(Genre g in Genres) list.Items.Add(g.Name+"  ("+g.Kind+")"); }\n    }\n\n    internal class SettingsForm : Form
+    internal class Genre
+    {
+        public string Name; public Color Color; public string Kind;
+        public Genre(string name, Color color, string kind) { Name = name; Color = color; Kind = kind; }
+    }
+
+    internal class GenreManagerForm : Form
+    {
+        private readonly List<Genre> source; private ListBox list; private TextBox nameBox; private ComboBox kindBox; private ComboBox colorBox;
+        public List<Genre> Genres { get; private set; }
+        public GenreManagerForm(List<Genre> current)
+        {
+            source = current; Genres = current.Select(g => new Genre(g.Name,g.Color,g.Kind)).ToList();
+            Text = "CONFIGURAR MÚSICA Y GÉNEROS"; Size = new Size(570,490); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox=false; MinimizeBox=false;
+            var p = new TableLayoutPanel { Dock=DockStyle.Fill, Padding=new Padding(12), RowCount=6, ColumnCount=1 }; p.RowStyles.Add(new RowStyle(SizeType.Percent,100)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,38)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,38)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,38)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,42)); p.RowStyles.Add(new RowStyle(SizeType.Absolute,45)); Controls.Add(p);
+            list = new ListBox { Dock=DockStyle.Fill, Font=new Font("Arial",12,FontStyle.Bold) }; RefreshList(); p.Controls.Add(list,0,0);
+            nameBox = new TextBox { Dock=DockStyle.Fill }; p.Controls.Add(nameBox,0,1);
+            kindBox = new ComboBox { Dock=DockStyle.Fill, DropDownStyle=ComboBoxStyle.DropDownList }; kindBox.Items.AddRange(new object[] { "AUDIO", "VIDEO", "KARAOKE", "CARPETA" }); kindBox.SelectedIndex=0; p.Controls.Add(kindBox,0,2);
+            colorBox = new ComboBox { Dock=DockStyle.Fill, DropDownStyle=ComboBoxStyle.DropDownList }; colorBox.Items.AddRange(new object[] { "AMARILLO", "VERDE", "ROSA", "AZUL", "NARANJA", "CELESTE" }); colorBox.SelectedIndex=0; p.Controls.Add(colorBox,0,3);
+            var actions = new FlowLayoutPanel { Dock=DockStyle.Fill }; var add = new Button { Text="AGREGAR GÉNERO", Width=190, Dock=DockStyle.Left }; var remove = new Button { Text="ELIMINAR SELECCIONADO", Width=220 }; actions.Controls.Add(add); actions.Controls.Add(remove); p.Controls.Add(actions,0,4);
+            var save = new Button { Text="GUARDAR CAMBIOS", Dock=DockStyle.Fill, BackColor=Color.Lime, Font=new Font("Arial",12,FontStyle.Bold) }; p.Controls.Add(save,0,5);
+            add.Click += delegate { string n=nameBox.Text.Trim(); if(n.Length==0 || Genres.Any(g=>g.Name.Equals(n,StringComparison.OrdinalIgnoreCase))) { MessageBox.Show("Escribe un nombre nuevo para el género."); return; } Genres.Add(new Genre(n,SelectedColor(),kindBox.SelectedItem.ToString())); nameBox.Clear(); RefreshList(); };
+            remove.Click += delegate { int i=list.SelectedIndex; if(i>=0) { if(Genres[i].Kind=="AUDIO" || Genres[i].Kind=="VIDEO" || Genres[i].Kind=="KARAOKE") { MessageBox.Show("Los géneros principales no se pueden eliminar."); return; } Genres.RemoveAt(i); RefreshList(); } };
+            save.Click += delegate { DialogResult=DialogResult.OK; Close(); };
+        }
+        private Color SelectedColor() { switch(colorBox.SelectedIndex) { case 0:return Color.FromArgb(255,205,0); case 1:return Color.LimeGreen; case 2:return Color.HotPink; case 3:return Color.RoyalBlue; case 4:return Color.DarkOrange; default:return Color.Cyan; } }
+        private void RefreshList() { list.Items.Clear(); foreach(Genre g in Genres) list.Items.Add(g.Name+"  ("+g.Kind+")"); }
+    }
+
+    internal class SettingsForm : Form
     {
         private TextBox folderBox, marqueeBox;
         public string MediaFolder { get; private set; }
