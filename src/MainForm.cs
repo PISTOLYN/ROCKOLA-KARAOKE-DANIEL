@@ -236,27 +236,6 @@ namespace AlexaRockola
             marqueeTimer.Start();
         }
 
-        private void BuildGenreButtons()
-        {
-            if (genrePanel == null) return;
-            genrePanel.Controls.Clear();
-            foreach (Genre g in genres)
-            {
-                var b = new Button { Text = g.Name.ToUpperInvariant(), Width = 155, Height = 54, BackColor = g.Color, ForeColor = Color.Black, FlatStyle = FlatStyle.Flat, Font = new Font("Arial", 12, FontStyle.Bold), Margin = new Padding(5) };
-                b.FlatAppearance.BorderSize = 1;
-                b.Click += delegate { activeCategory = g.Name; RefreshSongs(); };
-                genrePanel.Controls.Add(b);
-            }
-        }
-
-        private void EnsureDefaultGenres()
-        {
-            if (genres.Count > 0) return;
-            genres.Add(new Genre("MUSICA", Color.FromArgb(255, 205, 0), "AUDIO"));
-            genres.Add(new Genre("KARAOKES", Color.FromArgb(80, 220, 100), "KARAOKE"));
-            genres.Add(new Genre("VIDEOS", Color.FromArgb(245, 105, 150), "VIDEO"));
-        }
-
         private void ShowMainMenu()
         {
             using (var menu = new Form())
