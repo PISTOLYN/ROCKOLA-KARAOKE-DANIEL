@@ -185,12 +185,12 @@ namespace AlexaRockola
                 menu.StartPosition = FormStartPosition.CenterParent;
                 menu.FormBorderStyle = FormBorderStyle.FixedDialog;
                 menu.MaximizeBox = false; menu.MinimizeBox = false;
-                menu.Size = new Size(690, 720);
+                menu.Size = new Size(1120, 790);
                 menu.BackColor = Color.FromArgb(238, 240, 245);
-                var panel = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(22), BackColor = menu.BackColor };
+                var panel = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(22, 14, 22, 14), BackColor = menu.BackColor };
                 menu.Controls.Add(panel);
                 Action<string, Action> add = delegate(string caption, Action action) {
-                    var b = new Button { Text = caption, Width = 610, Height = 51, BackColor = Color.FromArgb(245, 246, 249), ForeColor = Color.FromArgb(8, 22, 48), FlatStyle = FlatStyle.Flat, Font = new Font("Arial", 17, FontStyle.Bold), Margin = new Padding(4) };
+                    var b = new Button { Text = caption, Width = 1030, Height = 62, BackColor = Color.FromArgb(245, 246, 249), ForeColor = Color.FromArgb(8, 22, 48), FlatStyle = FlatStyle.Flat, Font = new Font("Arial Narrow", 25, FontStyle.Bold), Margin = new Padding(4, 3, 4, 3) };
                     b.FlatAppearance.BorderColor = Color.Silver;
                     b.Click += delegate { menu.Close(); action(); };
                     panel.Controls.Add(b);
