@@ -30,6 +30,7 @@ namespace AlexaRockola
         private System.Windows.Forms.Timer marqueeTimer;
         private LibVLC libVLC;
         private MediaPlayer mediaPlayer;
+        private Media currentMedia;
         private VideoWindow videoWindow;
         private bool closing;
 
@@ -288,8 +289,9 @@ namespace AlexaRockola
             try
             {
                 mediaPlayer.Stop();
-                using (var media = new Media(libVLC, song.Path, FromType.FromPath))
-                    mediaPlayer.Play(media);
+                if (currentMedia != null) { currentMedia.Dispose(); currentMedia = null; }
+                currentMedia = new Media(libVLC, song.Path, FromType.FromPath);
+                mediaPlayer.Play(currentMedia);
                 playlist.SelectedIndex = index;
                 status.Text = "REPRODUCIENDO: " + song.Title;
                 if (song.IsVideo) ShowVideoWindow(); else if (videoWindow != null) videoWindow.Hide();
@@ -313,7 +315,7 @@ namespace AlexaRockola
 
         private void StopPlayback()
         {
-            try { if (mediaPlayer != null) mediaPlayer.Stop(); if (videoWindow != null) videoWindow.Hide(); } catch { }
+            try { if (mediaPlayer != null) mediaPlayer.Stop(); if (currentMedia != null) { currentMedia.Dispose(); currentMedia = null; } if (videoWindow != null) videoWindow.Hide(); } catch { }
         }
 
         private void ShowSettings()
@@ -373,7 +375,7 @@ namespace AlexaRockola
         {
             if (disposing)
             {
-                try { if (marqueeTimer != null) marqueeTimer.Dispose(); if (mediaPlayer != null) { mediaPlayer.EndReached -= MediaPlayer_EndReached; mediaPlayer.Dispose(); } if (libVLC != null) libVLC.Dispose(); if (videoWindow != null) videoWindow.Dispose(); } catch { }
+                try { if (marqueeTimer != null) marqueeTimer.Dispose(); if (mediaPlayer != null) { mediaPlayer.EndReached -= MediaPlayer_EndReached; mediaPlayer.Dispose(); } if (currentMedia != null) currentMedia.Dispose(); if (libVLC != null) libVLC.Dispose(); if (videoWindow != null) videoWindow.Dispose(); } catch { }
             }
             base.Dispose(disposing);
         }
