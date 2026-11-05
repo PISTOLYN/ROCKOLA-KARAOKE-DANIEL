@@ -221,6 +221,7 @@ namespace AlexaRockola
                     if (!genres.Any(g => g.Name.Equals(activeCategory, StringComparison.OrdinalIgnoreCase))) activeCategory = genres.Count == 0 ? "" : genres[0].Name;
                     BuildGenreButtons();
                     SaveConfig();
+                    ScanLibrary();
                     RefreshSongs();
                 }
             }
@@ -259,23 +260,33 @@ namespace AlexaRockola
         private void ScanLibrary()
         {
             songs.Clear();
-            if (!Directory.Exists(mediaFolder)) return;
             string[] audio = { ".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg", ".wma" };
             string[] video = { ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".mpeg", ".mpg", ".webm" };
-            try
+            var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!String.IsNullOrWhiteSpace(mediaFolder) && Directory.Exists(mediaFolder)) roots.Add(Path.GetFullPath(mediaFolder));
+            foreach (Genre genre in genres)
+                foreach (string folder in genre.Folders)
+                    if (!String.IsNullOrWhiteSpace(folder) && Directory.Exists(folder)) roots.Add(Path.GetFullPath(folder));
+            var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string root in roots)
             {
-                foreach (string file in Directory.EnumerateFiles(mediaFolder, "*.*", SearchOption.AllDirectories))
+                try
                 {
-                    string ext = Path.GetExtension(file).ToLowerInvariant();
-                    if (audio.Contains(ext) || video.Contains(ext))
+                    foreach (string file in Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories))
                     {
-                        string name = Path.GetFileNameWithoutExtension(file);
-                        string folder = new DirectoryInfo(Path.GetDirectoryName(file)).Name;
-                        songs.Add(new Song(name, folder, file, video.Contains(ext)));
+                        if (!found.Add(Path.GetFullPath(file))) continue;
+                        string ext = Path.GetExtension(file).ToLowerInvariant();
+                        if (audio.Contains(ext) || video.Contains(ext))
+                        {
+                            string name = Path.GetFileNameWithoutExtension(file);
+                            string folderName = new DirectoryInfo(Path.GetDirectoryName(file)).Name;
+                            songs.Add(new Song(name, folderName, file, video.Contains(ext)));
+                        }
                     }
                 }
+                catch (UnauthorizedAccessException) { }
+                catch (IOException) { }
             }
-            catch (Exception ex) { MessageBox.Show("No se pudo leer toda la carpeta:\r\n" + ex.Message, "ALEXA"); }
             songs.Sort((a, b) => String.Compare(a.Title, b.Title, StringComparison.CurrentCultureIgnoreCase));
         }
 
@@ -596,7 +607,7 @@ namespace AlexaRockola
         private void AddGenre(){string n=nameBox.Text.Trim();if(n.Length==0||working.Any(g=>g.Name.Equals(n,StringComparison.OrdinalIgnoreCase))){MessageBox.Show("Escribe un nombre nuevo y único.");return;}working.Add(new Genre(n,SelectedColor(),kindBox.SelectedItem.ToString()));RefreshGenres();genreList.SelectedIndex=working.Count-1;nameBox.Clear();}
         private void DeleteGenre(){Genre g=Selected();if(g==null)return;if(new[]{"MUSICA","KARAOKES","VIDEOS"}.Contains(g.Name.ToUpperInvariant())){MessageBox.Show("Los géneros principales no se pueden borrar.");return;}working.Remove(g);RefreshGenres();}
         private void ModifyGenre(){Genre g=Selected();if(g==null)return;string n=nameBox.Text.Trim();if(n.Length==0)n=g.Name;if(working.Any(x=>x!=g&&x.Name.Equals(n,StringComparison.OrdinalIgnoreCase))){MessageBox.Show("Ese nombre ya existe.");return;}g.Name=n;g.Kind=kindBox.SelectedItem.ToString();g.Color=SelectedColor();RefreshGenres();}
-        private void PickFolder(){Genre g=Selected();if(g==null){MessageBox.Show("Primero selecciona un género.");return;}using(var d=new FolderBrowserDialog{Description="Selecciona la carpeta o subcarpeta de "+g.Name})if(d.ShowDialog(this)==DialogResult.OK&&!g.Folders.Contains(d.SelectedPath,StringComparer.OrdinalIgnoreCase)){g.Folders.Add(d.SelectedPath);RefreshFolders();}}
+        private void PickFolder(){Genre g=Selected();if(g==null){MessageBox.Show("Primero selecciona un género.");return;}using(var d=new FolderBrowserDialog{Description="PASO 5 - Selecciona la carpeta que pertenece a "+g.Name,ShowNewFolderButton=false})if(d.ShowDialog(this)==DialogResult.OK){string selected=Path.GetFullPath(d.SelectedPath);if(!g.Folders.Contains(selected,StringComparer.OrdinalIgnoreCase)){g.Folders.Add(selected);RefreshFolders();}}}
         private void LoadSelected(){Genre g=Selected();if(g==null)return;nameBox.Text=g.Name;kindBox.SelectedItem=g.Kind;colorBox.SelectedIndex=ColorIndex(g.Color);RefreshFolders();}
         private int ColorIndex(Color c){if(c.ToArgb()==Color.LimeGreen.ToArgb())return 1;if(c.ToArgb()==Color.HotPink.ToArgb())return 2;if(c.ToArgb()==Color.RoyalBlue.ToArgb())return 3;if(c.ToArgb()==Color.DarkOrange.ToArgb())return 4;if(c.ToArgb()==Color.LightPink.ToArgb())return 5;if(c.ToArgb()==Color.Cyan.ToArgb())return 6;if(c.ToArgb()==Color.White.ToArgb())return 7;return 0;}
         private Color SelectedColor(){switch(colorBox.SelectedIndex){case 0:return Color.FromArgb(255,205,0);case 1:return Color.LimeGreen;case 2:return Color.HotPink;case 3:return Color.RoyalBlue;case 4:return Color.DarkOrange;case 5:return Color.LightPink;case 6:return Color.Cyan;default:return Color.White;}}
