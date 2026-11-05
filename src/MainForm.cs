@@ -600,26 +600,36 @@ namespace AlexaRockola
         public Keys FullScreenKey { get; private set; }
         public Keys StopKey { get; private set; }
         public bool RightClickAddsSong { get; private set; }
-        private ComboBox[] keys = new ComboBox[5];
+        private TextBox[] keyBoxes = new TextBox[5];
+        private Keys[] selectedKeys = new Keys[5];
         private CheckBox rightClick;
         public KeyboardSettingsForm(Keys menuKey, Keys addKey, Keys pauseKey, Keys fullKey, Keys stopKey, bool rightAdds)
         {
-            Text="CONFIGURAR TECLADO"; Size=new Size(650,430); StartPosition=FormStartPosition.CenterParent; FormBorderStyle=FormBorderStyle.FixedDialog; MaximizeBox=false; MinimizeBox=false;
-            var tabs=new TabControl { Dock=DockStyle.Fill }; Controls.Add(tabs);
-            var keyTab=new TabPage("CONFIGURAR TECLAS"); var otherTab=new TabPage("OTROS"); tabs.TabPages.Add(keyTab); tabs.TabPages.Add(otherTab);
-            var grid=new TableLayoutPanel { Dock=DockStyle.Fill, Padding=new Padding(16), ColumnCount=2, RowCount=5 };
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,60)); grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,40));
-            string[] names={"ABRIR MENÚ PRINCIPAL","AGREGAR CANCIÓN","PAUSAR / CONTINUAR","PANTALLA COMPLETA","DETENER / RESTAURAR"};
-            Keys[] values={menuKey,addKey,pauseKey,fullKey,stopKey};
-            for(int i=0;i<5;i++){ grid.RowStyles.Add(new RowStyle(SizeType.Absolute,52)); grid.Controls.Add(new Label{Text=names[i],Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft},0,i); keys[i]=new ComboBox{Dock=DockStyle.Fill,DropDownStyle=ComboBoxStyle.DropDownList}; keys[i].Items.AddRange(Enum.GetNames(typeof(Keys))); keys[i].SelectedItem=values[i].ToString(); grid.Controls.Add(keys[i],1,i); }
+            Text="CONFIGURAR TECLAS"; Size=new Size(850,560); StartPosition=FormStartPosition.CenterParent;
+            FormBorderStyle=FormBorderStyle.FixedDialog; MaximizeBox=false; MinimizeBox=false;
+            selectedKeys=new Keys[]{menuKey,addKey,pauseKey,fullKey,stopKey};
+            var tabs=new TabControl{Dock=DockStyle.Fill}; Controls.Add(tabs);
+            var keyTab=new TabPage("CONFIGURAR TECLAS"); var otherTab=new TabPage("OTROS"); tabs.TabPages.Add(keyTab);tabs.TabPages.Add(otherTab);
+            var grid=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(24),ColumnCount=2,RowCount=5};
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));
+            string[] names={"ABRIR MENÚ PRINCIPAL","AGREGAR CANCIÓN A LA LISTA","PAUSAR / CONTINUAR","PANTALLA COMPLETA","DETENER / RESTAURAR"};
+            for(int i=0;i<5;i++)
+            {
+                grid.RowStyles.Add(new RowStyle(SizeType.Absolute,66));
+                grid.Controls.Add(new Label{Text=names[i],Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,Font=new Font("Arial",12,FontStyle.Bold)},0,i);
+                int index=i; keyBoxes[i]=new TextBox{Dock=DockStyle.Fill,ReadOnly=true,Text=selectedKeys[i].ToString(),TextAlign=HorizontalAlignment.Center,Font=new Font("Arial",13,FontStyle.Bold),BackColor=Color.White};
+                keyBoxes[i].Click+=delegate{keyBoxes[index].Text="PRESIONA UNA TECLA...";keyBoxes[index].Focus();};
+                keyBoxes[i].KeyDown+=delegate(object sender,KeyEventArgs e){selectedKeys[index]=e.KeyCode;keyBoxes[index].Text=e.KeyCode.ToString();e.SuppressKeyPress=true;e.Handled=true;};
+                grid.Controls.Add(keyBoxes[i],1,i);
+            }
             keyTab.Controls.Add(grid);
-            rightClick=new CheckBox{Text="EL CLIC DERECHO AGREGA LA CANCIÓN SELECCIONADA A LA LISTA",Dock=DockStyle.Top,AutoSize=true,Padding=new Padding(16),Checked=rightAdds};
+            rightClick=new CheckBox{Text="EL CLIC DERECHO AGREGA LA CANCIÓN SELECCIONADA A LA LISTA",Dock=DockStyle.Top,AutoSize=true,Padding=new Padding(24),Checked=rightAdds,Font=new Font("Arial",11,FontStyle.Bold)};
             otherTab.Controls.Add(rightClick);
-            var bottom=new Panel{Dock=DockStyle.Bottom,Height=55}; Controls.Add(bottom);
-            var save=new Button{Text="GUARDAR CAMBIOS",Width=190,Dock=DockStyle.Right,BackColor=Color.LimeGreen};
-            save.Click+=delegate{MenuKey=Read(0);AddKey=Read(1);PauseKey=Read(2);FullScreenKey=Read(3);StopKey=Read(4);RightClickAddsSong=rightClick.Checked;DialogResult=DialogResult.OK;Close();}; bottom.Controls.Add(save);
+            var bottom=new Panel{Dock=DockStyle.Bottom,Height=64};Controls.Add(bottom);
+            var save=new Button{Text="GUARDAR CAMBIOS",Width=230,Dock=DockStyle.Right,BackColor=Color.LimeGreen,Font=new Font("Arial",12,FontStyle.Bold)};
+            save.Click+=delegate{MenuKey=selectedKeys[0];AddKey=selectedKeys[1];PauseKey=selectedKeys[2];FullScreenKey=selectedKeys[3];StopKey=selectedKeys[4];RightClickAddsSong=rightClick.Checked;DialogResult=DialogResult.OK;Close();};
+            bottom.Controls.Add(save);
         }
-        private Keys Read(int i){Keys value;return Enum.TryParse(keys[i].SelectedItem==null?"":keys[i].SelectedItem.ToString(),out value)?value:Keys.None;}
     }
 
     internal class SettingsForm : Form
