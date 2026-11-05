@@ -87,22 +87,8 @@ namespace AlexaRockola
             for (int i = 0; i < albumNames.Length; i++)
             {
                 var tile = new Panel { Width = 205, Height = 210, BackColor = i == 0 ? yellow : Color.FromArgb(18, 30, 70), Margin = new Padding(8, 4, 8, 4), Padding = new Padding(5) };
-                if (i == 0)
-                {
-                    var art = new PictureBox { Dock = DockStyle.Fill, BackColor = Color.FromArgb(40, 34, 28), SizeMode = PictureBoxSizeMode.Zoom };
-                    string defaultCoverPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "DefaultCover.jpg");
-                    if (File.Exists(defaultCoverPath))
-                    {
-                        try { using (var source = Image.FromFile(defaultCoverPath)) art.Image = new Bitmap(source); }
-                        catch { art.BackColor = Color.FromArgb(40, 34, 28); }
-                    }
-                    tile.Controls.Add(art);
-                }
-                else
-                {
-                    var art = new Label { Dock = DockStyle.Fill, BackColor = (i == 1 || i == 5 ? Color.FromArgb(95, 20, 105) : Color.FromArgb(8, 40, 90)), ForeColor = Color.White, Font = new Font("Arial", 20, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Text = (i == 1 || i == 5) ? "♫" : albumNames[i] };
-                    tile.Controls.Add(art);
-                }
+                var art = new Label { Dock = DockStyle.Fill, BackColor = i == 0 ? Color.FromArgb(40, 34, 28) : (i == 1 || i == 5 ? Color.FromArgb(95, 20, 105) : Color.FromArgb(8, 40, 90)), ForeColor = Color.White, Font = new Font("Arial", i == 0 ? 17 : 20, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Text = i == 0 ? "♌\r\nLEON\r\nROCKOLAS" : (i == 1 || i == 5 ? "♫" : albumNames[i]) };
+                tile.Controls.Add(art);
                 albums.Controls.Add(tile);
             }
             root.Controls.Add(albums, 0, 1);
