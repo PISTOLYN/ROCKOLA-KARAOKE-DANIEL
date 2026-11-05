@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
 using LibVLCSharp.WinForms;
@@ -35,6 +36,8 @@ namespace AlexaRockola
         private Media currentMedia;
         private VideoWindow videoWindow;
         private bool closing;
+        private Keys keyMenu = Keys.M, keyAdd = Keys.Enter, keyPause = Keys.Space, keyFullScreen = Keys.F11, keyStop = Keys.Escape;
+        private bool rightClickAddsSong = true;
 
         public MainForm()
         {
@@ -139,6 +142,7 @@ namespace AlexaRockola
             songList.Columns.Add("CANCIÓN", 690);
             songList.Columns.Add("ARTISTA / CARPETA", 330);
             songList.DoubleClick += delegate { AddSelectedSong(); };
+            songList.MouseClick += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Right && rightClickAddsSong) AddSelectedSong(); };
             songList.KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Enter) { AddSelectedSong(); e.Handled = true; } };
             left.Controls.Add(songList, 0, 1);
             body.Controls.Add(left, 0, 0);
@@ -194,7 +198,7 @@ namespace AlexaRockola
                 add("CONFIGURAR MÚSICA", ShowMusicSettings);
                 add("CONFIGURACIÓN GENERAL", ShowSettings);
                 add("SKINS - VISUALIZACIÓN", delegate { MessageBox.Show("La personalización de skins se habilitará en una siguiente etapa.", "ALEXA"); });
-                add("CONFIGURAR TECLADO", delegate { MessageBox.Show("Atajos actuales: M menú, Enter agregar, Espacio pausar, F11 pantalla completa, Esc salir.", "ALEXA"); });
+                add("CONFIGURAR TECLADO", ShowKeyboardSettings);
                 add("ESTADÍSTICAS", delegate { MessageBox.Show("Archivos detectados: " + songs.Count + "\r\nTemas en cola: " + queue.Count, "ESTADÍSTICAS"); });
                 add("ACTIVAR PROGRAMA", delegate { MessageBox.Show("ALEXA está ejecutándose.", "ALEXA"); });
                 add("CERRAR", delegate { StopPlayback(); });
@@ -396,6 +400,14 @@ namespace AlexaRockola
             try { if (mediaPlayer != null) mediaPlayer.Stop(); if (currentMedia != null) { currentMedia.Dispose(); currentMedia = null; } if (videoWindow != null) videoWindow.Hide(); } catch { }
         }
 
+        private void ShowKeyboardSettings()
+        {
+            using (var form = new KeyboardSettingsForm(keyMenu,keyAdd,keyPause,keyFullScreen,keyStop,rightClickAddsSong))
+            {
+                if(form.ShowDialog(this)==DialogResult.OK){keyMenu=form.MenuKey;keyAdd=form.AddKey;keyPause=form.PauseKey;keyFullScreen=form.FullScreenKey;keyStop=form.StopKey;rightClickAddsSong=form.RightClickAddsSong;SaveConfig();}
+            }
+        }
+
         private void ShowSettings()
         {
             using (var form = new SettingsForm(mediaFolder, marqueeText))
@@ -459,11 +471,11 @@ namespace AlexaRockola
 
                 private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.M) { ShowMainMenu(); e.Handled = true; }
-            if (e.KeyCode == Keys.Enter && songList.Focused) AddSelectedSong();
-            if (e.KeyCode == Keys.Space && mediaPlayer != null) mediaPlayer.Pause();
-            if (e.KeyCode == Keys.Escape) { if (WindowState == FormWindowState.Maximized) WindowState = FormWindowState.Normal; else StopPlayback(); }
-            if (e.KeyCode == Keys.F11) WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized;
+            if (e.KeyCode == keyMenu) { ShowMainMenu(); e.Handled = true; }
+            if (e.KeyCode == keyAdd && songList.Focused) { AddSelectedSong(); e.Handled = true; }
+            if (e.KeyCode == keyPause && mediaPlayer != null) { mediaPlayer.Pause(); e.Handled = true; }
+            if (e.KeyCode == keyStop) { if (WindowState == FormWindowState.Maximized) WindowState = FormWindowState.Normal; else StopPlayback(); e.Handled = true; }
+            if (e.KeyCode == keyFullScreen) { WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized; e.Handled = true; }
         }
 
         protected override void Dispose(bool disposing)
@@ -486,6 +498,7 @@ namespace AlexaRockola
     internal class Genre
     {
         public string Name; public Color Color; public string Kind;
+        public List<string> Folders = new List<string>();
         public Genre(string name, Color color, string kind) { Name = name; Color = color; Kind = kind; }
     }
 
