@@ -1,29 +1,33 @@
-# ROCKOLA-KARAOKE-DANIEL
+# ALEXA - ROCKOLA KARAOKE DANIEL
 
-Aplicación de escritorio de Karaoke y Rockola (Jukebox) para Windows.
+Aplicación de escritorio de Karaoke y Rockola para Windows.
 
-## Objetivo
+## Primera entrega: interfaz base
 
-Construir por etapas un sistema comercial con biblioteca multimedia, reproductor, cola de reproducción, créditos, modo VIP, administración y soporte para monedero electrónico Arduino por puerto serial.
+Se incorporó una primera pantalla funcional siguiendo la referencia visual aprobada por el usuario:
 
-## Plataforma objetivo
+- Marquesina superior verde neón con desplazamiento.
+- Carrusel horizontal de siete portadas de álbum.
+- Buscador de canciones y contador de álbumes/géneros.
+- Botones de categorías con colores configurados.
+- Lista central de canciones con selección.
+- Panel derecho de lista de reproducción.
+- Barra inferior roja de estado y controles.
+- Agregar canciones a la cola con doble clic o Enter.
+- Reordenar canciones en la cola con los controles de flechas.
+- Atajos: F11 alterna pantalla completa/ventana; Esc vuelve a ventana.
 
-- Windows 7 SP1, Windows 10 y Windows 11 (la compatibilidad final depende de validar cada dependencia y el instalador en equipos reales).
-- C# y Windows Forms.
-- Base de datos SQLite local.
-- Motor multimedia LibVLCSharp/VLC, sujeto a pruebas de compatibilidad por sistema operativo y arquitectura.
+## Plataforma
 
-## Estado
+- C# / Windows Forms.
+- .NET Framework 4.8.
+- Solución Visual Studio: `ALEXA.sln`.
 
-**Etapa 0 – Repositorio inicializado.** La siguiente etapa establece la solución de escritorio, estructura por módulos y persistencia SQLite.
+## Estado y alcance
 
-## Principios del proyecto
+Esta entrega implementa la estructura visual y las primeras interacciones de biblioteca/cola con canciones de demostración. **Todavía no incluye** el motor de reproducción, escaneo real de carpetas, miniaturas desde archivos, base de datos SQLite, configuración del engrane, monedero Arduino ni instaladores. Esas funciones se integrarán en las siguientes etapas; no se debe considerar aún un programa terminado para uso comercial.
 
-- Interfaz de cliente sencilla, visual y con controles grandes.
-- Panel de administración separado.
-- Código, nombres y comentarios en español cuando sea práctico.
-- No modificar otros repositorios del propietario.
+## Compilar
 
-## Desarrollo
+Abrir `ALEXA.sln` en Visual Studio en Windows con la carga de trabajo de desarrollo de escritorio .NET. Compilar en configuración Release.
 
-El proyecto se construirá en entregas pequeñas y verificables. No se considera listo para uso comercial hasta completar pruebas de reproducción, cobro, recuperación ante fallos, instalador y compatibilidad en cada Windows objetivo.
