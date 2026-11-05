@@ -57,8 +57,7 @@ namespace AlexaRockola
             }
             catch (Exception ex)
             {
-                MessageBox.Show("No se pudo iniciar el motor multimedia VLC.\r
-" + ex.Message, "ALEXA", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("No se pudo iniciar el motor multimedia VLC.\r\n" + ex.Message, "ALEXA", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             BuildInterface();
             ScanLibrary();
@@ -246,8 +245,7 @@ Rockola y karaoke para Windows.", "ACERCA DE"); });
                     }
                 }
             }
-            catch (Exception ex) { MessageBox.Show("No se pudo leer toda la carpeta:\r
-" + ex.Message, "ALEXA"); }
+            catch (Exception ex) { MessageBox.Show("No se pudo leer toda la carpeta:\r\n" + ex.Message, "ALEXA"); }
             songs.Sort((a, b) => String.Compare(a.Title, b.Title, StringComparison.CurrentCultureIgnoreCase));
         }
 
@@ -350,8 +348,7 @@ Rockola y karaoke para Windows.", "ACERCA DE"); });
                 status.Text = "REPRODUCIENDO: " + song.Title;
                 if (song.IsVideo) ShowVideoWindow(); else if (videoWindow != null) videoWindow.Hide();
             }
-            catch (Exception ex) { MessageBox.Show("No se pudo reproducir el archivo:\r
-" + ex.Message, "ALEXA"); }
+            catch (Exception ex) { MessageBox.Show("No se pudo reproducir el archivo:\r\n" + ex.Message, "ALEXA"); }
         }
 
         private void ShowVideoWindow()
