@@ -186,14 +186,12 @@ namespace AlexaRockola
                 add("CONFIGURACIÓN GENERAL", ShowSettings);
                 add("SKINS - VISUALIZACIÓN", delegate { MessageBox.Show("La personalización de skins se habilitará en una siguiente etapa.", "ALEXA"); });
                 add("CONFIGURAR TECLADO", delegate { MessageBox.Show("Atajos actuales: M menú, Enter agregar, Espacio pausar, F11 pantalla completa, Esc salir.", "ALEXA"); });
-                add("ESTADÍSTICAS", delegate { MessageBox.Show("Archivos detectados: " + songs.Count + "\r
-Temas en cola: " + queue.Count, "ESTADÍSTICAS"); });
+                add("ESTADÍSTICAS", delegate { MessageBox.Show("Archivos detectados: " + songs.Count + "\\r\\nTemas en cola: " + queue.Count, "ESTADÍSTICAS"); });
                 add("ACTIVAR PROGRAMA", delegate { MessageBox.Show("ALEXA está ejecutándose.", "ALEXA"); });
                 add("CERRAR", delegate { StopPlayback(); });
                 add("CERRAR PROGRAMA", delegate { Close(); });
                 add("APAGAR PC", delegate { MessageBox.Show("Por seguridad, el apagado del equipo no se ejecuta desde esta versión.", "ALEXA"); });
-                add("ACERCA DE...", delegate { MessageBox.Show("ALEXA - LEON ROCKOLAS\r
-Rockola y karaoke para Windows.", "ACERCA DE"); });
+                add("ACERCA DE...", delegate { MessageBox.Show("ALEXA - LEON ROCKOLAS\\r\\nRockola y karaoke para Windows.", "ACERCA DE"); });
                 add("RECOMENDACIONES", delegate { MessageBox.Show("Organiza tus archivos en carpetas llamadas Música, Karaokes, Videos o con el nombre de cada género.", "ALEXA"); });
                 menu.ShowDialog(this);
             }
