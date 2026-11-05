@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Data.SQLite;
 using System.Drawing;
 using System.IO;
@@ -33,12 +35,30 @@ namespace RockolaKaraoke.Interfaz
         private MediaPlayer reproductor;
         private Media medioActual;
         private bool moviendoProgreso;
-        private readonly Timer relojLetrero = new Timer();
         private string textoLetrero = "ROCKOLA KARAOKE  •  ELIGE TU MÚSICA FAVORITA";
-        private int posicionLetrero;
         private int velocidadLetrero = 180;
         private Color colorLetrero = Color.FromArgb(255, 35, 35);
-        private Label letreroLed;
+        private string textoSinTemas = "NO HAY TEMAS EN ESPERA";
+        private int velocidadInferior = 160;
+        private Color colorInferior = Color.Yellow;
+        private Color fondoInferior = Color.FromArgb(220, 0, 0);
+        private LetreroLed letreroLed;
+        private LetreroLed letreroInferior;
+        private Label tituloPortadas;
+        private Panel panelCola;
+        private Panel barraAbc;
+        private FlowLayoutPanel flujoAbc;
+        private FlowLayoutPanel filtros;
+        private FlowLayoutPanel listaEstilos;
+        private const string TextoBusqueda = "Buscar canción o artista...";
+        private readonly List<Button> botonesAbc = new List<Button>();
+        private int indiceAbc;
+        private readonly List<KeyValuePair<Button, string>> botonesTipo = new List<KeyValuePair<Button, string>>();
+        private readonly List<string> nombresGenero = new List<string>();
+        private readonly List<Panel> tarjetas = new List<Panel>();
+        private readonly List<string> carpetasTarjetas = new List<string>();
+        private int indicePortada;
+        private Dictionary<string, string> aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private string ArchivoLetrero { get { return Path.Combine(Application.UserAppDataPath, "letrero-led.txt"); } }
 
         public FormularioReproductor()
@@ -53,27 +73,12 @@ namespace RockolaKaraoke.Interfaz
 
             KeyPreview = true;
             CrearInterfaz();
-            KeyDown += delegate(object sender, KeyEventArgs e)
-            {
-                if (e.KeyCode == Keys.M && !(ActiveControl is TextBoxBase))
-                {
-                    e.SuppressKeyPress = true;
-                    MostrarMenuEdicion();
-                }
-                else if (e.KeyCode == Keys.F12)
-                {
-                    e.SuppressKeyPress = true;
-                    MostrarAdministracion();
-                }
-            };
-            Load += delegate { InicializarMotor(); CargarBiblioteca(); };
+            Load += delegate { InicializarMotor(); CargarBiblioteca(); ActiveControl = biblioteca; };
             FormClosing += delegate { LiberarMotor(); };
             reloj.Interval = 500;
             reloj.Tick += Reloj_Tick;
             CargarConfiguracionLetrero();
-            relojLetrero.Interval = velocidadLetrero;
-            relojLetrero.Tick += delegate { AvanzarLetrero(); };
-            relojLetrero.Start();
+            AplicarConfiguracionLetreros();
         }
 
         private void MostrarAdministracion()
@@ -122,8 +127,8 @@ namespace RockolaKaraoke.Interfaz
         private void CrearInterfaz()
         {
             Panel encabezado = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = Color.FromArgb(2, 5, 12), Padding = new Padding(8, 5, 8, 5) };
-            letreroLed = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, ForeColor = colorLetrero, BackColor = Color.FromArgb(5, 5, 8), Font = new Font("Consolas", 20F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(8, 0, 0, 0) };
-            letreroLed.Text = textoLetrero;
+            letreroLed = new LetreroLed { Dock = DockStyle.Fill, ForeColor = colorLetrero, BackColor = Color.FromArgb(5, 5, 8), Font = new Font("Consolas", 24F, FontStyle.Bold) };
+            letreroLed.Texto = textoLetrero;
             encabezado.Controls.Add(letreroLed);
 
             Panel inferior = new Panel { Dock = DockStyle.Bottom, Height = 78, BackColor = Color.FromArgb(5, 10, 24) };
@@ -169,16 +174,7 @@ namespace RockolaKaraoke.Interfaz
             mosaico.FlowDirection = FlowDirection.LeftToRight; mosaico.Padding = new Padding(8, 7, 8, 5);
             mosaico.BackColor = Color.FromArgb(3, 10, 27);
 
-            FlowLayoutPanel filtros = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, Padding = new Padding(8, 5, 8, 3), WrapContents = false, BackColor = Color.FromArgb(0, 185, 205) };
-            foreach (string tipo in new string[] { "Karaoke", "Musica", "Video" })
-            {
-                string etiqueta = tipo == "Musica" ? "MÚSICA" : tipo.ToUpperInvariant();
-                Button filtro = new Button { Text = etiqueta, Tag = tipo, Width = 132, Height = 36 };
-                Estilizar(filtro); filtro.BackColor = tipo == "Karaoke" ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 115, 190);
-                filtro.ForeColor = Color.White;
-                filtro.Click += delegate(object sender, EventArgs e) { filtroTipo = Convert.ToString(((Button)sender).Tag); ConstruirMosaico(); };
-                filtros.Controls.Add(filtro);
-            }
+            filtros = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, Padding = new Padding(8, 5, 8, 3), WrapContents = false, BackColor = Color.FromArgb(0, 185, 205) };
             busquedaMosaico.Dock = DockStyle.Top; busquedaMosaico.Height = 34;
             busquedaMosaico.Font = new Font("Segoe UI", 11F); busquedaMosaico.Margin = new Padding(8);
             busquedaMosaico.ForeColor = Color.DimGray; busquedaMosaico.Text = "Buscar canción o artista...";
@@ -197,11 +193,33 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.DoubleClick += delegate { AgregarSeleccionALaCola(); };
             biblioteca.DrawSubItem += delegate(object sender, DrawListViewSubItemEventArgs e)
             {
-                Color fondo = e.Item.Selected ? Color.FromArgb(245, 195, 0) : (e.ItemIndex % 2 == 0 ? Color.FromArgb(5, 15, 30) : Color.FromArgb(10, 22, 39));
-                Color tinta = e.Item.Selected ? Color.Black : Color.White;
-                using (SolidBrush b = new SolidBrush(fondo)) e.Graphics.FillRectangle(b, e.Bounds);
-                TextRenderer.DrawText(e.Graphics, e.SubItem.Text, biblioteca.Font, e.Bounds, tinta, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+                Color basico = e.ItemIndex % 2 == 0 ? Color.FromArgb(5, 15, 30) : Color.FromArgb(10, 22, 39);
+                bool marcada = e.Item.Selected;
+                Color tinta = marcada ? Color.Black : Color.White;
+                Rectangle area = e.Bounds;
+                int sangria = e.ColumnIndex == 0 ? 44 : 0;
+                using (SolidBrush fondoBase = new SolidBrush(basico)) { e.Graphics.FillRectangle(fondoBase, area); }
+                if (marcada)
+                {
+                    using (SolidBrush barraAmarilla = new SolidBrush(Color.FromArgb(245, 195, 0))) { e.Graphics.FillRectangle(barraAmarilla, area.X + sangria, area.Y, area.Width - sangria, area.Height); }
+                }
+                if (e.ColumnIndex == 0)
+                {
+                    int tamanoMarca = marcada ? 26 : 16;
+                    Rectangle marca = new Rectangle(area.X + 8 + (26 - tamanoMarca) / 2, area.Y + (area.Height - tamanoMarca) / 2, tamanoMarca, tamanoMarca);
+                    if (marcada)
+                    {
+                        using (SolidBrush punto = new SolidBrush(Color.FromArgb(245, 195, 0))) { e.Graphics.FillEllipse(punto, marca); }
+                    }
+                    else
+                    {
+                        using (SolidBrush cuadro = new SolidBrush(Color.Red)) { e.Graphics.FillRectangle(cuadro, marca); }
+                    }
+                }
+                Rectangle zonaTexto = new Rectangle(area.X + sangria, area.Y, area.Width - sangria, area.Height);
+                TextRenderer.DrawText(e.Graphics, e.SubItem.Text, biblioteca.Font, zonaTexto, tinta, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
             };
+            biblioteca.SelectedIndexChanged += delegate { ActualizarEncabezadoLista(); };
 
             lado.Controls.Add(biblioteca); lado.Controls.Add(filtros); lado.Controls.Add(busquedaMosaico);
             // Dos recuadros superiores: cartelera de PORTADAS y selector de ESTILO.
@@ -212,27 +230,18 @@ namespace RockolaKaraoke.Interfaz
             Panel cuadroEstilos = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 15, 35), Padding = new Padding(5), Margin = new Padding(3) };
             AplicarMarcoNeon(cuadroPortadas);
             AplicarMarcoNeon(cuadroEstilos);
-            Label tituloPortadas = new Label { Text = "MINIATURAS DE ÁLBUMES  •  7 DE 54  •  GÉNERO 2 DE 4", Dock = DockStyle.Top, Height = 31, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 11F, FontStyle.Bold) };
+            tituloPortadas = new Label { Text = "MINIATURAS DE ÁLBUMES  •  7 DE 54  •  GÉNERO 2 DE 4", Dock = DockStyle.Top, Height = 31, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 11F, FontStyle.Bold) };
             FlowLayoutPanel navegacionPortadas = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(4, 2, 2, 2) };
             Button portadaAnterior = new Button { Text = "◀ PORTADA", Width = 58, Height = 32 };
             Button portadaSiguiente = new Button { Text = "▶", Width = 112, Height = 32 };
             foreach (Button b in new Button[] { portadaAnterior, portadaSiguiente }) { Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); navegacionPortadas.Controls.Add(b); }
-            portadaAnterior.Click += delegate { DesplazarPortadas(-1); };
-            portadaSiguiente.Click += delegate { DesplazarPortadas(1); };
+            portadaAnterior.Click += delegate { MoverPortada(-1); };
+            portadaSiguiente.Click += delegate { MoverPortada(1); };
             cuadroPortadas.Controls.Add(mosaico);
             cuadroPortadas.Controls.Add(navegacionPortadas);
             cuadroPortadas.Controls.Add(tituloPortadas);
             Label tituloEstilos = new Label { Text = "CATEGORÍA", Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 14F, FontStyle.Bold) };
-            FlowLayoutPanel listaEstilos = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(3) };
-            foreach (string tipoEstilo in new string[] { "Todos", "Karaoke", "Musica", "Video" })
-            {
-                string nombreEstilo = tipoEstilo == "Musica" ? "MÚSICA" : tipoEstilo.ToUpperInvariant();
-                Button estilo = new Button { Text = nombreEstilo, Tag = tipoEstilo, Width = 180, Height = 43, Margin = new Padding(3, 5, 3, 5) };
-                Estilizar(estilo); estilo.BackColor = Color.FromArgb(0, 95, 165);
-                estilo.FlatAppearance.BorderSize = 1; estilo.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 240);
-                estilo.Click += delegate(object sender, EventArgs e) { filtroTipo = Convert.ToString(((Button)sender).Tag); ConstruirMosaico(); };
-                listaEstilos.Controls.Add(estilo);
-            }
+            listaEstilos = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(3) };
             cuadroEstilos.Controls.Add(listaEstilos);
             cuadroEstilos.Controls.Add(tituloEstilos);
             zonaSuperior.Controls.Add(cuadroPortadas, 0, 0);
@@ -250,6 +259,7 @@ namespace RockolaKaraoke.Interfaz
                 Button b = new Button { Text = modo, Width = 96, Height = 38 };
                 Estilizar(b); b.BackColor = modo == "KARAOKE" ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 105, 175);
                 botonesModo.Controls.Add(b);
+                botonesTipo.Add(new KeyValuePair<Button, string>(b, modo == "AUDIO" ? "Musica" : modo == "VIDEO" ? "Video" : "Karaoke"));
                 b.Click += delegate { filtroTipo = modo == "AUDIO" ? "Musica" : modo == "VIDEO" ? "Video" : "Karaoke"; ConstruirMosaico(); };
             }
 
@@ -260,7 +270,7 @@ namespace RockolaKaraoke.Interfaz
             Button btnSiguienteRockola = new Button { Text = "▶|", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
             Button btnSubirRockola = new Button { Text = "▲", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
             Button btnBajarRockola = new Button { Text = "▼", Width = 48, Height = 38, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
-            Button btnBuscarRockola = new Button { Text = "ARC\nBUSCAR", Width = 62, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            Button btnBuscarRockola = new Button { Text = "ABC", Width = 62, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
             Button btnAyudaRockola = new Button { Text = "Q\nAYUDA", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
             Button btnFullRockola = new Button { Text = "FULL", Width = 55, Height = 38, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
             foreach (Button b in new Button[] { btnAnteriorRockola, btnPlayRockola, btnSiguienteRockola, btnSubirRockola, btnBajarRockola, btnBuscarRockola, btnAyudaRockola, btnFullRockola })
@@ -273,11 +283,11 @@ namespace RockolaKaraoke.Interfaz
             btnSiguienteRockola.Click += delegate { ReproducirSiguiente(); };
             btnSubirRockola.Click += delegate { MoverSeleccionCancion(-1); };
             btnBajarRockola.Click += delegate { MoverSeleccionCancion(1); };
-            btnBuscarRockola.Click += delegate { busquedaMosaico.Focus(); };
+            btnBuscarRockola.Click += delegate { AlternarAbc(); };
             btnAyudaRockola.Click += delegate { MessageBox.Show(this, "Selecciona un álbum y después una canción. Usa PLAY para reproducir y ARC para buscar.", "Ayuda - Rockola", MessageBoxButtons.OK, MessageBoxIcon.Information); };
             btnFullRockola.Click += delegate { if (WindowState == FormWindowState.Maximized) WindowState = FormWindowState.Normal; else WindowState = FormWindowState.Maximized; };
 
-            Panel panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 25) };
+            panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 25) };
             etiquetaCola.Text = "NO HAY TEMAS EN ESPERA"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 28;
             etiquetaCola.TextAlign = ContentAlignment.MiddleLeft; etiquetaCola.Padding = new Padding(7, 0, 0, 0); etiquetaCola.ForeColor = Color.Gold;
             cola.Dock = DockStyle.Fill; cola.View = View.Details; cola.FullRowSelect = true; cola.GridLines = false;
@@ -300,13 +310,22 @@ namespace RockolaKaraoke.Interfaz
             filaInferior.Controls.Add(distribucionInferior);
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
-            Panel barraEstado = new Panel { Dock = DockStyle.Bottom, Height = 27, BackColor = Color.FromArgb(0, 105, 145) };
-            Label estadoIzquierdo = new Label { Text = "NO HAY TEMAS EN ESPERA", Dock = DockStyle.Left, Width = 300, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(10, 0, 0, 0), ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+            Panel barraEstado = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = Color.FromArgb(0, 105, 145) };
+            letreroInferior = new LetreroLed { Dock = DockStyle.Left, Width = 700, ForeColor = colorInferior, BackColor = fondoInferior, Font = new Font("Arial Black", 22F, FontStyle.Bold) };
+            letreroInferior.Texto = textoSinTemas;
             Label estadoCentro = new Label { Text = "VENTA AL 2223699949", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
             Label estadoDerecho = new Label { Text = "KARAOKE GRATIS", Dock = DockStyle.Right, Width = 180, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
-            barraEstado.Controls.Add(estadoCentro); barraEstado.Controls.Add(estadoDerecho); barraEstado.Controls.Add(estadoIzquierdo);
-            Controls.Add(centro); Controls.Add(barraEstado); Controls.Add(inferior); Controls.Add(encabezado);
+            barraEstado.Controls.Add(estadoCentro); barraEstado.Controls.Add(estadoDerecho); barraEstado.Controls.Add(letreroInferior);
+            barraEstado.Resize += delegate { letreroInferior.Width = Math.Max(300, (int)(barraEstado.ClientSize.Width * 0.62)); };
+            CrearBarraAbc();
+            Controls.Add(centro); Controls.Add(barraAbc); Controls.Add(barraEstado); Controls.Add(inferior); Controls.Add(encabezado);
             Shown += delegate { mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80); };
+        }
+
+        private static Color LeerColor(string html, Color porDefecto)
+        {
+            try { return ColorTranslator.FromHtml(html); }
+            catch { return porDefecto; }
         }
 
         private void CargarConfiguracionLetrero()
@@ -315,15 +334,14 @@ namespace RockolaKaraoke.Interfaz
             {
                 if (!File.Exists(ArchivoLetrero)) return;
                 string[] lineas = File.ReadAllLines(ArchivoLetrero);
-                if (lineas.Length > 0 && !String.IsNullOrWhiteSpace(lineas[0])) textoLetrero = lineas[0];
                 int velocidad;
-                if (lineas.Length > 1 && Int32.TryParse(lineas[1], out velocidad))
-                    velocidadLetrero = Math.Max(60, Math.Min(500, velocidad));
-                if (lineas.Length > 2)
-                {
-                    try { colorLetrero = ColorTranslator.FromHtml(lineas[2]); }
-                    catch { colorLetrero = Color.FromArgb(255, 35, 35); }
-                }
+                if (lineas.Length > 0 && !String.IsNullOrWhiteSpace(lineas[0])) textoLetrero = lineas[0];
+                if (lineas.Length > 1 && Int32.TryParse(lineas[1], out velocidad)) velocidadLetrero = Math.Max(60, Math.Min(500, velocidad));
+                if (lineas.Length > 2) colorLetrero = LeerColor(lineas[2], colorLetrero);
+                if (lineas.Length > 3 && !String.IsNullOrWhiteSpace(lineas[3])) textoSinTemas = lineas[3];
+                if (lineas.Length > 4 && Int32.TryParse(lineas[4], out velocidad)) velocidadInferior = Math.Max(60, Math.Min(500, velocidad));
+                if (lineas.Length > 5) colorInferior = LeerColor(lineas[5], colorInferior);
+                if (lineas.Length > 6) fondoInferior = LeerColor(lineas[6], fondoInferior);
             }
             catch { }
         }
@@ -334,7 +352,16 @@ namespace RockolaKaraoke.Interfaz
             {
                 string carpeta = Path.GetDirectoryName(ArchivoLetrero);
                 if (!Directory.Exists(carpeta)) Directory.CreateDirectory(carpeta);
-                File.WriteAllLines(ArchivoLetrero, new string[] { textoLetrero, velocidadLetrero.ToString(CultureInfo.InvariantCulture), ColorTranslator.ToHtml(colorLetrero) });
+                File.WriteAllLines(ArchivoLetrero, new string[]
+                {
+                    textoLetrero,
+                    velocidadLetrero.ToString(CultureInfo.InvariantCulture),
+                    ColorTranslator.ToHtml(colorLetrero),
+                    textoSinTemas,
+                    velocidadInferior.ToString(CultureInfo.InvariantCulture),
+                    ColorTranslator.ToHtml(colorInferior),
+                    ColorTranslator.ToHtml(fondoInferior)
+                });
             }
             catch (Exception ex)
             {
@@ -342,70 +369,110 @@ namespace RockolaKaraoke.Interfaz
             }
         }
 
-        private void AvanzarLetrero()
+        private void AplicarConfiguracionLetreros()
         {
-            if (letreroLed == null || letreroLed.IsDisposed || String.IsNullOrEmpty(textoLetrero)) return;
-            int anchoCaracter = Math.Max(8, TextRenderer.MeasureText("M", letreroLed.Font).Width);
-            int caracteres = Math.Max(12, (letreroLed.ClientSize.Width - 24) / anchoCaracter);
-            string recorrido = new string(' ', caracteres) + textoLetrero + "     ";
-            int ultimaPosicion = Math.Max(0, recorrido.Length - caracteres);
-            if (posicionLetrero > ultimaPosicion) posicionLetrero = 0;
-            letreroLed.Text = recorrido.Substring(posicionLetrero, Math.Min(caracteres, recorrido.Length - posicionLetrero));
-            posicionLetrero++;
+            if (letreroLed != null)
+            {
+                letreroLed.Texto = textoLetrero;
+                letreroLed.ForeColor = colorLetrero;
+                letreroLed.PixelesPorSegundo = 18000F / velocidadLetrero;
+            }
+            if (letreroInferior != null)
+            {
+                letreroInferior.ForeColor = colorInferior;
+                letreroInferior.BackColor = fondoInferior;
+                letreroInferior.PixelesPorSegundo = 18000F / velocidadInferior;
+            }
+            ActualizarLetreroInferior();
         }
 
-        private void MostrarMenuEdicion()
+        /// <summary>Letrero de abajo: "NO HAY TEMAS EN ESPERA" o la lista de temas en espera.</summary>
+        private void ActualizarLetreroInferior()
+        {
+            if (letreroInferior == null) return;
+            if (cola.Items.Count == 0) { letreroInferior.Texto = textoSinTemas; return; }
+            List<string> partes = new List<string>();
+            for (int i = 0; i < cola.Items.Count; i++)
+                partes.Add((i + 1) + ". " + cola.Items[i].Text + " - " + cola.Items[i].SubItems[1].Text);
+            letreroInferior.Texto = "EN ESPERA:  " + String.Join("   •   ", partes.ToArray());
+        }
+
+        private static void ElegirColor(IWin32Window dueno, Panel muestra)
+        {
+            using (ColorDialog selector = new ColorDialog { Color = muestra.BackColor, FullOpen = true })
+            {
+                if (selector.ShowDialog(dueno) == DialogResult.OK) muestra.BackColor = selector.Color;
+            }
+        }
+
+        private void MostrarConfigLetreros()
         {
             using (Form menu = new Form())
             {
-                menu.Text = "MENÚ DE EDICIÓN - ROCKOLA KARAOKE";
+                menu.Text = "CONFIGURAR LETREROS LED - ROCKOLA KARAOKE";
                 menu.StartPosition = FormStartPosition.CenterParent;
                 menu.FormBorderStyle = FormBorderStyle.FixedDialog;
                 menu.MaximizeBox = false;
                 menu.MinimizeBox = false;
-                menu.ClientSize = new Size(520, 350);
+                menu.ClientSize = new Size(540, 500);
                 menu.BackColor = Color.FromArgb(5, 14, 32);
                 menu.ForeColor = Color.White;
-                Label encabezado = new Label { Text = "CONFIGURAR LETRERO LED", Dock = DockStyle.Top, Height = 48, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
-                Label instruccion = new Label { Text = "Texto que aparecerá desplazándose en la parte superior:", Left = 22, Top = 62, Width = 470, Height = 28, ForeColor = Color.White };
-                TextBox texto = new TextBox { Left = 22, Top = 94, Width = 470, Height = 32, Text = textoLetrero, Font = new Font("Segoe UI", 11F) };
-                Label velocidadTexto = new Label { Text = "Velocidad (milisegundos por avance):", Left = 22, Top = 143, Width = 300, Height = 25, ForeColor = Color.White };
-                NumericUpDown velocidad = new NumericUpDown { Left = 330, Top = 140, Width = 100, Minimum = 60, Maximum = 500, Increment = 10, Value = velocidadLetrero };
-                Label colorTexto = new Label { Text = "Color de las letras LED:", Left = 22, Top = 184, Width = 220, Height = 28, ForeColor = Color.White };
-                Panel muestraColor = new Panel { Left = 250, Top = 182, Width = 48, Height = 30, BackColor = colorLetrero, BorderStyle = BorderStyle.FixedSingle };
-                Button cambiarColor = new Button { Text = "ELEGIR COLOR", Left = 310, Top = 180, Width = 180, Height = 36 };
-                Button guardar = new Button { Text = "GUARDAR CAMBIOS", Left = 22, Top = 260, Width = 220, Height = 42 };
-                Button cerrar = new Button { Text = "CERRAR", Left = 270, Top = 260, Width = 220, Height = 42 };
-                foreach (Button b in new Button[] { guardar, cerrar, cambiarColor }) { Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); }
-                cambiarColor.Click += delegate
-                {
-                    using (ColorDialog selector = new ColorDialog { Color = muestraColor.BackColor, FullOpen = true })
-                    {
-                        if (selector.ShowDialog(menu) == DialogResult.OK) muestraColor.BackColor = selector.Color;
-                    }
-                };
+                Font negrita = new Font("Segoe UI", 13F, FontStyle.Bold);
+                Color cian = Color.FromArgb(0, 235, 245);
+
+                Label h1 = new Label { Text = "LETRERO SUPERIOR", Left = 15, Top = 10, Width = 510, Height = 28, ForeColor = cian, Font = negrita };
+                Label l1 = new Label { Text = "Texto que camina de izquierda a derecha:", Left = 15, Top = 42, Width = 510, Height = 22 };
+                TextBox t1 = new TextBox { Left = 15, Top = 66, Width = 510, Text = textoLetrero, Font = new Font("Segoe UI", 11F) };
+                Label l2 = new Label { Text = "Velocidad (ms por avance, menor = más rápido):", Left = 15, Top = 108, Width = 310, Height = 24 };
+                NumericUpDown v1 = new NumericUpDown { Left = 330, Top = 105, Width = 100, Minimum = 60, Maximum = 500, Increment = 10, Value = velocidadLetrero };
+                Label l3 = new Label { Text = "Color de las letras:", Left = 15, Top = 150, Width = 220, Height = 24 };
+                Panel c1 = new Panel { Left = 250, Top = 146, Width = 48, Height = 28, BackColor = colorLetrero, BorderStyle = BorderStyle.FixedSingle };
+                Button b1 = new Button { Text = "ELEGIR COLOR", Left = 310, Top = 142, Width = 200, Height = 34 };
+
+                Label h2 = new Label { Text = "LETRERO INFERIOR", Left = 15, Top = 200, Width = 510, Height = 28, ForeColor = cian, Font = negrita };
+                Label l4 = new Label { Text = "Texto cuando no hay temas en espera:", Left = 15, Top = 232, Width = 510, Height = 22 };
+                TextBox t2 = new TextBox { Left = 15, Top = 256, Width = 510, Text = textoSinTemas, Font = new Font("Segoe UI", 11F) };
+                Label l5 = new Label { Text = "Velocidad (ms por avance, menor = más rápido):", Left = 15, Top = 298, Width = 310, Height = 24 };
+                NumericUpDown v2 = new NumericUpDown { Left = 330, Top = 295, Width = 100, Minimum = 60, Maximum = 500, Increment = 10, Value = velocidadInferior };
+                Label l6 = new Label { Text = "Color de las letras:", Left = 15, Top = 340, Width = 220, Height = 24 };
+                Panel c2 = new Panel { Left = 250, Top = 336, Width = 48, Height = 28, BackColor = colorInferior, BorderStyle = BorderStyle.FixedSingle };
+                Button b2 = new Button { Text = "ELEGIR COLOR", Left = 310, Top = 332, Width = 200, Height = 34 };
+                Label l7 = new Label { Text = "Color del fondo:", Left = 15, Top = 382, Width = 220, Height = 24 };
+                Panel c3 = new Panel { Left = 250, Top = 378, Width = 48, Height = 28, BackColor = fondoInferior, BorderStyle = BorderStyle.FixedSingle };
+                Button b3 = new Button { Text = "ELEGIR COLOR", Left = 310, Top = 374, Width = 200, Height = 34 };
+
+                Button guardar = new Button { Text = "GUARDAR CAMBIOS", Left = 15, Top = 440, Width = 250, Height = 44 };
+                Button cerrar = new Button { Text = "CERRAR", Left = 280, Top = 440, Width = 245, Height = 44 };
+                foreach (Button b in new Button[] { b1, b2, b3, guardar, cerrar }) { Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); }
+                b1.Click += delegate { ElegirColor(menu, c1); };
+                b2.Click += delegate { ElegirColor(menu, c2); };
+                b3.Click += delegate { ElegirColor(menu, c3); };
                 guardar.Click += delegate
                 {
-                    if (String.IsNullOrWhiteSpace(texto.Text)) { MessageBox.Show(menu, "Escribe el texto que deseas mostrar.", "Letrero LED"); return; }
-                    textoLetrero = texto.Text.Trim();
-                    velocidadLetrero = Decimal.ToInt32(velocidad.Value);
-                    colorLetrero = muestraColor.BackColor;
-                    letreroLed.ForeColor = colorLetrero;
-                    posicionLetrero = 0;
-                    relojLetrero.Interval = velocidadLetrero;
+                    if (String.IsNullOrWhiteSpace(t1.Text) || String.IsNullOrWhiteSpace(t2.Text)) { MessageBox.Show(menu, "Escribe el texto de los dos letreros.", "Letreros LED"); return; }
+                    textoLetrero = t1.Text.Trim();
+                    velocidadLetrero = Decimal.ToInt32(v1.Value);
+                    colorLetrero = c1.BackColor;
+                    textoSinTemas = t2.Text.Trim();
+                    velocidadInferior = Decimal.ToInt32(v2.Value);
+                    colorInferior = c2.BackColor;
+                    fondoInferior = c3.BackColor;
+                    AplicarConfiguracionLetreros();
                     GuardarConfiguracionLetrero();
-                    AvanzarLetrero();
-                    MessageBox.Show(menu, "El letrero LED se actualizó y quedó guardado.", "Letrero LED", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(menu, "Los letreros LED se actualizaron y quedaron guardados.", "Letreros LED", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 };
                 cerrar.Click += delegate { menu.Close(); };
-                menu.Controls.Add(encabezado); menu.Controls.Add(instruccion); menu.Controls.Add(texto);
-                menu.Controls.Add(velocidadTexto); menu.Controls.Add(velocidad); menu.Controls.Add(colorTexto);
-                menu.Controls.Add(muestraColor); menu.Controls.Add(cambiarColor); menu.Controls.Add(guardar); menu.Controls.Add(cerrar);
+                menu.CancelButton = cerrar;
+                menu.Controls.Add(h1); menu.Controls.Add(l1); menu.Controls.Add(t1); menu.Controls.Add(l2); menu.Controls.Add(v1);
+                menu.Controls.Add(l3); menu.Controls.Add(c1); menu.Controls.Add(b1);
+                menu.Controls.Add(h2); menu.Controls.Add(l4); menu.Controls.Add(t2); menu.Controls.Add(l5); menu.Controls.Add(v2);
+                menu.Controls.Add(l6); menu.Controls.Add(c2); menu.Controls.Add(b2); menu.Controls.Add(l7); menu.Controls.Add(c3); menu.Controls.Add(b3);
+                menu.Controls.Add(guardar); menu.Controls.Add(cerrar);
                 menu.ShowDialog(this);
             }
         }
 
-        private void DesplazarPortadas(int direccion)
+                private void DesplazarPortadas(int direccion)
         {
             if (mosaico.Controls.Count == 0) return;
             int paso = Math.Max(220, mosaico.ClientSize.Width / 2);
@@ -414,40 +481,56 @@ namespace RockolaKaraoke.Interfaz
             mosaico.AutoScrollPosition = new Point(destino, 0);
         }
 
+        private string NombreAlbum(string carpeta)
+        {
+            if (String.IsNullOrWhiteSpace(carpeta)) return "MI COLECCIÓN";
+            string alias;
+            if (aliasCarpetas.TryGetValue(carpeta.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), out alias) && !String.IsNullOrWhiteSpace(alias)) return alias;
+            return new DirectoryInfo(carpeta).Name;
+        }
+
         private void ConstruirMosaico()
         {
             mosaico.SuspendLayout();
             mosaico.Controls.Clear();
-            string texto = busquedaMosaico.Text == "Buscar canción o artista..." ? "" : busquedaMosaico.Text.Trim();
-            System.Collections.Generic.Dictionary<string, ListViewItem> albumes = new System.Collections.Generic.Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
+            tarjetas.Clear();
+            carpetasTarjetas.Clear();
+            string texto = TextoBuscado().Trim();
+            Dictionary<string, ListViewItem> albumes = new Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, int> conteo = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            List<string> orden = new List<string>();
 
             foreach (ListViewItem elemento in todosLosElementos)
             {
-                string tipo = Convert.ToString(elemento.ToolTipText);
-                if (filtroTipo != "Todos" && !tipo.Equals(filtroTipo, StringComparison.OrdinalIgnoreCase)) continue;
+                string carpetaTema = Path.GetDirectoryName(Convert.ToString(elemento.Tag)) ?? "";
+                int actual;
+                conteo.TryGetValue(carpetaTema, out actual);
+                conteo[carpetaTema] = actual + 1;
+
+                if (!String.Equals(filtroTipo, "Todos", StringComparison.OrdinalIgnoreCase))
+                {
+                    string comparar = String.IsNullOrEmpty(elemento.Name) ? Convert.ToString(elemento.ToolTipText) : elemento.Name;
+                    if (!IgualNormal(comparar, filtroTipo)) continue;
+                }
                 if (texto.Length > 0 && elemento.Text.IndexOf(texto, StringComparison.OrdinalIgnoreCase) < 0 &&
                     elemento.SubItems[1].Text.IndexOf(texto, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                string ruta = Convert.ToString(elemento.Tag);
-                string carpeta = Path.GetDirectoryName(ruta);
-                string nombreAlbum = String.IsNullOrWhiteSpace(carpeta) ? "MI COLECCIÓN" : new DirectoryInfo(carpeta).Name;
-                if (!albumes.ContainsKey(nombreAlbum)) albumes.Add(nombreAlbum, elemento);
+                if (!albumes.ContainsKey(carpetaTema)) { albumes.Add(carpetaTema, elemento); orden.Add(carpetaTema); }
             }
+            orden.Sort(delegate(string a, string b) { return String.Compare(NombreAlbum(a), NombreAlbum(b), StringComparison.CurrentCultureIgnoreCase); });
 
-            foreach (System.Collections.Generic.KeyValuePair<string, ListViewItem> album in albumes)
+            foreach (string carpeta in orden)
             {
-                ListViewItem primerTema = album.Value;
-                string carpeta = Path.GetDirectoryName(Convert.ToString(primerTema.Tag));
-                int cantidad = 0;
-                foreach (ListViewItem tema in todosLosElementos)
-                {
-                    if (String.Equals(Path.GetDirectoryName(Convert.ToString(tema.Tag)), carpeta, StringComparison.OrdinalIgnoreCase)) cantidad++;
-                }
+                ListViewItem primerTema = albumes[carpeta];
+                int cantidad;
+                conteo.TryGetValue(carpeta, out cantidad);
+                int posicion = tarjetas.Count;
 
                 Panel tarjeta = new Panel { Width = 178, Height = 205, Margin = new Padding(9, 5, 9, 5), BackColor = Color.FromArgb(0, 62, 125), Cursor = Cursors.Hand, Tag = primerTema };
                 tarjeta.Paint += delegate(object sender, PaintEventArgs e)
                 {
                     Panel p = (Panel)sender;
-                    using (Pen borde = new Pen(Color.FromArgb(0, 220, 245), 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
+                    bool elegida = tarjetas.IndexOf(p) == indicePortada;
+                    using (Pen borde = new Pen(elegida ? Color.FromArgb(255, 215, 0) : Color.FromArgb(0, 220, 245), elegida ? 5F : 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
                 };
                 PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 143, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
                 Image imagen = BuscarPortada(carpeta);
@@ -462,17 +545,41 @@ namespace RockolaKaraoke.Interfaz
                         using (SolidBrush b = new SolidBrush(Color.White)) e.Graphics.DrawString("♫", f, b, 58, 28);
                     };
                 }
-                Label nombre = new Label { Text = album.Key, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 9F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
-                Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 23, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
+                Label nombre = new Label { Text = NombreAlbum(carpeta), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 9F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
+                Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 23, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 8F, FontStyle.Bold), Cursor = Cursors.Hand };
                 tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
-                EventHandler elegir = delegate { MostrarCancionesDeAlbum(carpeta); };
+                EventHandler elegir = delegate { SeleccionarPortada(posicion); };
                 tarjeta.Click += elegir; portada.Click += elegir; nombre.Click += elegir; total.Click += elegir;
                 mosaico.Controls.Add(tarjeta);
+                tarjetas.Add(tarjeta);
+                carpetasTarjetas.Add(carpeta);
             }
             mosaico.ResumeLayout();
+            ResaltarTipos();
+            indicePortada = 0;
+            SeleccionarPortada(0);
         }
 
-        private Image BuscarPortada(string carpeta)
+        /// <summary>Pinta de amarillo la miniatura seleccionada.</summary>
+        private void ResaltarPortadas()
+        {
+            for (int i = 0; i < tarjetas.Count; i++)
+            {
+                bool elegida = i == indicePortada;
+                tarjetas[i].BackColor = elegida ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 62, 125);
+                foreach (Control c in tarjetas[i].Controls)
+                {
+                    Label etiqueta = c as Label;
+                    if (etiqueta == null) continue;
+                    bool principal = etiqueta.Dock == DockStyle.Fill;
+                    if (elegida) { etiqueta.BackColor = principal ? Color.FromArgb(245, 190, 0) : Color.FromArgb(215, 160, 0); etiqueta.ForeColor = Color.Black; }
+                    else { etiqueta.BackColor = principal ? Color.FromArgb(0, 95, 175) : Color.FromArgb(0, 75, 145); etiqueta.ForeColor = Color.White; }
+                }
+                tarjetas[i].Invalidate();
+            }
+        }
+
+                private Image BuscarPortada(string carpeta)
         {
             try
             {
@@ -513,7 +620,7 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.Items.Clear();
             foreach (ListViewItem original in todosLosElementos)
             {
-                if (String.Equals(Path.GetDirectoryName(Convert.ToString(original.Tag)), carpeta, StringComparison.OrdinalIgnoreCase))
+                if (String.Equals(Path.GetDirectoryName(Convert.ToString(original.Tag)) ?? "", carpeta ?? "", StringComparison.OrdinalIgnoreCase))
                 {
                     ListViewItem copia = (ListViewItem)original.Clone();
                     biblioteca.Items.Add(copia);
@@ -526,6 +633,7 @@ namespace RockolaKaraoke.Interfaz
                 biblioteca.Items[0].Focused = true;
                 biblioteca.Items[0].EnsureVisible();
             }
+            ActualizarEncabezadoLista();
         }
 
         private static void AplicarMarcoNeon(Panel panel)
@@ -582,7 +690,7 @@ namespace RockolaKaraoke.Interfaz
             {
                 using (SQLiteConnection conexion = Datos.BaseDatos.CrearConexion())
                 using (SQLiteCommand comando = new SQLiteCommand(
-                    "SELECT c.Titulo, IFNULL(a.Nombre,'Sin artista'), c.RutaArchivo, c.Tipo FROM Canciones c LEFT JOIN Artistas a ON a.Id=c.ArtistaId WHERE c.Activa=1 ORDER BY a.Nombre,c.Titulo;", conexion))
+                    "SELECT c.Titulo, IFNULL(a.Nombre,'Sin artista'), c.RutaArchivo, c.Tipo, IFNULL(g.Nombre,'') FROM Canciones c LEFT JOIN Artistas a ON a.Id=c.ArtistaId LEFT JOIN Generos g ON g.Id=c.GeneroId WHERE c.Activa=1 ORDER BY a.Nombre,c.Titulo;", conexion))
                 {
                     conexion.Open();
                     using (SQLiteDataReader lector = comando.ExecuteReader())
@@ -593,12 +701,15 @@ namespace RockolaKaraoke.Interfaz
                             elemento.SubItems.Add(Convert.ToString(lector[1]));
                             elemento.Tag = Convert.ToString(lector[2]);
                             elemento.ToolTipText = Convert.ToString(lector[3]);
+                            elemento.Name = Convert.ToString(lector[4]);
                             biblioteca.Items.Add(elemento);
                             todosLosElementos.Add(elemento);
                         }
                     }
                 }
                 tituloActual.Text = "Biblioteca cargada: " + biblioteca.Items.Count + " canciones y videos";
+                try { aliasCarpetas = ServicioGeneros.AliasPorCarpeta(); } catch { aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); }
+                ConstruirBotonesGenero();
                 ConstruirMosaico();
             }
             catch (Exception ex) { MessageBox.Show(this, "No se pudo cargar la biblioteca.\n" + ex.Message, "Biblioteca", MessageBoxButtons.OK, MessageBoxIcon.Error); }
@@ -707,6 +818,7 @@ namespace RockolaKaraoke.Interfaz
         private void ActualizarContadorCola()
         {
             etiquetaCola.Text = "COLA DE REPRODUCCIÓN (" + cola.Items.Count + ")";
+            ActualizarLetreroInferior();
         }
 
         private void LimpiarSeleccionBiblioteca()
@@ -781,10 +893,364 @@ namespace RockolaKaraoke.Interfaz
             return string.Format(CultureInfo.InvariantCulture, "{0:00}:{1:00}", minutos, segundos);
         }
 
+        // ===================== TECLADO: control de toda la rockola sin mouse =====================
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            // Si se está escribiendo en el buscador, las teclas normales escriben texto.
+            if (ActiveControl is TextBoxBase)
+            {
+                if (keyData == Keys.Escape || keyData == Keys.Down) { ActiveControl = biblioteca; return true; }
+                return base.ProcessCmdKey(ref msg, keyData);
+            }
+            if (keyData == Keys.F12) { MostrarAdministracion(); return true; }
+            AccionTeclado? accion = ConfiguracionTeclado.Buscar(keyData);
+            if (!accion.HasValue) return base.ProcessCmdKey(ref msg, keyData);
+            if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value)) return true;
+            EjecutarAccion(accion.Value);
+            return true;
+        }
+
+        private void EjecutarAccion(AccionTeclado accion)
+        {
+            switch (accion)
+            {
+                case AccionTeclado.Izquierda: MoverPortada(-1); break;
+                case AccionTeclado.Derecha: MoverPortada(1); break;
+                case AccionTeclado.Arriba: MoverSeleccionCancion(-1); break;
+                case AccionTeclado.Abajo: MoverSeleccionCancion(1); break;
+                case AccionTeclado.Agregar: if (biblioteca.SelectedIndices.Count > 0) AgregarSeleccionALaCola(); break;
+                case AccionTeclado.Cancelar: CancelarUltimo(); break;
+                case AccionTeclado.SiguienteTema: ReproducirSiguiente(); break;
+                case AccionTeclado.CambiarModo: CambiarGenero(); break;
+                case AccionTeclado.Menu: MostrarMenuPrincipal(); break;
+                case AccionTeclado.CerrarPrograma: if (ConfirmarSalida("¿Cerrar el programa?")) Application.Exit(); break;
+                case AccionTeclado.SubirVolumen: CambiarVolumen(ConfiguracionTeclado.PasoVolumen); break;
+                case AccionTeclado.BajarVolumen: CambiarVolumen(-ConfiguracionTeclado.PasoVolumen); break;
+                case AccionTeclado.PantallaCompleta: WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized; break;
+                case AccionTeclado.ApagarPC: ApagarComputadora(); break;
+                case AccionTeclado.Pausa: AlternarPausa(); break;
+                case AccionTeclado.ReproducirTema: ReproducirSeleccion(); break;
+                case AccionTeclado.Abecedario: AlternarAbc(); break;
+                case AccionTeclado.MostrarOcultarCola: panelCola.Visible = !panelCola.Visible; break;
+                case AccionTeclado.Buscar: busquedaMosaico.Focus(); busquedaMosaico.SelectAll(); break;
+            }
+        }
+
+        private bool ConfirmarSalida(string pregunta)
+        {
+            if (!ConfiguracionTeclado.ConfirmarSalida) return true;
+            return MessageBox.Show(this, pregunta, "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
+        }
+
+        private void ApagarComputadora()
+        {
+            if (!ConfirmarSalida("¿Apagar la computadora?")) return;
+            try { Process.Start("shutdown", "/s /t 10"); }
+            catch (Exception ex) { MessageBox.Show(this, "No se pudo apagar la PC.\n" + ex.Message); }
+        }
+
+        private void CambiarVolumen(int cambio)
+        {
+            int nuevo = Math.Max(0, Math.Min(100, volumen.Value + cambio));
+            volumen.Value = nuevo;
+            if (reproductor != null) reproductor.Volume = nuevo;
+        }
+
+        private void AlternarPausa()
+        {
+            if (reproductor == null) return;
+            if (reproductor.State == VLCState.Playing) { reproductor.Pause(); reproducir.Text = "▶ CONTINUAR"; }
+            else if (reproductor.State == VLCState.Paused) { reproductor.Pause(); reproducir.Text = "Ⅱ PAUSAR"; }
+        }
+
+        private void CancelarUltimo()
+        {
+            if (ConfiguracionTeclado.CancelarQuitaUltimo && cola.Items.Count > 0)
+            {
+                cola.Items.RemoveAt(cola.Items.Count - 1);
+                ActualizarContadorCola();
+                return;
+            }
+            if (TextoBuscado().Length > 0) ActualizarTextoBusqueda("");
+        }
+
+        // ===================== Miniaturas de álbumes (cuadro amarillo) =====================
+
+        private void MoverPortada(int paso)
+        {
+            if (tarjetas.Count == 0) return;
+            SeleccionarPortada((indicePortada + paso + tarjetas.Count) % tarjetas.Count);
+        }
+
+        private void SeleccionarPortada(int indice)
+        {
+            if (tarjetas.Count == 0)
+            {
+                biblioteca.Items.Clear();
+                ActualizarEncabezadoLista();
+                ActualizarTituloPortadas();
+                return;
+            }
+            indice = Math.Max(0, Math.Min(tarjetas.Count - 1, indice));
+            indicePortada = indice;
+            ResaltarPortadas();
+            mosaico.ScrollControlIntoView(tarjetas[indice]);
+            MostrarCancionesDeAlbum(carpetasTarjetas[indice]);
+            ActualizarTituloPortadas();
+        }
+
+        private void ActualizarEncabezadoLista()
+        {
+            if (biblioteca.Columns.Count == 0) return;
+            int total = biblioteca.Items.Count;
+            int actual = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] + 1 : (total > 0 ? 1 : 0);
+            biblioteca.Columns[0].Text = "[ÁLBUM SELECCIONADO]  •  " + actual + " DE " + total;
+        }
+
+        private void ActualizarTituloPortadas()
+        {
+            if (tituloPortadas == null) return;
+            List<string> modos = ListaModos();
+            int posicion = modos.FindIndex(delegate(string v) { return IgualNormal(v, filtroTipo); }) + 1;
+            tituloPortadas.Text = "MINIATURAS DE ÁLBUMES  •  " + (tarjetas.Count > 0 ? indicePortada + 1 : 0) + " DE " + tarjetas.Count + "  •  GÉNERO " + posicion + " DE " + modos.Count;
+        }
+
+        // ===================== Géneros: KARAOKE / MÚSICA / VIDEO (cuadro amarillo) =====================
+
+        private List<string> ListaModos()
+        {
+            List<string> modos = new List<string>();
+            modos.Add("Todos");
+            modos.AddRange(nombresGenero);
+            return modos;
+        }
+
+        private static string Normalizar(string texto)
+        {
+            if (String.IsNullOrEmpty(texto)) return "";
+            string descompuesto = texto.Normalize(System.Text.NormalizationForm.FormD);
+            System.Text.StringBuilder limpio = new System.Text.StringBuilder();
+            foreach (char c in descompuesto)
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) limpio.Append(c);
+            return limpio.ToString().Trim().ToUpperInvariant();
+        }
+
+        private static bool IgualNormal(string a, string b)
+        {
+            return Normalizar(a) == Normalizar(b);
+        }
+
+        private static string EtiquetaGenero(string nombre)
+        {
+            string mayusculas = nombre.ToUpperInvariant();
+            return mayusculas == "MUSICA" ? "MÚSICA" : mayusculas;
+        }
+
+        private Button CrearBotonGenero(string valor, int ancho, int alto)
+        {
+            Button boton = new Button { Text = EtiquetaGenero(valor), Tag = valor, Width = ancho, Height = alto };
+            Estilizar(boton);
+            boton.ForeColor = Color.White;
+            boton.Click += delegate { filtroTipo = valor; ConstruirMosaico(); };
+            botonesTipo.Add(new KeyValuePair<Button, string>(boton, valor));
+            return boton;
+        }
+
+        /// <summary>Crea las pestañas de género a partir de los géneros que el dueño configuró.</summary>
+        private void ConstruirBotonesGenero()
+        {
+            nombresGenero.Clear();
+            try { foreach (GeneroInfo g in ServicioGeneros.ListarGeneros()) nombresGenero.Add(g.Nombre); }
+            catch { }
+            if (nombresGenero.Count == 0) { nombresGenero.Add("Karaoke"); nombresGenero.Add("Musica"); nombresGenero.Add("Video"); }
+
+            for (int i = botonesTipo.Count - 1; i >= 0; i--)
+            {
+                Button viejo = botonesTipo[i].Key;
+                if (viejo.Parent == filtros || viejo.Parent == listaEstilos)
+                {
+                    viejo.Parent.Controls.Remove(viejo);
+                    viejo.Dispose();
+                    botonesTipo.RemoveAt(i);
+                }
+            }
+            foreach (string nombre in nombresGenero) filtros.Controls.Add(CrearBotonGenero(nombre, 132, 36));
+            foreach (string nombre in ListaModos())
+            {
+                Button estilo = CrearBotonGenero(nombre, 180, 43);
+                estilo.Margin = new Padding(3, 5, 3, 5);
+                estilo.FlatAppearance.BorderSize = 1;
+                estilo.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 240);
+                listaEstilos.Controls.Add(estilo);
+            }
+            if (!ListaModos().Exists(delegate(string v) { return IgualNormal(v, filtroTipo); })) filtroTipo = "Todos";
+            ResaltarTipos();
+        }
+
+        /// <summary>El cuadro amarillo marca el género activo (KARAOKE / MÚSICA / VIDEO).</summary>
+        private void ResaltarTipos()
+        {
+            foreach (KeyValuePair<Button, string> par in botonesTipo)
+            {
+                bool elegido = IgualNormal(par.Value, filtroTipo);
+                par.Key.BackColor = elegido ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 115, 190);
+                par.Key.ForeColor = elegido ? Color.Black : Color.White;
+            }
+            ActualizarTituloPortadas();
+        }
+
+        private void CambiarGenero()
+        {
+            List<string> modos = ListaModos();
+            int actual = modos.FindIndex(delegate(string v) { return IgualNormal(v, filtroTipo); });
+            filtroTipo = modos[(actual + 1) % modos.Count];
+            ConstruirMosaico();
+        }
+
+        // ===================== Buscador y barra ABC =====================
+
+        private string TextoBuscado()
+        {
+            return busquedaMosaico.Text == TextoBusqueda ? "" : busquedaMosaico.Text;
+        }
+
+        private void ActualizarTextoBusqueda(string nuevo)
+        {
+            if (String.IsNullOrEmpty(nuevo)) { busquedaMosaico.Text = TextoBusqueda; busquedaMosaico.ForeColor = Color.DimGray; }
+            else { busquedaMosaico.Text = nuevo; busquedaMosaico.ForeColor = Color.Black; }
+        }
+
+        private void CrearBarraAbc()
+        {
+            barraAbc = new Panel { Dock = DockStyle.Bottom, Height = 120, BackColor = Color.FromArgb(2, 10, 30), Visible = false, Padding = new Padding(6) };
+            AplicarMarcoNeon(barraAbc);
+            flujoAbc = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, FlowDirection = FlowDirection.LeftToRight, BackColor = Color.FromArgb(2, 10, 30) };
+            List<string> teclas = new List<string>();
+            foreach (char letra in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") teclas.Add(letra.ToString());
+            teclas.Add("ESPACIO"); teclas.Add("BORRAR"); teclas.Add("CERRAR");
+            foreach (string tecla in teclas)
+            {
+                string valor = tecla;
+                Button boton = new Button { Text = tecla, Width = tecla.Length > 1 ? 120 : 48, Height = 46, Margin = new Padding(3), TabStop = false };
+                Estilizar(boton);
+                boton.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+                boton.Click += delegate { indiceAbc = botonesAbc.IndexOf(boton); PulsarTeclaAbc(valor); ResaltarAbc(); };
+                flujoAbc.Controls.Add(boton);
+                botonesAbc.Add(boton);
+            }
+            barraAbc.Controls.Add(flujoAbc);
+            ResaltarAbc();
+        }
+
+        private void ResaltarAbc()
+        {
+            for (int i = 0; i < botonesAbc.Count; i++)
+            {
+                bool elegido = i == indiceAbc;
+                botonesAbc[i].BackColor = elegido ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 105, 175);
+                botonesAbc[i].ForeColor = elegido ? Color.Black : Color.White;
+            }
+        }
+
+        private void AlternarAbc()
+        {
+            if (barraAbc.Visible) { CerrarAbc(); return; }
+            barraAbc.Visible = true;
+            indiceAbc = 0;
+            ResaltarAbc();
+        }
+
+        private void CerrarAbc()
+        {
+            barraAbc.Visible = false;
+            ActiveControl = biblioteca;
+        }
+
+        private void PulsarTeclaAbc(string tecla)
+        {
+            if (tecla == "CERRAR") { CerrarAbc(); return; }
+            string actual = TextoBuscado();
+            if (tecla == "ESPACIO") ActualizarTextoBusqueda(actual + " ");
+            else if (tecla == "BORRAR") ActualizarTextoBusqueda(actual.Length > 0 ? actual.Substring(0, actual.Length - 1) : "");
+            else ActualizarTextoBusqueda(actual + tecla.ToLowerInvariant());
+        }
+
+        private void MoverAbcVertical(int direccion)
+        {
+            Button actual = botonesAbc[indiceAbc];
+            int filaObjetivo = -1;
+            foreach (Button b in botonesAbc)
+            {
+                if (direccion > 0 && b.Top > actual.Top && (filaObjetivo == -1 || b.Top < filaObjetivo)) filaObjetivo = b.Top;
+                if (direccion < 0 && b.Top < actual.Top && (filaObjetivo == -1 || b.Top > filaObjetivo)) filaObjetivo = b.Top;
+            }
+            if (filaObjetivo == -1) return;
+            int mejor = indiceAbc, distancia = Int32.MaxValue;
+            for (int i = 0; i < botonesAbc.Count; i++)
+            {
+                if (botonesAbc[i].Top != filaObjetivo) continue;
+                int d = Math.Abs(botonesAbc[i].Left - actual.Left);
+                if (d < distancia) { distancia = d; mejor = i; }
+            }
+            indiceAbc = mejor;
+        }
+
+        private bool ManejarTeclaAbc(AccionTeclado accion)
+        {
+            switch (accion)
+            {
+                case AccionTeclado.Izquierda: indiceAbc = (indiceAbc + botonesAbc.Count - 1) % botonesAbc.Count; ResaltarAbc(); return true;
+                case AccionTeclado.Derecha: indiceAbc = (indiceAbc + 1) % botonesAbc.Count; ResaltarAbc(); return true;
+                case AccionTeclado.Arriba: MoverAbcVertical(-1); ResaltarAbc(); return true;
+                case AccionTeclado.Abajo: MoverAbcVertical(1); ResaltarAbc(); return true;
+                case AccionTeclado.Agregar: PulsarTeclaAbc(botonesAbc[indiceAbc].Text); ResaltarAbc(); return true;
+                case AccionTeclado.Cancelar:
+                case AccionTeclado.Abecedario: CerrarAbc(); return true;
+            }
+            return false;
+        }
+
+        // ===================== Menú (tecla M) =====================
+
+        private void MostrarMenuPrincipal()
+        {
+            string seleccion;
+            using (FormularioMenuPrincipal menu = new FormularioMenuPrincipal())
+            {
+                menu.ShowDialog(this);
+                seleccion = menu.Seleccion;
+            }
+            switch (seleccion)
+            {
+                case "MUSICA":
+                    {
+                        using (FormularioMusica ventana = new FormularioMusica()) { ventana.ShowDialog(this); }
+                        CargarBiblioteca();
+                        break;
+                    }
+                case "LETREROS": MostrarConfigLetreros(); break;
+                case "SKIN":
+                    {
+                        using (FormularioSkin ventana = new FormularioSkin()) { ventana.ShowDialog(this); }
+                        break;
+                    }
+                case "TECLADO":
+                    {
+                        using (FormularioTeclado ventana = new FormularioTeclado()) { ventana.ShowDialog(this); }
+                        break;
+                    }
+                case "SALIR": if (ConfirmarSalida("¿Cerrar el programa?")) Application.Exit(); break;
+                case "APAGAR": ApagarComputadora(); break;
+                case "ACERCA":
+                    MessageBox.Show(this, "ROCKOLA KARAOKE DANIEL\nMenú: tecla M (configurable).\nAdministración: tecla F12.", "Acerca de...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+            }
+        }
+
         private void LiberarMotor()
         {
             reloj.Stop();
-            relojLetrero.Stop();
             if (reproductor != null) { reproductor.Stop(); reproductor.Dispose(); reproductor = null; }
             if (medioActual != null) { medioActual.Dispose(); medioActual = null; }
             if (motor != null) { motor.Dispose(); motor = null; }

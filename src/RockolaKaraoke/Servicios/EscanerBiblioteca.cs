@@ -24,6 +24,11 @@ namespace RockolaKaraoke.Servicios
 
         public static ResultadoEscaneo Escanear(IEnumerable<string> carpetas)
         {
+            return Escanear(carpetas, null);
+        }
+
+        public static ResultadoEscaneo Escanear(IEnumerable<string> carpetas, long? generoId)
+        {
             ResultadoEscaneo resultado = new ResultadoEscaneo();
             using (SQLiteConnection conexion = Datos.BaseDatos.CrearConexion())
             {
@@ -47,7 +52,7 @@ namespace RockolaKaraoke.Servicios
                         {
                             if (!Extensiones.Contains(Path.GetExtension(archivo))) continue;
                             resultado.ArchivosEncontrados++;
-                            try { GuardarArchivo(conexion, transaccion, archivo, resultado); }
+                            try { GuardarArchivo(conexion, transaccion, archivo, resultado, generoId); }
                             catch (SQLiteException) { resultado.Errores++; }
                             catch (IOException) { resultado.Errores++; }
                             catch (UnauthorizedAccessException) { resultado.Errores++; }
@@ -59,7 +64,7 @@ namespace RockolaKaraoke.Servicios
             return resultado;
         }
 
-        private static void GuardarArchivo(SQLiteConnection conexion, SQLiteTransaction transaccion, string ruta, ResultadoEscaneo resultado)
+        private static void GuardarArchivo(SQLiteConnection conexion, SQLiteTransaction transaccion, string ruta, ResultadoEscaneo resultado, long? generoId)
         {
             string nombreArchivo = Path.GetFileNameWithoutExtension(ruta);
             string artista = Path.GetDirectoryName(ruta);
@@ -96,8 +101,9 @@ namespace RockolaKaraoke.Servicios
 
             if (existenteId == 0)
             {
-                using (SQLiteCommand cmd = new SQLiteCommand("INSERT INTO Canciones(ArtistaId,Titulo,RutaArchivo,Tipo) VALUES(@artista,@titulo,@ruta,@tipo);", conexion, transaccion))
+                using (SQLiteCommand cmd = new SQLiteCommand("INSERT INTO Canciones(GeneroId,ArtistaId,Titulo,RutaArchivo,Tipo) VALUES(@genero,@artista,@titulo,@ruta,@tipo);", conexion, transaccion))
                 {
+                    cmd.Parameters.AddWithValue("@genero", (object)generoId ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@artista", artistaId);
                     cmd.Parameters.AddWithValue("@titulo", titulo);
                     cmd.Parameters.AddWithValue("@ruta", ruta);
@@ -108,8 +114,9 @@ namespace RockolaKaraoke.Servicios
             }
             else
             {
-                using (SQLiteCommand cmd = new SQLiteCommand("UPDATE Canciones SET ArtistaId=@artista,Titulo=@titulo,Tipo=@tipo,Activa=1 WHERE Id=@id;", conexion, transaccion))
+                using (SQLiteCommand cmd = new SQLiteCommand("UPDATE Canciones SET GeneroId=IFNULL(@genero,GeneroId),ArtistaId=@artista,Titulo=@titulo,Tipo=@tipo,Activa=1 WHERE Id=@id;", conexion, transaccion))
                 {
+                    cmd.Parameters.AddWithValue("@genero", (object)generoId ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@artista", artistaId);
                     cmd.Parameters.AddWithValue("@titulo", titulo);
                     cmd.Parameters.AddWithValue("@tipo", tipo);
