@@ -22,8 +22,8 @@ namespace AlexaRockola
         private string marqueeText = "QUIERE CANTAR  QUIERES ESCUCHAR MUSICA";
         private string activeCategory = "MUSICA";
         private readonly List<Genre> genres = new List<Genre>();
+        private readonly List<Genre> genres = new List<Genre>();
         private FlowLayoutPanel genrePanel;
-        private PictureBox coverBox;
         private ListView songList;
         private ListBox playlist;
         private TextBox searchBox;
@@ -67,6 +67,99 @@ namespace AlexaRockola
         }
 
         private void BuildInterface()
+        {
+            var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, BackColor = black, Padding = new Padding(5) };
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 245));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 105));
+            root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
+            Controls.Add(root);
+
+            marquee = new Label { Dock = DockStyle.Fill, BackColor = Color.Black, ForeColor = Color.Lime, Font = new Font("Consolas", 19, FontStyle.Bold), TextAlign = ContentAlignment.MiddleLeft, Text = RepeatMarquee() };
+            marquee.BorderStyle = BorderStyle.FixedSingle;
+            root.Controls.Add(marquee, 0, 0);
+
+            var albums = new FlowLayoutPanel { Dock = DockStyle.Fill, BackColor = navy, WrapContents = false, AutoScroll = true, Padding = new Padding(10), Margin = new Padding(0, 8, 0, 8), BorderStyle = BorderStyle.FixedSingle };
+            string[] albumNames = { "LEON ROCKOLAS", "MUSICA", "ARTISTAS", "JUAN GABRIEL", "1D KIDS", "KARAOKE", "TIERRA SHOW" };
+            for (int i = 0; i < albumNames.Length; i++)
+            {
+                var tile = new Panel { Width = 205, Height = 210, BackColor = i == 0 ? yellow : Color.FromArgb(18, 30, 70), Margin = new Padding(8, 4, 8, 4), Padding = new Padding(5) };
+                var art = new Label { Dock = DockStyle.Fill, BackColor = i == 0 ? Color.FromArgb(40, 34, 28) : (i == 1 || i == 5 ? Color.FromArgb(95, 20, 105) : Color.FromArgb(8, 40, 90)), ForeColor = Color.White, Font = new Font("Arial", i == 0 ? 17 : 20, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Text = i == 0 ? "♌\r\nLEON\r\nROCKOLAS" : (i == 1 || i == 5 ? "♫" : albumNames[i]) };
+                tile.Controls.Add(art);
+                albums.Controls.Add(tile);
+            }
+            root.Controls.Add(albums, 0, 1);
+
+            var topTools = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, BackColor = cyan, Padding = new Padding(5) };
+            topTools.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+            topTools.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            var searchRow = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2 };
+            searchRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            searchRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 490));
+            searchBox = new TextBox { Dock = DockStyle.Fill, Font = new Font("Arial", 15) };
+            searchBox.TextChanged += delegate { RefreshSongs(); };
+            searchRow.Controls.Add(searchBox, 0, 0);
+            counters = new Label { Dock = DockStyle.Fill, BackColor = black, ForeColor = cyan, TextAlign = ContentAlignment.MiddleCenter };
+            searchRow.Controls.Add(counters, 1, 0);
+            topTools.Controls.Add(searchRow, 0, 0);
+
+            var categories = new FlowLayoutPanel { Dock = DockStyle.Fill, BackColor = cyan, WrapContents = false, AutoScroll = true };
+            genrePanel = categories;
+            BuildGenreButtons();
+            topTools.Controls.Add(categories, 0, 1);
+            root.Controls.Add(topTools, 0, 2);
+
+            var body = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, BackColor = black, Padding = new Padding(0, 4, 0, 4) };
+            body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 245));
+            var left = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
+            left.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            left.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, BackColor = cyan };
+            header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
+            header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+            header.Controls.Add(new Label { Text = "[BIBLIOTECA DE CANCIONES]", Dock = DockStyle.Fill, ForeColor = Color.White, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Arial", 12, FontStyle.Bold) }, 0, 0);
+            header.Controls.Add(new Label { Text = "ARTISTA / CARPETA", Dock = DockStyle.Fill, ForeColor = Color.White, TextAlign = ContentAlignment.MiddleCenter }, 1, 0);
+            left.Controls.Add(header, 0, 0);
+            songList = new ListView { Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, GridLines = false, BackColor = black, ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Arial", 12, FontStyle.Bold), HideSelection = false, MultiSelect = false };
+            songList.Columns.Add("CANCIÓN", 690);
+            songList.Columns.Add("ARTISTA / CARPETA", 330);
+            songList.DoubleClick += delegate { AddSelectedSong(); };
+            songList.KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Enter) { AddSelectedSong(); e.Handled = true; } };
+            left.Controls.Add(songList, 0, 1);
+            body.Controls.Add(left, 0, 0);
+
+            var right = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, BackColor = Color.White, Margin = new Padding(4, 0, 0, 0) };
+            right.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            right.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            right.Controls.Add(new Label { Text = "MUSICA\r\nLISTA EN REPRODUCCION", Dock = DockStyle.Fill, BackColor = Color.Red, ForeColor = Color.Yellow, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Arial", 11, FontStyle.Bold) }, 0, 0);
+            playlist = new ListBox { Dock = DockStyle.Fill, BackColor = Color.White, ForeColor = Color.DarkBlue, Font = new Font("Arial", 11, FontStyle.Bold), IntegralHeight = false };
+            playlist.DoubleClick += delegate { PlayQueueSelection(); };
+            right.Controls.Add(playlist, 0, 1);
+            body.Controls.Add(right, 1, 0);
+            root.Controls.Add(body, 0, 3);
+
+            var bottom = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, BackColor = cyan };
+            bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 480));
+            status = new Label { Dock = DockStyle.Fill, BackColor = Color.Red, ForeColor = Color.Yellow, Font = new Font("Arial", 19, FontStyle.Bold), TextAlign = ContentAlignment.MiddleLeft, Text = "NO HAY TEMAS EN ESPERA   NO HAY TEMAS EN ESPERA" };
+            bottom.Controls.Add(status, 0, 0);
+            var controls = new FlowLayoutPanel { Dock = DockStyle.Fill, BackColor = cyan, WrapContents = false, FlowDirection = FlowDirection.LeftToRight };
+            AddControl(controls, "◀", delegate { MoveQueue(-1); });
+            AddControl(controls, "▶", delegate { PlayQueueSelection(); });
+            AddControl(controls, "▼", delegate { MoveQueue(1); });
+            AddControl(controls, "▲", delegate { MoveQueue(-1); });
+            AddControl(controls, "ABC", delegate { searchBox.Focus(); });
+            AddControl(controls, "⌕", delegate { searchBox.Focus(); });
+            AddControl(controls, "M", ShowMainMenu);
+            bottom.Controls.Add(controls, 1, 0);
+            root.Controls.Add(bottom, 0, 4);
+
+            marqueeTimer = new System.Windows.Forms.Timer { Interval = 160 };
+            marqueeTimer.Tick += delegate { if (marquee.Text.Length > 1) marquee.Text = marquee.Text.Substring(1) + marquee.Text.Substring(0, 1); };
+            marqueeTimer.Start();
+        }
         {
             var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, BackColor = black, Padding = new Padding(6) };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
@@ -215,9 +308,28 @@ namespace AlexaRockola
 
                 private string RepeatMarquee() { return "   " + marqueeText + "       " + marqueeText + "       " + marqueeText + "   "; }
 
-        private void AddCategory(FlowLayoutPanel panel, string text, Color back, Color fore) { }
+        private void BuildGenreButtons()
+        {
+            if (genrePanel == null) return;
+            genrePanel.Controls.Clear();
+            foreach (Genre g in genres)
+            {
+                var b = new Button { Text = g.Name.ToUpperInvariant(), Width = 140, Height = 48, BackColor = g.Color, ForeColor = Color.Black, FlatStyle = FlatStyle.Flat, Font = new Font("Arial", 12, FontStyle.Bold), Margin = new Padding(5, 3, 5, 3) };
+                b.FlatAppearance.BorderSize = 0;
+                b.Click += delegate { activeCategory = g.Name; RefreshSongs(); };
+                genrePanel.Controls.Add(b);
+            }
+        }
 
-                private void AddControl(FlowLayoutPanel panel, string text, Action action)
+        private void EnsureDefaultGenres()
+        {
+            if (genres.Count > 0) return;
+            genres.Add(new Genre("MUSICA", yellow, "AUDIO"));
+            genres.Add(new Genre("KARAOKES", Color.Lime, "KARAOKE"));
+            genres.Add(new Genre("VIDEOS", Color.Magenta, "VIDEO"));
+        }
+
+        private void AddControl(FlowLayoutPanel panel, string text, Action action)
         {
             var b = new Button { Text = text, Width = 48, Height = 46, BackColor = Color.Gainsboro, ForeColor = Color.Black, Font = new Font("Arial", 15, FontStyle.Bold), Margin = new Padding(3), FlatStyle = FlatStyle.Flat };
             b.Click += delegate { action(); };
