@@ -605,6 +605,8 @@ namespace AlexaRockola
             colorBox.Items.AddRange(new object[] { "AMARILLO", "VERDE", "ROSA", "AZUL", "NARANJA", "ROSA CLARO", "CELESTE", "BLANCO" }); colorBox.SelectedIndex = 0;
             Button addFolder = Btn("AGREGAR CARPETA", 145), addSub = Btn("AGREGAR SUB-CARPETA", 175), removeFolder = Btn("QUITAR", 85);
             editor.Controls.AddRange(new Control[] { new Label { Text = "GÉNERO:", AutoSize = true, Margin = new Padding(3, 13, 0, 0) }, nameBox, kindBox, colorBox, addFolder, addSub, removeFolder });
+            Button save = new Button { Text = "GUARDAR CAMBIOS", Width = 190, Height = 35, BackColor = Color.LimeGreen, Font = new Font("Arial", 10, FontStyle.Bold), Margin = new Padding(3, 7, 3, 3) };
+            editor.Controls.Add(save);
             layout.Controls.Add(editor, 1, 2);
 
             add.Click += delegate { AddGenre(); };
@@ -615,9 +617,6 @@ namespace AlexaRockola
             addFolder.Click += delegate { PickFolder(); };
             addSub.Click += delegate { PickFolder(); };
             removeFolder.Click += delegate { Genre g = Selected(); int i = folderList.SelectedIndex; if (g != null && i >= 0) { g.Folders.RemoveAt(i); RefreshFolders(); } };
-            var save = new Button { Text = "GUARDAR CAMBIOS", Dock = DockStyle.Right, Width = 210, BackColor = Color.LimeGreen, Font = new Font("Arial", 10, FontStyle.Bold) };
-            layout.Controls.Add(save, 1, 2);
-            save.BringToFront();
             save.Click += delegate { DialogResult = DialogResult.OK; Close(); };
             RefreshGenres();
 
@@ -653,35 +652,65 @@ namespace AlexaRockola
         public Keys FullScreenKey { get; private set; }
         public Keys StopKey { get; private set; }
         public bool RightClickAddsSong { get; private set; }
-        private TextBox[] keyBoxes = new TextBox[5];
+        private Button[] keyButtons = new Button[5];
         private Keys[] selectedKeys = new Keys[5];
+        private int captureIndex = -1;
         private CheckBox rightClick;
         public KeyboardSettingsForm(Keys menuKey, Keys addKey, Keys pauseKey, Keys fullKey, Keys stopKey, bool rightAdds)
         {
-            Text="CONFIGURAR TECLAS"; Size=new Size(850,560); StartPosition=FormStartPosition.CenterParent;
-            FormBorderStyle=FormBorderStyle.FixedDialog; MaximizeBox=false; MinimizeBox=false;
-            selectedKeys=new Keys[]{menuKey,addKey,pauseKey,fullKey,stopKey};
-            var tabs=new TabControl{Dock=DockStyle.Fill}; Controls.Add(tabs);
-            var keyTab=new TabPage("CONFIGURAR TECLAS"); var otherTab=new TabPage("OTROS"); tabs.TabPages.Add(keyTab);tabs.TabPages.Add(otherTab);
-            var grid=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(24),ColumnCount=2,RowCount=5};
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));
-            string[] names={"ABRIR MENÚ PRINCIPAL","AGREGAR CANCIÓN A LA LISTA","PAUSAR / CONTINUAR","PANTALLA COMPLETA","DETENER / RESTAURAR"};
-            for(int i=0;i<5;i++)
+            Text = "CONFIGURAR TECLAS";
+            Size = new Size(900, 620);
+            StartPosition = FormStartPosition.CenterParent;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false; MinimizeBox = false;
+            KeyPreview = true;
+            selectedKeys = new Keys[] { menuKey, addKey, pauseKey, fullKey, stopKey };
+            var tabs = new TabControl { Dock = DockStyle.Fill };
+            Controls.Add(tabs);
+            var keyTab = new TabPage("CONFIGURAR TECLAS");
+            var otherTab = new TabPage("OTROS");
+            var disarmTab = new TabPage("DESARMAR TECLADO");
+            tabs.TabPages.AddRange(new TabPage[] { keyTab, otherTab, disarmTab });
+            var grid = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(22), ColumnCount = 2, RowCount = 5 };
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32));
+            string[] names = { "ABRIR MENÚ PRINCIPAL", "AGREGAR CANCIÓN A LA LISTA", "PAUSAR / CONTINUAR", "PANTALLA COMPLETA", "DETENER / RESTAURAR" };
+            for (int i = 0; i < names.Length; i++)
             {
-                grid.RowStyles.Add(new RowStyle(SizeType.Absolute,66));
-                grid.Controls.Add(new Label{Text=names[i],Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,Font=new Font("Arial",12,FontStyle.Bold)},0,i);
-                int index=i; keyBoxes[i]=new TextBox{Dock=DockStyle.Fill,ReadOnly=true,Text=selectedKeys[i].ToString(),TextAlign=HorizontalAlignment.Center,Font=new Font("Arial",13,FontStyle.Bold),BackColor=Color.White};
-                keyBoxes[i].Click+=delegate{keyBoxes[index].Text="PRESIONA UNA TECLA...";keyBoxes[index].Focus();};
-                keyBoxes[i].KeyDown+=delegate(object sender,KeyEventArgs e){selectedKeys[index]=e.KeyCode;keyBoxes[index].Text=e.KeyCode.ToString();e.SuppressKeyPress=true;e.Handled=true;};
-                grid.Controls.Add(keyBoxes[i],1,i);
+                grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 72));
+                grid.Controls.Add(new Label { Text = names[i], Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Arial", 12, FontStyle.Bold) }, 0, i);
+                int index = i;
+                keyButtons[i] = new Button { Text = selectedKeys[i].ToString(), Dock = DockStyle.Fill, Font = new Font("Arial", 12, FontStyle.Bold), BackColor = Color.White };
+                keyButtons[i].Click += delegate { captureIndex = index; keyButtons[index].Text = "PRESIONA UNA TECLA"; keyButtons[index].BackColor = Color.LightYellow; Focus(); };
+                grid.Controls.Add(keyButtons[i], 1, i);
             }
             keyTab.Controls.Add(grid);
-            rightClick=new CheckBox{Text="EL CLIC DERECHO AGREGA LA CANCIÓN SELECCIONADA A LA LISTA",Dock=DockStyle.Top,AutoSize=true,Padding=new Padding(24),Checked=rightAdds,Font=new Font("Arial",11,FontStyle.Bold)};
+            KeyDown += CaptureKey;
+            rightClick = new CheckBox { Text = "EL CLIC DERECHO AGREGA LA CANCIÓN SELECCIONADA A LA LISTA", Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(24), Checked = rightAdds, Font = new Font("Arial", 11, FontStyle.Bold) };
             otherTab.Controls.Add(rightClick);
-            var bottom=new Panel{Dock=DockStyle.Bottom,Height=64};Controls.Add(bottom);
-            var save=new Button{Text="GUARDAR CAMBIOS",Width=230,Dock=DockStyle.Right,BackColor=Color.LimeGreen,Font=new Font("Arial",12,FontStyle.Bold)};
-            save.Click+=delegate{MenuKey=selectedKeys[0];AddKey=selectedKeys[1];PauseKey=selectedKeys[2];FullScreenKey=selectedKeys[3];StopKey=selectedKeys[4];RightClickAddsSong=rightClick.Checked;DialogResult=DialogResult.OK;Close();};
+            otherTab.Controls.Add(new Label { Text = "Haz clic en el cuadro de cada función y después presiona la tecla que deseas asignar.", AutoSize = true, Location = new Point(24, 75) });
+            disarmTab.Controls.Add(new Label { Text = "RESTAURAR TECLAS PREDETERMINADAS", AutoSize = true, Location = new Point(24, 28), Font = new Font("Arial", 11, FontStyle.Bold) });
+            var reset = new Button { Text = "RESTAURAR CONFIGURACIÓN", Width = 260, Height = 42, Location = new Point(24, 65) };
+            reset.Click += delegate { selectedKeys = new Keys[] { Keys.M, Keys.Enter, Keys.Space, Keys.F11, Keys.Escape }; for (int i = 0; i < 5; i++) { keyButtons[i].Text = selectedKeys[i].ToString(); keyButtons[i].BackColor = Color.White; } captureIndex = -1; };
+            disarmTab.Controls.Add(reset);
+            var bottom = new Panel { Dock = DockStyle.Bottom, Height = 64 };
+            Controls.Add(bottom);
+            var save = new Button { Text = "GUARDAR CAMBIOS", Width = 230, Dock = DockStyle.Right, BackColor = Color.LimeGreen, Font = new Font("Arial", 12, FontStyle.Bold) };
+            save.Click += delegate { if (captureIndex >= 0) { MessageBox.Show("Termina de asignar la tecla pendiente antes de guardar."); return; } MenuKey = selectedKeys[0]; AddKey = selectedKeys[1]; PauseKey = selectedKeys[2]; FullScreenKey = selectedKeys[3]; StopKey = selectedKeys[4]; RightClickAddsSong = rightClick.Checked; DialogResult = DialogResult.OK; Close(); };
             bottom.Controls.Add(save);
+        }
+        private void CaptureKey(object sender, KeyEventArgs e)
+        {
+            if (captureIndex < 0) return;
+            if (e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.Menu) return;
+            for (int i = 0; i < selectedKeys.Length; i++)
+                if (i != captureIndex && selectedKeys[i] == e.KeyCode) { MessageBox.Show("Esa tecla ya está asignada a otra función."); e.SuppressKeyPress = true; e.Handled = true; return; }
+            selectedKeys[captureIndex] = e.KeyCode;
+            keyButtons[captureIndex].Text = e.KeyCode.ToString();
+            keyButtons[captureIndex].BackColor = Color.White;
+            captureIndex = -1;
+            e.SuppressKeyPress = true;
+            e.Handled = true;
         }
     }
 
