@@ -1,33 +1,24 @@
 # ALEXA - ROCKOLA KARAOKE DANIEL
 
-Aplicación de escritorio de Karaoke y Rockola para Windows.
+Aplicación de escritorio de karaoke y rockola para Windows, desarrollada en C# / Windows Forms sobre .NET Framework 4.8.
 
-## Primera entrega: interfaz base
+## Entrega 2: biblioteca y reproducción multimedia
 
-Se incorporó una primera pantalla funcional siguiendo la referencia visual aprobada por el usuario:
-
-- Marquesina superior verde neón con desplazamiento.
-- Carrusel horizontal de siete portadas de álbum.
-- Buscador de canciones y contador de álbumes/géneros.
-- Botones de categorías con colores configurados.
-- Lista central de canciones con selección.
-- Panel derecho de lista de reproducción.
-- Barra inferior roja de estado y controles.
-- Agregar canciones a la cola con doble clic o Enter.
-- Reordenar canciones en la cola con los controles de flechas.
-- Atajos: F11 alterna pantalla completa/ventana; Esc vuelve a ventana.
-
-## Plataforma
-
-- C# / Windows Forms.
-- .NET Framework 4.8.
-- Solución Visual Studio: `ALEXA.sln`.
-
-## Estado y alcance
-
-Esta entrega implementa la estructura visual y las primeras interacciones de biblioteca/cola con canciones de demostración. **Todavía no incluye** el motor de reproducción, escaneo real de carpetas, miniaturas desde archivos, base de datos SQLite, configuración del engrane, monedero Arduino ni instaladores. Esas funciones se integrarán en las siguientes etapas; no se debe considerar aún un programa terminado para uso comercial.
+- Se conserva la distribución visual aprobada: marquesina, carrusel de siete miniaturas, búsqueda, categorías, lista central, cola derecha y barra inferior.
+- Motor multimedia LibVLCSharp + LibVLC nativo para Windows.
+- Escaneo recursivo de una carpeta seleccionada para audio (MP3, WAV, FLAC, M4A, AAC, OGG, WMA) y video (MP4, MKV, AVI, MOV, WMV, MPEG, MPG, WEBM).
+- Búsqueda por título y carpeta/artista.
+- Agregar a la cola con doble clic o Enter.
+- Reproducir canción seleccionada en la cola, pausar, detener y avanzar automáticamente al terminar.
+- Ventana de video a pantalla completa para archivos de video.
+- Reordenar canciones en espera.
+- Configuración para carpeta multimedia y texto de marquesina; se guarda en %AppData%\AlexaRockola\config.ini.
+- Atajos: Enter agrega, Espacio pausa, F11 pantalla completa y Esc sale de pantalla completa/detiene.
 
 ## Compilar
 
-Abrir `ALEXA.sln` en Visual Studio en Windows con la carga de trabajo de desarrollo de escritorio .NET. Compilar en configuración Release.
+Abrir `ALEXA.sln` en Visual Studio 2022 con .NET Framework 4.8 Developer Pack y restauración NuGet habilitada. Compilar Release. El paquete nativo LibVLC Windows es grande; el primer restore puede tardar.
 
+## Pendiente
+
+Aún falta validar la compilación y reproducción en equipos reales. Esta entrega no incluye todavía SQLite, perfiles separados de Música/Karaoke/Video con metadatos, portadas reales, ecualizador, créditos/monedero Arduino, ni instalador final.
