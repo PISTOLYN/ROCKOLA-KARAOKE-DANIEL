@@ -143,7 +143,7 @@ namespace AlexaRockola
             songList.Columns.Add("ARTISTA / CARPETA", 330);
             songList.DoubleClick += delegate { AddSelectedSong(); };
             songList.MouseClick += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Right && rightClickAddsSong) AddSelectedSong(); };
-            songList.KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Enter) { AddSelectedSong(); e.Handled = true; } };
+            songList.KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == keyAdd) { AddSelectedSong(); e.Handled = true; } };
             left.Controls.Add(songList, 0, 1);
             body.Controls.Add(left, 0, 0);
 
