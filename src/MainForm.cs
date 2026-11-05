@@ -287,7 +287,8 @@ namespace AlexaRockola
             IEnumerable<Song> filtered = songs;
             if (selected != null)
             {
-                if (selected.Kind == "AUDIO") filtered = filtered.Where(s => !s.IsVideo && !IsInNamedFolder(s.Path, "KARAOKE"));
+                if (selected.Folders.Count > 0) filtered = filtered.Where(s => selected.Folders.Any(folder => IsInsideFolder(s.Path, folder)));
+                else if (selected.Kind == "AUDIO") filtered = filtered.Where(s => !s.IsVideo && !IsInNamedFolder(s.Path, "KARAOKE"));
                 else if (selected.Kind == "KARAOKE") filtered = filtered.Where(s => IsInNamedFolder(s.Path, "KARAOKE"));
                 else if (selected.Kind == "VIDEO") filtered = filtered.Where(s => s.IsVideo && !IsInNamedFolder(s.Path, "KARAOKE"));
                 else filtered = filtered.Where(s => IsInNamedFolder(s.Path, selected.Name));
@@ -312,6 +313,16 @@ namespace AlexaRockola
             string normalized = path.Replace('/', '\\').ToUpperInvariant();
             string token = "\\" + folderName.ToUpperInvariant() + "\\";
             return normalized.Contains(token);
+        }
+
+        private bool IsInsideFolder(string filePath, string folderPath)
+        {
+            try
+            {
+                string root = System.IO.Path.GetFullPath(folderPath).TrimEnd(System.IO.Path.DirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar;
+                return System.IO.Path.GetFullPath(filePath).StartsWith(root, StringComparison.OrdinalIgnoreCase);
+            }
+            catch { return false; }
         }
 
                 private void AddSelectedSong()
@@ -437,8 +448,26 @@ namespace AlexaRockola
                         string key = line.Substring(0, p);
                         string value = line.Substring(p + 1);
                         if (key == "MediaFolder") mediaFolder = value;
-                        if (key == "MarqueeText") marqueeText = value;
-                        if (key.StartsWith("Genre", StringComparison.OrdinalIgnoreCase))
+                        else if (key == "MarqueeText") marqueeText = value;
+                        else if (key == "KeyMenu") Enum.TryParse(value, out keyMenu);
+                        else if (key == "KeyAdd") Enum.TryParse(value, out keyAdd);
+                        else if (key == "KeyPause") Enum.TryParse(value, out keyPause);
+                        else if (key == "KeyFullScreen") Enum.TryParse(value, out keyFullScreen);
+                        else if (key == "KeyStop") Enum.TryParse(value, out keyStop);
+                        else if (key == "RightClickAddsSong") Boolean.TryParse(value, out rightClickAddsSong);
+                        else if (key == "GenreFolder")
+                        {
+                            try {
+                                string[] fp=value.Split('|');
+                                if(fp.Length==2) {
+                                    string gn=Encoding.UTF8.GetString(Convert.FromBase64String(fp[0]));
+                                    string path=Encoding.UTF8.GetString(Convert.FromBase64String(fp[1]));
+                                    Genre target=genres.FirstOrDefault(g=>g.Name.Equals(gn,StringComparison.OrdinalIgnoreCase));
+                                    if(target!=null && Directory.Exists(path) && !target.Folders.Contains(path,StringComparer.OrdinalIgnoreCase)) target.Folders.Add(path);
+                                }
+                            } catch { }
+                        }
+                        else if (key == "Genre")
                         {
                             string[] parts = value.Split('|');
                             if (parts.Length >= 5)
@@ -462,8 +491,12 @@ namespace AlexaRockola
             {
                 string dir = Path.GetDirectoryName(configPath);
                 Directory.CreateDirectory(dir);
-                var lines = new List<string> { "MediaFolder=" + mediaFolder, "MarqueeText=" + marqueeText };
-                foreach (Genre g in genres) lines.Add("Genre=" + g.Name.Replace("|","") + "|" + g.Kind + "|" + g.Color.R + "|" + g.Color.G + "|" + g.Color.B);
+                var lines = new List<string> { "MediaFolder=" + mediaFolder, "MarqueeText=" + marqueeText, "KeyMenu="+keyMenu, "KeyAdd="+keyAdd, "KeyPause="+keyPause, "KeyFullScreen="+keyFullScreen, "KeyStop="+keyStop, "RightClickAddsSong="+rightClickAddsSong };
+                foreach (Genre g in genres)
+                {
+                    lines.Add("Genre=" + g.Name.Replace("|","") + "|" + g.Kind + "|" + g.Color.R + "|" + g.Color.G + "|" + g.Color.B);
+                    foreach(string folder in g.Folders) lines.Add("GenreFolder="+Convert.ToBase64String(Encoding.UTF8.GetBytes(g.Name))+"|"+Convert.ToBase64String(Encoding.UTF8.GetBytes(folder)));
+                }
                 File.WriteAllLines(configPath, lines);
             }
             catch { }
