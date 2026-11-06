@@ -34,13 +34,15 @@ namespace RockolaKaraoke.Interfaz
             lista.Columns.Add("ACCIÓN", 600); lista.Columns.Add("TECLA", 250);
             lista.ItemActivate += delegate { CambiarTeclaSeleccionada(); };
             Panel botones = new Panel { Dock = DockStyle.Bottom, Height = 56 };
-            Button restablecer = new Button { Text = "RESTABLECER TECLAS ORIGINALES", Left = 8, Top = 8, Width = 330, Height = 40 };
-            Button cerrar = new Button { Text = "CERRAR", Left = 350, Top = 8, Width = 200, Height = 40 };
-            foreach (Button b in new Button[] { restablecer, cerrar })
+            Button cambiar = new Button { Text = "CAMBIAR TECLA SELECCIONADA", Left = 8, Top = 8, Width = 300, Height = 40 };
+            Button restablecer = new Button { Text = "RESTABLECER", Left = 316, Top = 8, Width = 190, Height = 40 };
+            Button cerrar = new Button { Text = "CERRAR", Left = 512, Top = 8, Width = 150, Height = 40 };
+            foreach (Button b in new Button[] { cambiar, restablecer, cerrar })
             {
                 b.FlatStyle = FlatStyle.Flat; b.BackColor = Color.FromArgb(0, 105, 175); b.ForeColor = Color.White;
                 b.Font = new Font("Segoe UI", 10F, FontStyle.Bold); botones.Controls.Add(b);
             }
+            cambiar.Click += delegate { CambiarTeclaSeleccionada(); };
             restablecer.Click += delegate { ConfiguracionTeclado.Restablecer(); LlenarLista(0); };
             cerrar.Click += delegate { Close(); };
             paginaTeclas.Controls.Add(lista); paginaTeclas.Controls.Add(botones); paginaTeclas.Controls.Add(ayuda);
@@ -57,8 +59,9 @@ namespace RockolaKaraoke.Interfaz
             paginaOtros.Controls.Add(quitaUltimo); paginaOtros.Controls.Add(confirmar);
 
             Controls.Add(pestanas);
+            KeyPreview = true;
             LlenarLista(0);
-            Shown += delegate { lista.Focus(); };
+            Shown += delegate { Activate(); lista.Focus(); };
         }
 
         private void LlenarLista(int seleccionar)
