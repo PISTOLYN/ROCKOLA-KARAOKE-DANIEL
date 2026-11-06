@@ -1095,13 +1095,26 @@ namespace RockolaKaraoke.Interfaz
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            // Si se está escribiendo en el buscador, las teclas normales escriben texto.
+            if (keyData == Keys.F12) { MostrarAdministracion(); ActiveControl = biblioteca; biblioteca.Focus(); return true; }
+
             if (ActiveControl is TextBoxBase)
             {
-                if (keyData == Keys.Escape || keyData == Keys.Down) { ActiveControl = biblioteca; return true; }
+                if (keyData == Keys.Escape || keyData == Keys.Down)
+                {
+                    ActiveControl = biblioteca;
+                    biblioteca.Focus();
+                    return true;
+                }
+                if (keyData == Keys.M && (busquedaMosaico.Text == TextoBusqueda || String.IsNullOrWhiteSpace(busquedaMosaico.Text)))
+                {
+                    MostrarMenuPrincipal();
+                    ActiveControl = biblioteca;
+                    biblioteca.Focus();
+                    return true;
+                }
                 return base.ProcessCmdKey(ref msg, keyData);
             }
-            if (keyData == Keys.F12) { MostrarAdministracion(); return true; }
+
             AccionTeclado? accion = ConfiguracionTeclado.Buscar(keyData);
             if (!accion.HasValue) return base.ProcessCmdKey(ref msg, keyData);
             if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value)) return true;
@@ -1419,12 +1432,16 @@ namespace RockolaKaraoke.Interfaz
                 menu.ShowDialog(this);
                 seleccion = menu.Seleccion;
             }
+            ActiveControl = biblioteca;
+            biblioteca.Focus();
             switch (seleccion)
             {
                 case "MUSICA":
                     {
                         using (FormularioMusica ventana = new FormularioMusica()) { ventana.ShowDialog(this); }
                         CargarBiblioteca();
+                        ActiveControl = biblioteca;
+                        biblioteca.Focus();
                         break;
                     }
                 case "LETREROS": MostrarConfigLetreros(); break;
@@ -1436,6 +1453,8 @@ namespace RockolaKaraoke.Interfaz
                 case "TECLADO":
                     {
                         using (FormularioTeclado ventana = new FormularioTeclado()) { ventana.ShowDialog(this); }
+                        ActiveControl = biblioteca;
+                        biblioteca.Focus();
                         break;
                     }
                 case "SALIR": if (ConfirmarSalida("¿Cerrar el programa?")) Application.Exit(); break;
