@@ -101,15 +101,16 @@ namespace RockolaKaraoke.Interfaz
                 menu.FormBorderStyle = FormBorderStyle.FixedDialog;
                 menu.MaximizeBox = false;
                 menu.MinimizeBox = false;
-                menu.ClientSize = new Size(430, 260);
+                menu.ClientSize = new Size(430, 315);
                 menu.BackColor = Color.FromArgb(5, 14, 32);
                 menu.ForeColor = Color.White;
 
                 Label titulo = new Label { Text = "PANEL DE ADMINISTRACIÓN", Dock = DockStyle.Top, Height = 55, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 16F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 220, 235) };
-                Button bibliotecaAdmin = new Button { Text = "BIBLIOTECA Y ESCANEO DE MÚSICA", Width = 340, Height = 45, Left = 45, Top = 75 };
-                Button skinAdmin = new Button { Text = "CONFIGURAR SKIN", Width = 340, Height = 45, Left = 45, Top = 130 };
-                Button cerrar = new Button { Text = "CERRAR", Width = 340, Height = 38, Left = 45, Top = 190 };
-                foreach (Button b in new Button[] { bibliotecaAdmin, skinAdmin, cerrar })
+                Button bibliotecaAdmin = new Button { Text = "BIBLIOTECA Y ESCANEO DE MÚSICA", Width = 340, Height = 42, Left = 45, Top = 75 };
+                Button skinAdmin = new Button { Text = "CONFIGURAR SKIN", Width = 340, Height = 42, Left = 45, Top = 125 };
+                Button tecladoAdmin = new Button { Text = "CONFIGURAR TECLADO", Width = 340, Height = 42, Left = 45, Top = 175 };
+                Button cerrar = new Button { Text = "CERRAR", Width = 340, Height = 36, Left = 45, Top = 225 };
+                foreach (Button b in new Button[] { bibliotecaAdmin, skinAdmin, tecladoAdmin, cerrar })
                 {
                     Estilizar(b);
                     b.BackColor = Color.FromArgb(0, 100, 165);
@@ -126,10 +127,16 @@ namespace RockolaKaraoke.Interfaz
                     using (FormularioSkin ventana = new FormularioSkin())
                         ventana.ShowDialog(menu);
                 };
+                tecladoAdmin.Click += delegate
+                {
+                    using (FormularioTeclado ventana = new FormularioTeclado())
+                        ventana.ShowDialog(menu);
+                };
                 cerrar.Click += delegate { menu.Close(); };
                 menu.Controls.Add(titulo);
                 menu.Controls.Add(bibliotecaAdmin);
                 menu.Controls.Add(skinAdmin);
+                menu.Controls.Add(tecladoAdmin);
                 menu.Controls.Add(cerrar);
                 menu.ShowDialog(this);
             }
