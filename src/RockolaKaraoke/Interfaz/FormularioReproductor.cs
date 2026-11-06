@@ -707,7 +707,7 @@ namespace RockolaKaraoke.Interfaz
                         if (foto != null)
                         {
                             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                            g.DrawImage(foto, new Rectangle(105, 12, 825, plantilla.Height - 24));
+                            g.DrawImage(foto, new Rectangle(126, 50, 1015, 990));
                         }
                         g.DrawImage(plantilla, new Rectangle(0, 0, plantilla.Width, plantilla.Height));
                     }
