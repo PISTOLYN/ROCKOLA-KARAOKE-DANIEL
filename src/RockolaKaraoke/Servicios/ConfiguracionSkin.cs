@@ -96,7 +96,7 @@ namespace RockolaKaraoke.Servicios
                     using (Image i = Image.FromFile(rutaFinal)) 
                     { 
                         raiz.BackgroundImage = new Bitmap(i); 
-                        raiz.BackgroundImageLayout = ImageLayout.Stretch; 
+                        raiz.BackgroundImageLayout = ImageLayout.Zoom; // ZOOM para que no se deforme
                         tieneImagen = true;
                     } 
                 } 
@@ -145,8 +145,8 @@ namespace RockolaKaraoke.Servicios
                 }
                 else if (c is Panel || c is TableLayoutPanel || c is FlowLayoutPanel)
                 {
-                    // Hace los paneles transparentes si hay imagen de fondo
-                    c.BackColor = tieneImagen ? Color.Transparent : Panel; 
+                    // Los paneles mantienen su color para que la interfaz se vea ordenada
+                    c.BackColor = Panel; 
                 }
                 else 
                 {
