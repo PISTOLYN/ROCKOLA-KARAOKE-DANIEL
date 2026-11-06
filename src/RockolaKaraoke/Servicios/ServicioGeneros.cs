@@ -162,5 +162,10 @@ namespace RockolaKaraoke.Servicios
         {
             return EscanerBiblioteca.Escanear(carpetas, generoId);
         }
+
+        public static ResultadoEscaneo EscanearArchivos(IEnumerable<string> archivos, long generoId)
+        {
+            return EscanerBiblioteca.EscanearArchivos(archivos, generoId);
+        }
     }
 }
