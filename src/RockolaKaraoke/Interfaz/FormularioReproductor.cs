@@ -641,7 +641,18 @@ namespace RockolaKaraoke.Interfaz
                     using (Pen borde = new Pen(elegida ? Color.FromArgb(255, 215, 0) : Color.FromArgb(0, 220, 245), elegida ? 5F : 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
                 };
                 PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 143, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
-                portada.Image = CrearPortadaArtista(carpeta);
+                Image imagen = BuscarPortada(carpeta);
+                if (imagen != null) portada.Image = imagen;
+                else
+                {
+                    portada.Paint += delegate(object sender, PaintEventArgs e)
+                    {
+                        Rectangle r = ((PictureBox)sender).ClientRectangle;
+                        using (System.Drawing.Drawing2D.LinearGradientBrush grad = new System.Drawing.Drawing2D.LinearGradientBrush(r, Color.FromArgb(18, 38, 105), Color.FromArgb(135, 25, 115), 35F)) e.Graphics.FillRectangle(grad, r);
+                        using (Font f = new Font("Segoe UI Symbol", 48F, FontStyle.Bold))
+                        using (SolidBrush b = new SolidBrush(Color.White)) e.Graphics.DrawString("♫", f, b, 58, 28);
+                    };
+                }
                 Label nombre = new Label { Text = NombreAlbum(carpeta), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 9F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
                 Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 23, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 8F, FontStyle.Bold), Cursor = Cursors.Hand };
                 tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
@@ -676,53 +687,7 @@ namespace RockolaKaraoke.Interfaz
             }
         }
 
-                // Compone la portada del artista dentro del marco de CD.
-        // Si la carpeta no contiene una imagen, utiliza LeonDefault como imagen de respaldo.
-        private Image CrearPortadaArtista(string carpeta)
-        {
-            Image foto = BuscarPortada(carpeta);
-            if (foto == null)
-            {
-                string leon = Path.Combine(Application.StartupPath, "Assets", "LeonDefault.jpg");
-                if (File.Exists(leon))
-                {
-                    using (FileStream fs = new FileStream(leon, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    using (Image original = Image.FromStream(fs)) foto = new Bitmap(original);
-                }
-            }
-
-            string marco = Path.Combine(Application.StartupPath, "PORTADA CD PNG.png");
-            if (!File.Exists(marco))
-                return foto;
-
-            try
-            {
-                using (FileStream fsMarco = new FileStream(marco, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                using (Image plantilla = Image.FromStream(fsMarco))
-                {
-                    Bitmap resultado = new Bitmap(plantilla.Width, plantilla.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    using (Graphics g = Graphics.FromImage(resultado))
-                    {
-                        g.Clear(Color.Transparent);
-                        if (foto != null)
-                        {
-                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                            g.DrawImage(foto, new Rectangle(126, 50, 1015, 990));
-                        }
-                        g.DrawImage(plantilla, new Rectangle(0, 0, plantilla.Width, plantilla.Height));
-                    }
-                    if (foto != null) foto.Dispose();
-                    return resultado;
-                }
-            }
-            catch
-            {
-                if (foto != null) return foto;
-                return null;
-            }
-        }
-
-        private Image BuscarPortada(string carpeta)
+                private Image BuscarPortada(string carpeta)
         {
             try
             {
