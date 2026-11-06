@@ -1105,7 +1105,9 @@ namespace RockolaKaraoke.Interfaz
                     biblioteca.Focus();
                     return true;
                 }
-                if (keyData == Keys.M && (busquedaMosaico.Text == TextoBusqueda || String.IsNullOrWhiteSpace(busquedaMosaico.Text)))
+                AccionTeclado? accionBuscador = ConfiguracionTeclado.Buscar(keyData);
+                bool teclaMenu = keyData == Keys.M || (accionBuscador.HasValue && accionBuscador.Value == AccionTeclado.Menu);
+                if (teclaMenu && (busquedaMosaico.Text == TextoBusqueda || String.IsNullOrWhiteSpace(busquedaMosaico.Text)))
                 {
                     MostrarMenuPrincipal();
                     ActiveControl = biblioteca;
