@@ -42,6 +42,13 @@ namespace RockolaKaraoke.Interfaz
                 listaSkins.SelectedItem = ConfiguracionSkin.SkinActivo;
                 if (listaSkins.SelectedIndex < 0) listaSkins.SelectedIndex = 0;
             }
+            listaSkins.SelectedIndexChanged += delegate {
+                if (listaSkins.SelectedItem != null) {
+                    string rutaAuto = Path.Combine(rutaSkins, listaSkins.SelectedItem.ToString(), "FondoPrincipal.jpg");
+                    if (File.Exists(rutaAuto)) imagen.Text = rutaAuto;
+                }
+                ActualizarVista();
+            };
             body.Controls.Add(listaSkins); y += 45;
 
             // --- COLORES ---
@@ -50,10 +57,13 @@ namespace RockolaKaraoke.Interfaz
             for (int i = 0; i < bs.Length; i++) { Button actual = bs[i]; actual.SetBounds(20 + i * 205, y, 190, 42); body.Controls.Add(actual); actual.Click += delegate { Elegir(actual); }; } y += 55;
 
             // --- IMAGEN SUELTA ---
-            body.Controls.Add(new Label { Text = "Imagen de fondo (opcional si no usas carpeta Skins)", Bounds = new Rectangle(20, y, 350, 25) }); y += 25;
+            body.Controls.Add(new Label { Text = "Imagen de fondo (Ruta de la imagen)", Bounds = new Rectangle(20, y, 350, 25) }); y += 25;
             imagen.SetBounds(20, y, 650, 30); imagen.Text = ConfiguracionSkin.Imagen; body.Controls.Add(imagen);
             Button buscar = new Button { Text = "BUSCAR", Bounds = new Rectangle(680, y, 150, 30) }; body.Controls.Add(buscar);
-            buscar.Click += delegate { using (OpenFileDialog d = new OpenFileDialog { Filter = "Imágenes|*.png;*.jpg;*.jpeg;*.bmp" }) if (d.ShowDialog(this) == DialogResult.OK) imagen.Text = d.FileName; }; y += 45;
+            buscar.Click += delegate { 
+                using (OpenFileDialog d = new OpenFileDialog { Filter = "Imágenes|*.png;*.jpg;*.jpeg;*.bmp" }) 
+                    if (d.ShowDialog(this) == DialogResult.OK) { imagen.Text = d.FileName; ActualizarVista(); } 
+            }; y += 45;
 
             // --- RESOLUCIÓN Y TAMAÑO ---
             body.Controls.Add(new Label { Text = "Resolución", Bounds = new Rectangle(20, y, 100, 30) });
@@ -68,7 +78,8 @@ namespace RockolaKaraoke.Interfaz
             body.Controls.Add(new Label { Text = "Vista previa", Bounds = new Rectangle(20, y, 200, 25) }); y += 25;
             muestra.SetBounds(20, y, 810, 120); muestra.BackColor = ConfiguracionSkin.Fondo; muestra.BorderStyle = BorderStyle.FixedSingle;
             titulo.Text = "ROCKOLA • KARAOKE"; titulo.Dock = DockStyle.Top; titulo.Height = 60; titulo.TextAlign = ContentAlignment.MiddleCenter;
-            mensaje.Dock = DockStyle.Fill; mensaje.TextAlign = ContentAlignment.MiddleCenter; mensaje.Text = "¡Elige tu música favorita!"; muestra.Controls.Add(mensaje); muestra.Controls.Add(titulo); body.Controls.Add(muestra); y += 132;
+            mensaje.Dock = DockStyle.Fill; mensaje.TextAlign = ContentAlignment.MiddleCenter; mensaje.Text = "¡Elige tu música favorita!"; 
+            muestra.Controls.Add(mensaje); muestra.Controls.Add(titulo); body.Controls.Add(muestra); y += 132;
 
             // --- GUARDAR ---
             Button guardar = new Button { Text = "GUARDAR Y APLICAR SKIN", Bounds = new Rectangle(20, y, 260, 48), BackColor = Color.FromArgb(30, 105, 170), ForeColor = Color.White };
@@ -79,11 +90,35 @@ namespace RockolaKaraoke.Interfaz
                 DialogResult = DialogResult.OK; Close();
             };
 
-            tamano.ValueChanged += delegate { ActualizarVista(); }; mensajes.TextChanged += delegate { ActualizarVista(); };
+            tamano.ValueChanged += delegate { ActualizarVista(); }; 
+            mensajes.TextChanged += delegate { ActualizarVista(); };
+            imagen.TextChanged += delegate { ActualizarVista(); };
+
             Controls.Add(body); Controls.Add(head); ActualizarVista();
         }
 
         void Elegir(Button b) { using (ColorDialog d = new ColorDialog { Color = b.BackColor, FullOpen = true }) if (d.ShowDialog(this) == DialogResult.OK) b.BackColor = d.Color; ActualizarVista(); }
-        void ActualizarVista() { muestra.BackColor = fondo.BackColor; titulo.BackColor = panel.BackColor; mensaje.BackColor = panel.BackColor; titulo.ForeColor = texto.BackColor; mensaje.ForeColor = texto.BackColor; titulo.Font = new Font("Segoe UI", (float)tamano.Value, FontStyle.Bold); mensaje.Text = mensajes.Lines.Length > 0 ? mensajes.Lines[0] : "Vista previa"; }
+        
+        void ActualizarVista() 
+        { 
+            muestra.BackColor = fondo.BackColor; 
+            titulo.BackColor = panel.BackColor; 
+            mensaje.BackColor = panel.BackColor; 
+            titulo.ForeColor = texto.BackColor; 
+            mensaje.ForeColor = texto.BackColor; 
+            titulo.Font = new Font("Segoe UI", (float)tamano.Value, FontStyle.Bold); 
+            mensaje.Text = mensajes.Lines.Length > 0 ? mensajes.Lines[0] : "Vista previa"; 
+            
+            // Mostrar la imagen en la vista previa si existe
+            if (!String.IsNullOrWhiteSpace(imagen.Text) && File.Exists(imagen.Text))
+            {
+                try { using (Image i = Image.FromFile(imagen.Text)) muestra.BackgroundImage = new Bitmap(i); muestra.BackgroundImageLayout = ImageLayout.Stretch; }
+                catch { muestra.BackgroundImage = null; }
+            }
+            else
+            {
+                muestra.BackgroundImage = null;
+            }
+        }
     }
 }
