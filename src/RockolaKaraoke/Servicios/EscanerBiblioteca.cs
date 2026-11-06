@@ -64,6 +64,31 @@ namespace RockolaKaraoke.Servicios
             return resultado;
         }
 
+        public static ResultadoEscaneo EscanearArchivos(IEnumerable<string> archivos, long generoId)
+        {
+            ResultadoEscaneo resultado = new ResultadoEscaneo();
+            using (SQLiteConnection conexion = Datos.BaseDatos.CrearConexion())
+            {
+                conexion.Open();
+                using (SQLiteTransaction transaccion = conexion.BeginTransaction())
+                {
+                    foreach (string archivo in archivos)
+                    {
+                        try
+                        {
+                            if (String.IsNullOrWhiteSpace(archivo) || !File.Exists(archivo) ||
+                                !Extensiones.Contains(Path.GetExtension(archivo))) { resultado.Omitidos++; continue; }
+                            resultado.ArchivosEncontrados++;
+                            GuardarArchivo(conexion, transaccion, Path.GetFullPath(archivo), resultado, generoId);
+                        }
+                        catch (Exception) { resultado.Errores++; }
+                    }
+                    transaccion.Commit();
+                }
+            }
+            return resultado;
+        }
+
         private static void GuardarArchivo(SQLiteConnection conexion, SQLiteTransaction transaccion, string ruta, ResultadoEscaneo resultado, long? generoId)
         {
             string nombreArchivo = Path.GetFileNameWithoutExtension(ruta);
