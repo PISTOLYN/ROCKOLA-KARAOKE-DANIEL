@@ -44,6 +44,16 @@ namespace RockolaKaraoke.Interfaz
         private Color fondoInferior = Color.FromArgb(220, 0, 0);
         private LetreroLed letreroLed;
         private LetreroLed letreroInferior;
+
+        // Pantalla de reproducción con carátula.
+        private Panel panelReproduccion;
+        private PictureBox imagenReproduccion;
+        private Label etiquetaTituloReproduccion;
+        private Label etiquetaArtistaReproduccion;
+        private Label etiquetaTiempoReproduccion;
+        private string tituloCancionActual = "";
+        private string artistaCancionActual = "";
+        private bool mostrandoReproduccion;
         private Label tituloPortadas;
         private Panel panelCola;
         private Panel barraAbc;
@@ -152,7 +162,12 @@ namespace RockolaKaraoke.Interfaz
                 else if (reproductor != null && reproductor.State == VLCState.Paused) { reproductor.Pause(); reproducir.Text = "Ⅱ PAUSAR"; }
                 else ReproducirSeleccion();
             };
-            detener.Click += delegate { if (reproductor != null) reproductor.Stop(); reproducir.Text = "▶ REPRODUCIR"; };
+            detener.Click += delegate
+            {
+                if (reproductor != null) reproductor.Stop();
+                reproducir.Text = "▶ REPRODUCIR";
+                MostrarBibliotecaNormal();
+            };
             volumen.Scroll += delegate { if (reproductor != null) reproductor.Volume = volumen.Value; };
             inferior.Controls.Add(controles); inferior.Controls.Add(tiempo); inferior.Controls.Add(progreso); inferior.Controls.Add(tituloActual);
 
@@ -318,7 +333,81 @@ namespace RockolaKaraoke.Interfaz
             barraEstado.Controls.Add(estadoCentro); barraEstado.Controls.Add(estadoDerecho); barraEstado.Controls.Add(letreroInferior);
             barraEstado.Resize += delegate { letreroInferior.Width = Math.Max(300, (int)(barraEstado.ClientSize.Width * 0.62)); };
             CrearBarraAbc();
-            Controls.Add(centro); Controls.Add(barraAbc); Controls.Add(barraEstado); Controls.Add(inferior); Controls.Add(encabezado);
+            // Panel rojo superpuesto únicamente al área central: no tapa encabezado ni controles inferiores.
+            panelReproduccion = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.DarkRed,
+                Visible = false
+            };
+
+            TableLayoutPanel contenidoReproduccion = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.DarkRed,
+                ColumnCount = 1,
+                RowCount = 5,
+                Padding = new Padding(24)
+            };
+            contenidoReproduccion.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            contenidoReproduccion.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
+            contenidoReproduccion.RowStyles.Add(new RowStyle(SizeType.Percent, 65F));
+            contenidoReproduccion.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
+            contenidoReproduccion.RowStyles.Add(new RowStyle(SizeType.Percent, 7F));
+            contenidoReproduccion.RowStyles.Add(new RowStyle(SizeType.Percent, 8F));
+
+            Label encabezadoReproduccion = new Label
+            {
+                Text = "REPRODUCIENDO AHORA",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold)
+            };
+            imagenReproduccion = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.DarkRed,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Margin = new Padding(8)
+            };
+            etiquetaTituloReproduccion = new Label
+            {
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 21F, FontStyle.Bold,
+                GraphicsUnit.Point)
+            };
+            etiquetaArtistaReproduccion = new Label
+            {
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.WhiteSmoke,
+                Font = new Font("Segoe UI", 13F, FontStyle.Regular)
+            };
+            etiquetaTiempoReproduccion = new Label
+            {
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold)
+            };
+
+            contenidoReproduccion.Controls.Add(encabezadoReproduccion, 0, 0);
+            contenidoReproduccion.Controls.Add(imagenReproduccion, 0, 1);
+            contenidoReproduccion.Controls.Add(etiquetaTituloReproduccion, 0, 2);
+            contenidoReproduccion.Controls.Add(etiquetaArtistaReproduccion, 0, 3);
+            contenidoReproduccion.Controls.Add(etiquetaTiempoReproduccion, 0, 4);
+            panelReproduccion.Controls.Add(contenidoReproduccion);
+
+            // Un contenedor común permite superponer la vista roja sin alterar el resto del diseño.
+            Panel areaCentral = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(1, 5, 18) };
+            areaCentral.Controls.Add(centro);
+            areaCentral.Controls.Add(panelReproduccion);
+            panelReproduccion.BringToFront();
+
+            Controls.Add(areaCentral); Controls.Add(barraAbc); Controls.Add(barraEstado); Controls.Add(inferior); Controls.Add(encabezado);
             Shown += delegate { mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80); };
         }
 
@@ -386,11 +475,25 @@ namespace RockolaKaraoke.Interfaz
             ActualizarLetreroInferior();
         }
 
-        /// <summary>Letrero de abajo: "NO HAY TEMAS EN ESPERA" o la lista de temas en espera.</summary>
+        /// <summary>Durante la reproducción muestra el tema actual; en reposo muestra la espera.</summary>
         private void ActualizarLetreroInferior()
         {
             if (letreroInferior == null) return;
-            if (cola.Items.Count == 0) { letreroInferior.Texto = textoSinTemas; return; }
+
+            if (mostrandoReproduccion && reproductor != null &&
+                (reproductor.IsPlaying || reproductor.State == VLCState.Paused))
+            {
+                letreroInferior.Texto = "AHORA SUENA: " + tituloCancionActual +
+                    "  •  " + artistaCancionActual + "  •  " + tiempo.Text;
+                return;
+            }
+
+            if (cola.Items.Count == 0)
+            {
+                letreroInferior.Texto = textoSinTemas;
+                return;
+            }
+
             List<string> partes = new List<string>();
             for (int i = 0; i < cola.Items.Count; i++)
                 partes.Add((i + 1) + ". " + cola.Items[i].Text + " - " + cola.Items[i].SubItems[1].Text);
@@ -667,11 +770,24 @@ namespace RockolaKaraoke.Interfaz
                 pantalla.MediaPlayer = reproductor;
                 reproductor.EndReached += delegate
                 {
-                    if (!IsDisposed && IsHandleCreated) BeginInvoke((Action)ReproducirSiguiente);
+                    if (!IsDisposed && IsHandleCreated)
+                    {
+                        BeginInvoke((Action)delegate
+                        {
+                            // Si hay temas en espera, continúa con la cola; si no, vuelve a la biblioteca.
+                            if (cola.Items.Count > 0) ReproducirSiguiente();
+                            else MostrarBibliotecaNormal();
+                        });
+                    }
                 };
                 reproductor.EncounteredError += delegate
                 {
-                    if (!IsDisposed && IsHandleCreated) BeginInvoke((Action)delegate { tituloActual.Text = "No se pudo reproducir este archivo. Revisa su formato o ubicación."; });
+                    if (!IsDisposed && IsHandleCreated)
+                        BeginInvoke((Action)delegate
+                        {
+                            MostrarBibliotecaNormal();
+                            tituloActual.Text = "No se pudo reproducir este archivo. Revisa su formato o ubicación.";
+                        });
                 };
                 reproductor.Volume = volumen.Value;
                 reloj.Start();
@@ -759,10 +875,16 @@ namespace RockolaKaraoke.Interfaz
                 if (medioActual != null) medioActual.Dispose();
                 medioActual = new Media(motor, new Uri(Path.GetFullPath(ruta)));
                 if (!reproductor.Play(medioActual)) throw new InvalidOperationException("VLC no pudo iniciar la reproducción.");
+
                 tituloActual.Text = titulo + "  —  " + artista;
                 reproducir.Text = "Ⅱ PAUSAR";
+                MostrarPantallaReproduccion(ruta, titulo, artista);
             }
-            catch (Exception ex) { MessageBox.Show(this, "No se pudo reproducir el archivo.\n" + ex.Message, "Error de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex)
+            {
+                MostrarBibliotecaNormal();
+                MessageBox.Show(this, "No se pudo reproducir el archivo.\n" + ex.Message, "Error de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void AgregarSeleccionALaCola()
@@ -872,14 +994,80 @@ namespace RockolaKaraoke.Interfaz
 
         private void Reloj_Tick(object sender, EventArgs e)
         {
-            if (reproductor == null || !reproductor.IsPlaying) return;
-            if (reproductor.Length > 0)
+            if (reproductor == null) return;
+
+            if (reproductor.IsPlaying && reproductor.Length > 0)
             {
                 moviendoProgreso = true;
                 progreso.Value = Math.Max(0, Math.Min(1000, (int)(reproductor.Position * 1000)));
                 moviendoProgreso = false;
-                tiempo.Text = FormatearTiempo(reproductor.Time) + " / " + FormatearTiempo(reproductor.Length);
+
+                string actual = FormatearTiempo(reproductor.Time);
+                string total = FormatearTiempo(reproductor.Length);
+                tiempo.Text = actual + " / " + total;
+
+                if (mostrandoReproduccion)
+                {
+                    etiquetaTiempoReproduccion.Text = actual + " / " + total;
+                    ActualizarLetreroInferior();
+                }
             }
+        }
+
+
+        private void MostrarPantallaReproduccion(string ruta, string titulo, string artista)
+        {
+            tituloCancionActual = titulo ?? "";
+            artistaCancionActual = artista ?? "";
+            etiquetaTituloReproduccion.Text = tituloCancionActual;
+            etiquetaArtistaReproduccion.Text = artistaCancionActual;
+            etiquetaTiempoReproduccion.Text = "00:00 / 00:00";
+
+            Image portada = BuscarPortada(Path.GetDirectoryName(ruta));
+            if (portada == null)
+            {
+                string predeterminada = Path.Combine(Application.StartupPath, "Assets", "LeonDefault.jpg");
+                if (File.Exists(predeterminada))
+                {
+                    using (FileStream fs = new FileStream(predeterminada, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (Image original = Image.FromStream(fs))
+                        portada = new Bitmap(original);
+                }
+            }
+
+            Image anterior = imagenReproduccion.Image;
+            imagenReproduccion.Image = portada;
+            if (anterior != null) anterior.Dispose();
+
+            mostrandoReproduccion = true;
+            panelReproduccion.Visible = true;
+            panelReproduccion.BringToFront();
+            tiempo.Text = "00:00 / 00:00";
+            ActualizarLetreroInferior();
+        }
+
+        private void MostrarBibliotecaNormal()
+        {
+            mostrandoReproduccion = false;
+            if (panelReproduccion != null) panelReproduccion.Visible = false;
+
+            if (imagenReproduccion != null && imagenReproduccion.Image != null)
+            {
+                Image anterior = imagenReproduccion.Image;
+                imagenReproduccion.Image = null;
+                anterior.Dispose();
+            }
+
+            tituloCancionActual = "";
+            artistaCancionActual = "";
+            etiquetaTituloReproduccion.Text = "";
+            etiquetaArtistaReproduccion.Text = "";
+            etiquetaTiempoReproduccion.Text = "00:00 / 00:00";
+            tiempo.Text = "00:00 / 00:00";
+            progreso.Value = 0;
+            reproducir.Text = "▶ REPRODUCIR";
+            tituloActual.Text = "No hay tema en reproducción";
+            ActualizarLetreroInferior();
         }
 
         private static string FormatearTiempo(long milisegundos)
