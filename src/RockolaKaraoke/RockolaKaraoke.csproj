@@ -46,8 +46,8 @@
     <Compile Include="Datos\BaseDatos.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\\..\\Assets\\LeonDefault.jpg">
-      <Link>Assets\\LeonDefault.jpg</Link>
+    <Content Include="..\..\Assets\LeonDefault.jpg">
+      <Link>Assets\LeonDefault.jpg</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <None Include="App.config" />
