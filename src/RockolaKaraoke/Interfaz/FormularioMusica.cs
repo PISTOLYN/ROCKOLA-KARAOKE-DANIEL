@@ -108,6 +108,7 @@ namespace RockolaKaraoke.Interfaz
             Button modificarAlias = CrearBoton("MODIFICAR ALIAS", botonesCarpetas);
             Button explorador = CrearBoton("EXPLORADOR DE WINDOWS", botonesCarpetas);
             Button actualizarCarpetas = CrearBoton("ACTUALIZAR (RE-ESCANEAR)", botonesCarpetas);
+            Button agregarArchivos = CrearBoton("AGREGAR ARCHIVOS DE MÚSICA / VIDEO", botonesCarpetas);
             etiquetaCarpetas.Dock = DockStyle.Top; etiquetaCarpetas.Height = 28; etiquetaCarpetas.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             etiquetaCarpetas.ForeColor = Color.FromArgb(0, 235, 245); etiquetaCarpetas.TextAlign = ContentAlignment.MiddleLeft;
             grupoCarpetas.Controls.Add(listaCarpetas); grupoCarpetas.Controls.Add(botonesCarpetas); grupoCarpetas.Controls.Add(etiquetaCarpetas);
@@ -127,6 +128,7 @@ namespace RockolaKaraoke.Interfaz
             modificarAlias.Click += delegate { ModificarAlias(); };
             explorador.Click += delegate { AbrirExplorador(); };
             actualizarCarpetas.Click += delegate { Reescanear(); };
+            agregarArchivos.Click += delegate { AgregarArchivos(); };
 
             Load += delegate { CargarGeneros(-1); };
         }
@@ -237,6 +239,41 @@ namespace RockolaKaraoke.Interfaz
                 if (nuevas == 0) { MessageBox.Show(this, "Esa carpeta ya estaba en el género (o no tiene sub-carpetas).", "Carpetas", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
                 EscanearCarpetas(aEscanear, g.Id);
                 CargarCarpetas();
+            }
+        }
+
+        private void AgregarArchivos()
+        {
+            GeneroInfo g = GeneroActual;
+            if (g == null)
+            {
+                MessageBox.Show(this, "Primero crea o selecciona un género musical.", "Agregar música", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (OpenFileDialog dialogo = new OpenFileDialog())
+            {
+                dialogo.Title = "Selecciona canciones o videos para agregar al género " + g.Nombre;
+                dialogo.Filter = "Música y video|*.mp3;*.wav;*.wma;*.m4a;*.aac;*.flac;*.ogg;*.mp4;*.mkv;*.avi;*.wmv;*.mov;*.mpeg;*.mpg|Todos los archivos|*.*";
+                dialogo.Multiselect = true;
+                if (dialogo.ShowDialog(this) != DialogResult.OK) return;
+
+                Cursor = Cursors.WaitCursor;
+                estado.Text = "Agregando archivos seleccionados...";
+                Application.DoEvents();
+                try
+                {
+                    ResultadoEscaneo resultado = ServicioGeneros.EscanearArchivos(dialogo.FileNames, g.Id);
+                    estado.Text = "Importación terminada. Revisados: " + resultado.ArchivosEncontrados +
+                        "  Nuevos: " + resultado.Nuevos + "  Actualizados: " + resultado.Actualizados +
+                        "  Omitidos: " + resultado.Omitidos + "  Errores: " + resultado.Errores;
+                    MessageBox.Show(this, estado.Text, "Importación de música", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, "No se pudieron agregar los archivos.\\n" + ex.Message, "Error de importación", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally { Cursor = Cursors.Default; }
             }
         }
 
