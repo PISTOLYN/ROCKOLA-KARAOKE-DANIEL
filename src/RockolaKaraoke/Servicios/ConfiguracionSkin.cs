@@ -46,6 +46,7 @@ namespace RockolaKaraoke.Servicios
         public static Color Panel { get { return ColorValor("Skin.Panel", Color.FromArgb(23, 30, 53)); } }
         public static Color Acento { get { return ColorValor("Skin.Acento", Color.FromArgb(30, 105, 170)); } }
         public static Color Texto { get { return ColorValor("Skin.Texto", Color.White); } }
+        
         public static string Imagen { get { return Leer("Skin.Imagen", ""); } }
         public static string Resolucion { get { return Leer("Skin.Resolucion", "Pantalla completa"); } }
         public static string Mensajes { get { return Leer("Skin.Mensajes", "¡Elige tu música favorita!|Disfruta de la mejor música y videos"); } }
@@ -59,13 +60,8 @@ namespace RockolaKaraoke.Servicios
             }
         }
 
-        // --- NUEVAS PROPIEDADES PARA EL SKIN ACTIVO ---
         public static string SkinActivo { get { return Leer("Skin.Activo", "Default"); } }
-        
-        public static void GuardarSkinActivo(string nombreSkin) 
-        { 
-            Escribir("Skin.Activo", nombreSkin); 
-        }
+        public static void GuardarSkinActivo(string nombreSkin) { Escribir("Skin.Activo", nombreSkin); }
 
         public static void GuardarTodo(Color f, Color p, Color a, Color t, string img, string res, string msg, int tam)
         {
@@ -79,21 +75,26 @@ namespace RockolaKaraoke.Servicios
             Escribir("Skin.TamanoTitulo", tam.ToString());
         }
 
-        // --- MÉTODO APLICAR MODIFICADO PARA CARGAR LA IMAGEN DE LA CARPETA ---
         public static void Aplicar(Control raiz)
         {
             raiz.BackColor = Fondo;
             raiz.ForeColor = Texto;
 
-            // Buscar la imagen de fondo en la carpeta del skin seleccionado
-            string carpetaSkin = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Skins", SkinActivo);
-            string rutaFondo = Path.Combine(carpetaSkin, "FondoPrincipal.jpg");
+            // 1. Intentar cargar la imagen desde el cuadro de texto (ruta directa)
+            string rutaFinal = Imagen;
+            
+            // 2. Si el cuadro está vacío, intentar buscarla en la carpeta Skins
+            if (String.IsNullOrWhiteSpace(rutaFinal))
+            {
+                string carpetaSkin = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Skins", SkinActivo);
+                rutaFinal = Path.Combine(carpetaSkin, "FondoPrincipal.jpg");
+            }
 
-            if (File.Exists(rutaFondo))
+            if (!String.IsNullOrWhiteSpace(rutaFinal) && File.Exists(rutaFinal))
             {
                 try 
                 { 
-                    using (Image i = Image.FromFile(rutaFondo)) 
+                    using (Image i = Image.FromFile(rutaFinal)) 
                     { 
                         raiz.BackgroundImage = new Bitmap(i); 
                         raiz.BackgroundImageLayout = ImageLayout.Stretch; 
@@ -101,18 +102,9 @@ namespace RockolaKaraoke.Servicios
                 } 
                 catch { }
             }
-            else if (!String.IsNullOrWhiteSpace(Imagen) && File.Exists(Imagen))
+            else
             {
-                // Código anterior por si usan una imagen suelta
-                try 
-                { 
-                    using (Image i = Image.FromFile(Imagen)) 
-                    { 
-                        raiz.BackgroundImage = new Bitmap(i); 
-                        raiz.BackgroundImageLayout = ImageLayout.Stretch; 
-                    } 
-                } 
-                catch { }
+                raiz.BackgroundImage = null;
             }
 
             Hijos(raiz);
