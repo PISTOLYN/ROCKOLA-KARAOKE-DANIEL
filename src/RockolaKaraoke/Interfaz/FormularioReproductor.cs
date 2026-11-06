@@ -1099,14 +1099,31 @@ namespace RockolaKaraoke.Interfaz
 
             if (ActiveControl is TextBoxBase)
             {
-                if (keyData == Keys.Escape || keyData == Keys.Down)
+                // ESC siempre permite salir del buscador sin borrar texto.
+                if ((keyData & Keys.KeyCode) == Keys.Escape)
                 {
                     ActiveControl = biblioteca;
                     biblioteca.Focus();
                     return true;
                 }
+
                 AccionTeclado? accionBuscador = ConfiguracionTeclado.Buscar(keyData);
-                bool teclaMenu = keyData == Keys.M || (accionBuscador.HasValue && accionBuscador.Value == AccionTeclado.Menu);
+                bool teclaMenu = keyData == Keys.M ||
+                    (accionBuscador.HasValue && accionBuscador.Value == AccionTeclado.Menu);
+
+                // No interceptar letras ni números mientras se escribe una búsqueda.
+                // Sí permitir las teclas físicas de navegación/control aunque se hayan reasignado.
+                Keys codigo = keyData & Keys.KeyCode;
+                bool teclaDeControl = codigo == Keys.Up || codigo == Keys.Down ||
+                    codigo == Keys.Left || codigo == Keys.Right || codigo == Keys.Enter ||
+                    codigo == Keys.Return || codigo == Keys.Add || codigo == Keys.Subtract ||
+                    codigo == Keys.Divide || codigo == Keys.Multiply || codigo == Keys.F1 ||
+                    codigo == Keys.F2 || codigo == Keys.F3 || codigo == Keys.F4 ||
+                    codigo == Keys.F5 || codigo == Keys.F6 || codigo == Keys.F7 ||
+                    codigo == Keys.F8 || codigo == Keys.F9 || codigo == Keys.F10 ||
+                    codigo == Keys.F11 || codigo == Keys.F12 || codigo == Keys.Home ||
+                    codigo == Keys.End || codigo == Keys.PageUp || codigo == Keys.PageDown;
+
                 if (teclaMenu && (busquedaMosaico.Text == TextoBusqueda || String.IsNullOrWhiteSpace(busquedaMosaico.Text)))
                 {
                     MostrarMenuPrincipal();
@@ -1114,6 +1131,15 @@ namespace RockolaKaraoke.Interfaz
                     biblioteca.Focus();
                     return true;
                 }
+
+                if (accionBuscador.HasValue && teclaDeControl)
+                {
+                    ActiveControl = biblioteca;
+                    biblioteca.Focus();
+                    EjecutarAccion(accionBuscador.Value);
+                    return true;
+                }
+
                 return base.ProcessCmdKey(ref msg, keyData);
             }
 
