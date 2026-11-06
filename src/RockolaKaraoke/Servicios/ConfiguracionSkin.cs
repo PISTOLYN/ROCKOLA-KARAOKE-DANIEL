@@ -80,10 +80,9 @@ namespace RockolaKaraoke.Servicios
             raiz.BackColor = Fondo;
             raiz.ForeColor = Texto;
 
-            // 1. Intentar cargar la imagen desde el cuadro de texto (ruta directa)
+            bool tieneImagen = false;
             string rutaFinal = Imagen;
             
-            // 2. Si el cuadro está vacío, intentar buscarla en la carpeta Skins
             if (String.IsNullOrWhiteSpace(rutaFinal))
             {
                 string carpetaSkin = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Skins", SkinActivo);
@@ -98,16 +97,15 @@ namespace RockolaKaraoke.Servicios
                     { 
                         raiz.BackgroundImage = new Bitmap(i); 
                         raiz.BackgroundImageLayout = ImageLayout.Stretch; 
+                        tieneImagen = true;
                     } 
                 } 
                 catch { }
             }
-            else
-            {
-                raiz.BackgroundImage = null;
-            }
 
-            Hijos(raiz);
+            if (!tieneImagen) raiz.BackgroundImage = null;
+
+            Hijos(raiz, tieneImagen);
 
             Form f = raiz as Form;
             if (f != null)
@@ -128,7 +126,7 @@ namespace RockolaKaraoke.Servicios
             }
         }
 
-        static void Hijos(Control p)
+        static void Hijos(Control p, bool tieneImagen)
         {
             foreach (Control c in p.Controls)
             {
@@ -140,21 +138,22 @@ namespace RockolaKaraoke.Servicios
                     b.FlatStyle = FlatStyle.Flat;
                     b.FlatAppearance.BorderSize = 0;
                 }
-                else if (c is ListView)
+                else if (c is ListView || c is ListBox || c is TextBox)
                 {
                     c.BackColor = Panel;
                     c.ForeColor = Texto;
                 }
-                else if (c is Panel)
+                else if (c is Panel || c is TableLayoutPanel || c is FlowLayoutPanel)
                 {
-                    c.BackColor = Panel;
+                    // Hace los paneles transparentes si hay imagen de fondo
+                    c.BackColor = tieneImagen ? Color.Transparent : Panel; 
                 }
                 else 
                 {
                     c.ForeColor = Texto;
                 }
                 
-                Hijos(c);
+                Hijos(c, tieneImagen);
             }
         }
     }
