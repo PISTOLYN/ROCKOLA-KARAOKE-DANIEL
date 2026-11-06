@@ -47,6 +47,7 @@ namespace RockolaKaraoke.Interfaz
 
         // Pantalla de reproducción con carátula.
         private Panel panelReproduccion;
+        private Control contenidoBiblioteca;
         private PictureBox imagenReproduccion;
         private Label etiquetaTituloReproduccion;
         private Label etiquetaArtistaReproduccion;
@@ -403,9 +404,13 @@ namespace RockolaKaraoke.Interfaz
 
             // Un contenedor común permite superponer la vista roja sin alterar el resto del diseño.
             Panel areaCentral = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(1, 5, 18) };
-            areaCentral.Controls.Add(centro);
+            contenidoBiblioteca = centro;
+            contenidoBiblioteca.Dock = DockStyle.Fill;
+            panelReproduccion.Dock = DockStyle.Fill;
             areaCentral.Controls.Add(panelReproduccion);
-            panelReproduccion.BringToFront();
+            areaCentral.Controls.Add(contenidoBiblioteca);
+            contenidoBiblioteca.Visible = true;
+            panelReproduccion.Visible = false;
 
             Controls.Add(areaCentral); Controls.Add(barraAbc); Controls.Add(barraEstado); Controls.Add(inferior); Controls.Add(encabezado);
             Shown += delegate { mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80); };
@@ -996,7 +1001,7 @@ namespace RockolaKaraoke.Interfaz
         {
             if (reproductor == null) return;
 
-            if (reproductor.IsPlaying && reproductor.Length > 0)
+            if ((reproductor.IsPlaying || reproductor.State == VLCState.Paused) && reproductor.Length > 0)
             {
                 moviendoProgreso = true;
                 progreso.Value = Math.Max(0, Math.Min(1000, (int)(reproductor.Position * 1000)));
@@ -1040,9 +1045,13 @@ namespace RockolaKaraoke.Interfaz
             if (anterior != null) anterior.Dispose();
 
             mostrandoReproduccion = true;
+            // Alternar vistas explícitamente: evita que la biblioteca quede por encima del panel.
+            if (contenidoBiblioteca != null) contenidoBiblioteca.Visible = false;
             panelReproduccion.Visible = true;
             panelReproduccion.BringToFront();
+            panelReproduccion.Refresh();
             tiempo.Text = "00:00 / 00:00";
+            etiquetaTiempoReproduccion.Text = tiempo.Text;
             ActualizarLetreroInferior();
         }
 
@@ -1050,6 +1059,7 @@ namespace RockolaKaraoke.Interfaz
         {
             mostrandoReproduccion = false;
             if (panelReproduccion != null) panelReproduccion.Visible = false;
+            if (contenidoBiblioteca != null) contenidoBiblioteca.Visible = true;
 
             if (imagenReproduccion != null && imagenReproduccion.Image != null)
             {
