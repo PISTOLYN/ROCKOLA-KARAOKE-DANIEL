@@ -77,6 +77,7 @@ namespace RockolaKaraoke.Servicios
 
         public static void Aplicar(Control raiz)
         {
+            // El formulario principal toma el color de fondo y la imagen
             raiz.BackColor = Fondo;
             raiz.ForeColor = Texto;
 
@@ -96,7 +97,7 @@ namespace RockolaKaraoke.Servicios
                     using (Image i = Image.FromFile(rutaFinal)) 
                     { 
                         raiz.BackgroundImage = new Bitmap(i); 
-                        raiz.BackgroundImageLayout = ImageLayout.Zoom; // ZOOM para que no se deforme
+                        raiz.BackgroundImageLayout = ImageLayout.Stretch; 
                         tieneImagen = true;
                     } 
                 } 
@@ -105,6 +106,7 @@ namespace RockolaKaraoke.Servicios
 
             if (!tieneImagen) raiz.BackgroundImage = null;
 
+            // Llamamos a la función que hace transparentes los paneles
             Hijos(raiz, tieneImagen);
 
             Form f = raiz as Form;
@@ -138,21 +140,23 @@ namespace RockolaKaraoke.Servicios
                     b.FlatStyle = FlatStyle.Flat;
                     b.FlatAppearance.BorderSize = 0;
                 }
-                else if (c is ListView || c is ListBox || c is TextBox)
+                else if (c is ListView || c is ListBox)
                 {
+                    // Las listas se quedan oscuras para que se lean las canciones
                     c.BackColor = Panel;
                     c.ForeColor = Texto;
                 }
                 else if (c is Panel || c is TableLayoutPanel || c is FlowLayoutPanel)
                 {
-                    // Los paneles mantienen su color para que la interfaz se vea ordenada
-                    c.BackColor = Panel; 
+                    // AQUÍ ESTÁ EL TRUCO: Si hay imagen, los paneles se vuelven transparentes
+                    c.BackColor = tieneImagen ? Color.Transparent : Panel;
                 }
                 else 
                 {
                     c.ForeColor = Texto;
                 }
                 
+                // Si el control tiene hijos, seguimos bajando
                 Hijos(c, tieneImagen);
             }
         }
