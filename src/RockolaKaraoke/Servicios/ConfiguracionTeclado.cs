@@ -142,7 +142,7 @@ namespace RockolaKaraoke.Servicios
                     if (tecla == Keys.None || usadas.Contains(tecla))
                     {
                         tecla = Keys.F1;
-                        while (usadas.Contains(tecla) && tecla < Keys.F24) tecla++;
+                        while (usadas.Contains(tecla) && (int)tecla < (int)Keys.F24) tecla = (Keys)((int)tecla + 1);
                         if (usadas.Contains(tecla)) tecla = Keys.None;
                     }
                 }
