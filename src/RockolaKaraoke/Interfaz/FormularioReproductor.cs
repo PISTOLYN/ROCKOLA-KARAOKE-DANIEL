@@ -916,9 +916,12 @@ namespace RockolaKaraoke.Interfaz
             }
 
             using (Image caja = Image.FromFile(rutaCajaVacia))
-            using (Bitmap resultado = new Bitmap(caja.Width, caja.Height))
+            using (Bitmap resultado = new Bitmap(caja.Width, caja.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
             using (Graphics g = Graphics.FromImage(resultado))
             {
+                // El PNG de la caja tiene zonas transparentes: rellenarlas con rojo
+                // antes de dibujar conserva el fondo rojo visible alrededor del CD.
+                g.Clear(Color.FromArgb(150, 0, 0));
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
                 g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 g.DrawImage(caja, 0, 0, caja.Width, caja.Height);
