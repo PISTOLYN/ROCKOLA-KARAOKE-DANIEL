@@ -50,6 +50,7 @@ namespace RockolaKaraoke.Interfaz
         private FlowLayoutPanel flujoAbc;
         private FlowLayoutPanel filtros;
         private FlowLayoutPanel listaEstilos;
+        private Label tituloEstilos;
         private const string TextoBusqueda = "Buscar canción o artista...";
         private readonly List<Button> botonesAbc = new List<Button>();
         private int indiceAbc;
@@ -107,6 +108,7 @@ namespace RockolaKaraoke.Interfaz
                 ActiveControl = biblioteca;
             };
             FormClosing += delegate { LiberarMotor(); };
+            Activated += delegate { AplicarVisibilidadGeneros(); };
             reloj.Interval = 500;
             reloj.Tick += Reloj_Tick;
             CargarConfiguracionLetrero();
@@ -283,10 +285,11 @@ namespace RockolaKaraoke.Interfaz
             cuadroPortadas.Controls.Add(mosaico);
             cuadroPortadas.Controls.Add(navegacionPortadas);
             cuadroPortadas.Controls.Add(tituloPortadas);
-            Label tituloEstilos = new Label { Text = "CATEGORÍA", Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 14F, FontStyle.Bold) };
+            tituloEstilos = new Label { Text = "CATEGORÍA", Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 14F, FontStyle.Bold) };
             listaEstilos = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(3) };
             cuadroEstilos.Controls.Add(listaEstilos);
             cuadroEstilos.Controls.Add(tituloEstilos);
+            AplicarVisibilidadGeneros();
             zonaSuperior.Controls.Add(cuadroPortadas, 0, 0);
             zonaSuperior.Controls.Add(cuadroEstilos, 1, 0);
             marcoSuperior.Controls.Add(zonaSuperior);
@@ -1429,7 +1432,7 @@ namespace RockolaKaraoke.Interfaz
                 }
             }
             foreach (string nombre in nombresGenero) filtros.Controls.Add(CrearBotonGenero(nombre, 132, 36));
-            filtros.Visible = ConfiguracionTeclado.MostrarListaGeneros;
+            AplicarVisibilidadGeneros();
             foreach (string nombre in ListaModos())
             {
                 Button estilo = CrearBotonGenero(nombre, 180, 43);
@@ -1440,6 +1443,14 @@ namespace RockolaKaraoke.Interfaz
             }
             if (!ListaModos().Exists(delegate(string v) { return IgualNormal(v, filtroTipo); })) filtroTipo = "Todos";
             ResaltarTipos();
+        }
+
+        private void AplicarVisibilidadGeneros()
+        {
+            bool mostrar = ConfiguracionTeclado.MostrarListaGeneros;
+            if (filtros != null) filtros.Visible = mostrar;
+            if (listaEstilos != null) listaEstilos.Visible = mostrar;
+            if (tituloEstilos != null) tituloEstilos.Visible = mostrar;
         }
 
         private void ResaltarTipos()
