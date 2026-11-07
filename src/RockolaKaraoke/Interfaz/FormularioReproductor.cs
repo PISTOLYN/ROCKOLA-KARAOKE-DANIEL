@@ -259,7 +259,19 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.OwnerDraw = true;
             biblioteca.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e) { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(0, 175, 205)), e.Bounds); TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 15F, FontStyle.Bold), e.Bounds, Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis); };
             biblioteca.DrawItem += delegate(object sender, DrawListViewItemEventArgs e) { e.DrawDefault = true; };
-            biblioteca.DoubleClick += delegate { AgregarSeleccionALaCola(); };
+            // Cada clic sobre una canción la agrega a la lista de reproducción,
+            // incluso si ya estaba seleccionada o si aparece repetida en la cola.
+            // MouseUp permite volver a pulsar la misma fila y agregar otra copia.
+            biblioteca.MouseUp += delegate(object sender, MouseEventArgs e)
+            {
+                if (e.Button != MouseButtons.Left) return;
+                ListViewItem temaPulsado = biblioteca.GetItemAt(e.X, e.Y);
+                if (temaPulsado == null) return;
+                LimpiarSeleccionBiblioteca();
+                temaPulsado.Selected = true;
+                temaPulsado.Focused = true;
+                AgregarSeleccionALaCola(false);
+            };
             biblioteca.DrawSubItem += delegate(object sender, DrawListViewSubItemEventArgs e)
             {
                 Color basico = e.ItemIndex % 2 == 0 ? Color.FromArgb(5, 15, 30) : Color.FromArgb(10, 22, 39);
@@ -953,6 +965,9 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.Items[indice].Selected = true;
             biblioteca.Items[indice].Focused = true;
             biblioteca.Items[indice].EnsureVisible();
+            // Al recorrer la biblioteca con las flechas, cada tema seleccionado
+            // se incorpora inmediatamente a la cola, sin ventanas emergentes.
+            AgregarSeleccionALaCola(false);
         }
 
         private void ReproducirSeleccion()
@@ -1108,40 +1123,15 @@ namespace RockolaKaraoke.Interfaz
             int ancho = Math.Max(420, (int)(panelPortadaPrincipal.ClientSize.Width * 0.62));
             int alto = Math.Max(230, (int)(panelPortadaPrincipal.ClientSize.Height * 0.69));
             ancho = Math.Min(ancho, panelPortadaPrincipal.ClientSize.Width - 30);
-            alto = Math.Min(alto, panelPortadaPrincipal.ClientSize.Height - 110);
-            pictureBoxPortada.Bounds = new Rectangle(
-                (panelPortadaPrincipal.ClientSize.Width - ancho) / 2,
-                Math.Max(8, (panelPortadaPrincipal.ClientSize.Height - alto) / 2 - 18),
-                ancho, alto);
-
-            int margen = Math.Max(24, (int)(panelPortadaPrincipal.ClientSize.Width * 0.025));
-            int y = panelPortadaPrincipal.ClientSize.Height - 82;
-            lblTituloPortada.Bounds = new Rectangle(margen, y, panelPortadaPrincipal.ClientSize.Width - margen * 2, 30);
-            lblArtistaPortada.Bounds = new Rectangle(margen, y + 29, panelPortadaPrincipal.ClientSize.Width - margen * 2, 22);
-            lblDuracionPortada.Bounds = new Rectangle(margen, y + 50, panelPortadaPrincipal.ClientSize.Width - margen * 2, 22);
-        }
-
-        private void AgregarSeleccionALaCola()
+            alto = Math.Min(a        private void AgregarSeleccionALaCola(bool mostrarMensaje = true)
         {
-            // Al pulsar la tecla de agregar desde el buscador, ListView puede conservar
-            // el elemento enfocado sin reportarlo en SelectedIndices. Recuperar esa fila.
+            // Recuperar la fila enfocada si el control todavía no actualizó SelectedIndices.
             if (biblioteca.SelectedIndices.Count == 0 && biblioteca.FocusedItem != null)
-            {
                 biblioteca.FocusedItem.Selected = true;
-            }
 
-            if (biblioteca.SelectedIndices.Count == 0)
-            {
-                ActiveControl = biblioteca;
-                MessageBox.Show(this, "Selecciona una canción de la lista y después presiona la tecla configurada como AGREGAR.", "Cola de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+            if (biblioteca.SelectedIndices.Count == 0) return;
 
             int agregadas = 0;
-            int duplicadas = 0;
-
-            // SelectedIndices conserva el orden visual de la biblioteca.
-            // Cada tema nuevo se agrega al final, sin interrumpir el que está sonando.
             foreach (int indice in biblioteca.SelectedIndices)
             {
                 if (indice < 0 || indice >= biblioteca.Items.Count) continue;
@@ -1154,25 +1144,28 @@ namespace RockolaKaraoke.Interfaz
                 try { rutaNormalizada = Path.GetFullPath(ruta); }
                 catch { rutaNormalizada = ruta; }
 
-                bool yaExiste = !String.IsNullOrWhiteSpace(rutaActualReproduccion) &&
-                    String.Equals(rutaActualReproduccion, rutaNormalizada, StringComparison.OrdinalIgnoreCase);
-
-                for (int i = 0; !yaExiste && i < cola.Items.Count; i++)
-                {
-                    string rutaEnCola = Convert.ToString(cola.Items[i].Tag);
-                    if (String.IsNullOrWhiteSpace(rutaEnCola)) continue;
-                    try { rutaEnCola = Path.GetFullPath(rutaEnCola); } catch { }
-                    yaExiste = String.Equals(rutaEnCola, rutaNormalizada, StringComparison.OrdinalIgnoreCase);
-                }
-
-                if (yaExiste)
-                {
-                    duplicadas++;
-                    continue;
-                }
-
+                // Se permiten canciones repetidas, incluso la que está sonando.
+                // Cada selección genera una entrada independiente en la cola.
                 ListViewItem nuevo = new ListViewItem(origen.Text);
                 nuevo.SubItems.Add(origen.SubItems[1].Text);
+                nuevo.Tag = rutaNormalizada;
+                cola.Items.Add(nuevo);
+                agregadas++;
+            }
+
+            ActualizarContadorCola();
+
+            // Los movimientos automáticos de selección no deben abrir ventanas
+            // que interrumpan la navegación. El mensaje queda para la tecla AGREGAR.
+            if (mostrarMensaje && ConfiguracionTeclado.MostrarMensajeAlAgregar && agregadas > 0)
+            {
+                string mensaje = agregadas == 1 ? "Se agregó 1 tema a la lista de reproducción." :
+                    "Se agregaron " + agregadas + " temas a la lista de reproducción.";
+                MessageBox.Show(this, mensaje, "Lista de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+[1].Text);
                 nuevo.Tag = rutaNormalizada;
                 cola.Items.Add(nuevo);
                 agregadas++;
