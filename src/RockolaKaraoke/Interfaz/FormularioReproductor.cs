@@ -194,6 +194,7 @@ namespace RockolaKaraoke.Interfaz
             detener.Click += delegate 
             { 
                 if (reproductor != null) reproductor.Stop(); 
+                rutaActualReproduccion = "";
                 reproducir.Text = "▶ REPRODUCIR";
                 if (temporizadorInactividad != null) temporizadorInactividad.Stop();
                 MostrarPortadaEnEspera();
@@ -837,6 +838,7 @@ namespace RockolaKaraoke.Interfaz
                         }
                         else
                         {
+                            rutaActualReproduccion = "";
                             MostrarPortadaEnEspera();
                             ActualizarLetreroInferior();
                             reproducir.Text = "▶ REPRODUCIR";
@@ -941,6 +943,7 @@ namespace RockolaKaraoke.Interfaz
             try
             {
                 reproductor.Stop();
+                rutaActualReproduccion = "";
                 if (medioActual != null) medioActual.Dispose();
                 medioActual = new Media(motor, new Uri(Path.GetFullPath(ruta)));
                 if (!reproductor.Play(medioActual)) throw new InvalidOperationException("VLC no pudo iniciar la reproducción.");
@@ -1217,6 +1220,7 @@ namespace RockolaKaraoke.Interfaz
             // La cola terminó: detenerse y mostrar la pantalla de espera.
             // No saltar a la canción siguiente de la biblioteca.
             if (reproductor != null) reproductor.Stop();
+            rutaActualReproduccion = "";
             reproducir.Text = "▶ REPRODUCIR";
             MostrarPortadaEnEspera();
             ActualizarLetreroInferior();
