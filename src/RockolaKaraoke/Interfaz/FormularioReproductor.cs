@@ -380,13 +380,13 @@ namespace RockolaKaraoke.Interfaz
             panelPortadaPrincipal.Controls.Add(tablaPortada);
             // ------------------------------------------
 
+            // --- BARRA DE ESTADO INFERIOR (SIN LOS TEXTOS DE VENTA Y KARAOKE) ---
             Panel barraEstado = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = Color.FromArgb(0, 105, 145) };
-            letreroInferior = new LetreroLed { Dock = DockStyle.Left, Width = 700, ForeColor = colorInferior, BackColor = fondoInferior, Font = new Font("Arial Black", 22F, FontStyle.Bold) };
+            letreroInferior = new LetreroLed { Dock = DockStyle.Fill, ForeColor = colorInferior, BackColor = fondoInferior, Font = new Font("Arial Black", 22F, FontStyle.Bold) };
             letreroInferior.Texto = textoSinTemas;
-            Label estadoCentro = new Label { Text = "VENTA AL 2223699949", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
-            Label estadoDerecho = new Label { Text = "KARAOKE GRATIS", Dock = DockStyle.Right, Width = 180, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 8F, FontStyle.Bold) };
-            barraEstado.Controls.Add(estadoCentro); barraEstado.Controls.Add(estadoDerecho); barraEstado.Controls.Add(letreroInferior);
-            barraEstado.Resize += delegate { letreroInferior.Width = Math.Max(300, (int)(barraEstado.ClientSize.Width * 0.62)); };
+            barraEstado.Controls.Add(letreroInferior);
+            // ------------------------------------------------------------------
+
             CrearBarraAbc();
             
             Controls.Add(centro); 
