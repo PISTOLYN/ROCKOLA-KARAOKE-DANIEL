@@ -1146,23 +1146,34 @@ namespace RockolaKaraoke.Interfaz
 
         private void ReproducirSiguiente()
         {
-            if (cola.Items.Count > 0)
+            // Siguiente siempre significa la siguiente canción agregada a la cola.
+            // Nunca recorrer automáticamente la biblioteca completa.
+            while (cola.Items.Count > 0)
             {
                 ListViewItem elemento = cola.Items[0];
                 string ruta = Convert.ToString(elemento.Tag);
                 string titulo = elemento.Text;
                 string artista = elemento.SubItems[1].Text;
+
+                // Retirar el elemento de la cola antes de intentar reproducirlo
+                // evita que un archivo inexistente bloquee el avance.
                 cola.Items.RemoveAt(0);
                 ActualizarContadorCola();
+
+                if (String.IsNullOrWhiteSpace(ruta) || !File.Exists(ruta))
+                    continue;
+
                 ReproducirArchivo(ruta, titulo, artista);
                 SeleccionarEnBiblioteca(ruta);
                 return;
             }
 
-            if (biblioteca.Items.Count == 0) return;
-            int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] + 1 : 0;
-            if (indice >= biblioteca.Items.Count) indice = 0;
-            ReproducirIndice(indice);
+            // La cola terminó: detenerse y mostrar la pantalla de espera.
+            // No saltar a la canción siguiente de la biblioteca.
+            if (reproductor != null) reproductor.Stop();
+            reproducir.Text = "▶ REPRODUCIR";
+            MostrarPortadaEnEspera();
+            ActualizarLetreroInferior();
         }
 
         private void Reloj_Tick(object sender, EventArgs e)
