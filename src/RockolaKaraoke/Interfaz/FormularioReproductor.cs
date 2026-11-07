@@ -62,6 +62,7 @@ namespace RockolaKaraoke.Interfaz
 
         // --- VARIABLES PARA LA PORTADA Y SKINS ---
         private Panel panelPortadaPrincipal;
+        private Control contenidoCentral;
         private PictureBox pictureBoxPortada;
         private Label lblTituloPortada;
         private Label lblArtistaPortada;
@@ -410,23 +411,19 @@ namespace RockolaKaraoke.Interfaz
                 BackColor = Color.FromArgb(190, 0, 0),
                 Margin = Padding.Empty
             };
+            // Alternar dos vistas hermanas: nunca superponer dos controles Fill.
+            // En espera solo está visible la portada roja; al reproducir, solo el reproductor.
+            contenidoCentral = centro;
             centro.Dock = DockStyle.Fill;
+            centro.Visible = false;
             contenedorCentral.Controls.Add(centro);
 
-            // La capa de espera NO usa Dock=Fill porque centro ya ocupa todo el
-            // contenedor. Se superpone con Bounds sincronizados al tamaño del padre.
-            panelPortadaPrincipal.Dock = DockStyle.None;
-            panelPortadaPrincipal.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            panelPortadaPrincipal.Dock = DockStyle.Fill;
+            panelPortadaPrincipal.Margin = Padding.Empty;
             panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
-            panelPortadaPrincipal.Bounds = contenedorCentral.ClientRectangle;
-            panelPortadaPrincipal.Visible = false;
+            panelPortadaPrincipal.Visible = true;
             contenedorCentral.Controls.Add(panelPortadaPrincipal);
-            contenedorCentral.Controls.SetChildIndex(panelPortadaPrincipal, 0);
-            contenedorCentral.Resize += delegate
-            {
-                panelPortadaPrincipal.Bounds = contenedorCentral.ClientRectangle;
-                if (panelPortadaPrincipal.Visible) panelPortadaPrincipal.BringToFront();
-            };
+            panelPortadaPrincipal.BringToFront();
 
             Controls.Add(contenedorCentral);
             Controls.Add(barraAbc);
@@ -449,7 +446,7 @@ namespace RockolaKaraoke.Interfaz
                 // La portada es la pantalla de espera: nunca debe tapar una canción en reproducción.
                 if (reproductor != null && reproductor.IsPlaying)
                 {
-                    panelPortadaPrincipal.Visible = false;
+                    MostrarContenidoReproductor();
                 }
                 else
                 {
@@ -815,7 +812,7 @@ namespace RockolaKaraoke.Interfaz
                         ReproducirSiguiente(); 
                         if (cola.Items.Count == 0 && (reproductor == null || !reproductor.IsPlaying)) 
                         {
-                            panelPortadaPrincipal.Visible = false;
+                            MostrarPortadaEnEspera();
                             ActualizarLetreroInferior();
                         }
                     });
@@ -938,7 +935,7 @@ namespace RockolaKaraoke.Interfaz
                 // Combina la caja de CD y la carátula, dejando el disco de colores visible.
                 EstablecerImagenCajaCD(caratulaArtista ?? CargarImagenLeon());
 
-                panelPortadaPrincipal.Visible = false;
+                MostrarContenidoReproductor();
             }
             catch (Exception ex) { MessageBox.Show(this, "No se pudo reproducir el archivo.\n" + ex.Message, "Error de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
@@ -993,18 +990,28 @@ namespace RockolaKaraoke.Interfaz
                 if (leon != null) EstablecerImagenCajaCD(leon);
                 else EstablecerImagenCajaCD(null);
             }
-            if (panelPortadaPrincipal.Parent != null)
-                panelPortadaPrincipal.Bounds = panelPortadaPrincipal.Parent.ClientRectangle;
             panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
+            panelPortadaPrincipal.Dock = DockStyle.Fill;
             panelPortadaPrincipal.Visible = true;
+            if (contenidoCentral != null) contenidoCentral.Visible = false;
             panelPortadaPrincipal.BringToFront();
-            if (panelPortadaPrincipal.Parent != null)
-                panelPortadaPrincipal.Parent.Controls.SetChildIndex(panelPortadaPrincipal, 0);
+            panelPortadaPrincipal.PerformLayout();
             pictureBoxPortada.BringToFront();
             lblTituloPortada.BringToFront();
             lblArtistaPortada.BringToFront();
             lblDuracionPortada.BringToFront();
             AjustarComposicionPortada();
+        }
+
+        private void MostrarContenidoReproductor()
+        {
+            panelPortadaPrincipal.Visible = false;
+            if (contenidoCentral != null)
+            {
+                contenidoCentral.Dock = DockStyle.Fill;
+                contenidoCentral.Visible = true;
+                contenidoCentral.BringToFront();
+            }
         }
 
         private void AjustarComposicionPortada()
