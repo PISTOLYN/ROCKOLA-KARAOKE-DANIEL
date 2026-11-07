@@ -341,8 +341,9 @@ namespace RockolaKaraoke.Interfaz
             // --- PORTADA DE ESPERA: CAJA DE CD ABIERTA SOBRE FONDO ROJO ---
             panelPortadaPrincipal = new Panel
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.None,
                 BackColor = Color.FromArgb(190, 0, 0),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
                 Visible = false
             };
 
@@ -402,8 +403,17 @@ namespace RockolaKaraoke.Interfaz
             Controls.Add(inferior);
             Controls.Add(encabezado);
             panelPortadaPrincipal.Visible = false;
-            
-            Shown += delegate { mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80); };
+            Action ajustarPanelPortada = delegate
+            {
+                panelPortadaPrincipal.Bounds = centro.Bounds;
+                AjustarComposicionPortada();
+            };
+            Shown += delegate
+            {
+                mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80);
+                ajustarPanelPortada();
+            };
+            Resize += delegate { ajustarPanelPortada(); };
 
             // --- CONFIGURACIÓN DEL TEMPORIZADOR DE INACTIVIDAD ---
             temporizadorInactividad = new Timer();
