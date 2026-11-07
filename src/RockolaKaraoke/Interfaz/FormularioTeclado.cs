@@ -108,7 +108,16 @@ namespace RockolaKaraoke.Interfaz
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == Keys.Escape) { Close(); return true; }
+            Keys tecla = keyData & Keys.KeyCode;
+            if (tecla == Keys.Escape) { Close(); return true; }
+
+            // ENTER siempre abre la captura de la acción seleccionada, incluso
+            // cuando el ListView consume la tecla antes de generar KeyDown.
+            if (tecla == Keys.Enter && lista.Focused)
+            {
+                CambiarTeclaSeleccionada();
+                return true;
+            }
             return base.ProcessCmdKey(ref msg, keyData);
         }
     }
