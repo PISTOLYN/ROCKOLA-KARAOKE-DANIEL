@@ -83,6 +83,7 @@ namespace RockolaKaraoke.Servicios
             bool tieneImagen = false;
             string rutaFinal = Imagen;
             
+            // Si la caja de texto está vacía, busca automáticamente en la carpeta Skins/NombreDelSkin
             if (String.IsNullOrWhiteSpace(rutaFinal))
             {
                 string carpetaSkin = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Skins", SkinActivo);
@@ -96,7 +97,6 @@ namespace RockolaKaraoke.Servicios
                     using (Image i = Image.FromFile(rutaFinal)) 
                     { 
                         raiz.BackgroundImage = new Bitmap(i); 
-                        // Usamos Stretch para que llene la pantalla, o Zoom si prefieres que no se deforme
                         raiz.BackgroundImageLayout = ImageLayout.Stretch; 
                         tieneImagen = true;
                     } 
@@ -139,18 +139,16 @@ namespace RockolaKaraoke.Servicios
                     b.FlatStyle = FlatStyle.Flat;
                     b.FlatAppearance.BorderSize = 0;
                 }
-                else if (c is ListView || c is ListBox)
+                else if (c is ListView || c is ListBox || c is TextBox)
                 {
+                    // Las listas se quedan oscuras para que se lean las canciones
                     c.BackColor = Panel;
                     c.ForeColor = Texto;
                 }
                 else if (c is Panel || c is TableLayoutPanel || c is FlowLayoutPanel)
                 {
-                    // TRUCO DE TRANSPARENCIA: Si hay imagen, usamos un color oscuro semitransparente
-                    if (tieneImagen)
-                        c.BackColor = Color.FromArgb(200, Panel.R, Panel.G, Panel.B); // 200 de 255 es semitransparente
-                    else
-                        c.BackColor = Panel;
+                    // EL TRUCO: Si hay imagen de fondo, los paneles se vuelven transparentes
+                    c.BackColor = tieneImagen ? Color.Transparent : Panel; 
                 }
                 else 
                 {
