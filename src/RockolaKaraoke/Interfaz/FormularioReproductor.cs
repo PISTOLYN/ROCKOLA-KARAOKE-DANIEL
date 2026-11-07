@@ -341,9 +341,8 @@ namespace RockolaKaraoke.Interfaz
             // --- PORTADA DE ESPERA: CAJA DE CD ABIERTA SOBRE FONDO ROJO ---
             panelPortadaPrincipal = new Panel
             {
-                Dock = DockStyle.None,
+                Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(190, 0, 0),
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
                 Visible = false
             };
 
@@ -394,26 +393,23 @@ namespace RockolaKaraoke.Interfaz
 
             CrearBarraAbc();
             
-            // La portada es una capa superpuesta al formulario, no una celda
-            // del TableLayoutPanel central: así ocupa todo el espacio disponible.
+            // La portada se superpone como hija del área central y usa Dock=Fill.
+            // Así el fondo rojo cubre toda el área de reproducción, no solo la caja.
             Controls.Add(centro);
-            Controls.Add(panelPortadaPrincipal);
+            centro.Controls.Add(panelPortadaPrincipal);
+            panelPortadaPrincipal.Dock = DockStyle.Fill;
+            panelPortadaPrincipal.Visible = false;
+            panelPortadaPrincipal.BringToFront();
             Controls.Add(barraAbc);
             Controls.Add(barraEstado);
             Controls.Add(inferior);
             Controls.Add(encabezado);
-            panelPortadaPrincipal.Visible = false;
-            Action ajustarPanelPortada = delegate
-            {
-                panelPortadaPrincipal.Bounds = centro.Bounds;
-                AjustarComposicionPortada();
-            };
             Shown += delegate
             {
                 mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80);
-                ajustarPanelPortada();
+                AjustarComposicionPortada();
+                panelPortadaPrincipal.BringToFront();
             };
-            Resize += delegate { ajustarPanelPortada(); };
 
             // --- CONFIGURACIÓN DEL TEMPORIZADOR DE INACTIVIDAD ---
             temporizadorInactividad = new Timer();
