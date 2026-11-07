@@ -807,13 +807,21 @@ namespace RockolaKaraoke.Interfaz
                 pantalla.MediaPlayer = reproductor;
                 reproductor.EndReached += delegate
                 {
-                    if (!IsDisposed && IsHandleCreated) BeginInvoke((Action)delegate 
-                    { 
-                        ReproducirSiguiente(); 
-                        if (cola.Items.Count == 0 && (reproductor == null || !reproductor.IsPlaying)) 
+                    if (!IsDisposed && IsHandleCreated) BeginInvoke((Action)delegate
+                    {
+                        // Al terminar una canción, continuar únicamente con la cola.
+                        // No avanzar automáticamente por toda la biblioteca.
+                        // Tampoco comprobar IsPlaying justo después de Play(): VLC puede
+                        // tardar unos instantes en cambiar de estado y tapar la nueva canción.
+                        if (cola.Items.Count > 0)
+                        {
+                            ReproducirSiguiente();
+                        }
+                        else
                         {
                             MostrarPortadaEnEspera();
                             ActualizarLetreroInferior();
+                            reproducir.Text = "▶ REPRODUCIR";
                         }
                     });
                 };
