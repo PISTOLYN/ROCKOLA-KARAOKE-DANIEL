@@ -83,7 +83,7 @@ namespace RockolaKaraoke.Servicios
             bool tieneImagen = false;
             string rutaFinal = Imagen;
             
-            // Si la caja de texto está vacía, busca automáticamente en la carpeta Skins/NombreDelSkin
+            // Si la caja de texto de Imagen está vacía, busca automáticamente en Skins/NombreDelSkin
             if (String.IsNullOrWhiteSpace(rutaFinal))
             {
                 string carpetaSkin = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Skins", SkinActivo);
