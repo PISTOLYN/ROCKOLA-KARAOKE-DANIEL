@@ -52,8 +52,8 @@ namespace RockolaKaraoke.Servicios
                 case AccionTeclado.Abajo: return "BAJAR EN LA LISTA DE TEMAS";
                 case AccionTeclado.Izquierda: return "IR A LA IZQUIERDA EN LA LISTA DE ÁLBUMES";
                 case AccionTeclado.Derecha: return "IR A LA DERECHA EN LA LISTA DE ÁLBUMES";
-                case AccionTeclado.Agregar: return "OK (AGREGAR TEMA A LA LISTA DE ESPERA)";
-                case AccionTeclado.Cancelar: return "CANCELAR (QUITAR ÚLTIMO TEMA / CERRAR)";
+                case AccionTeclado.Agregar: return "OK (REPRODUCIR O AGREGAR A LA LISTA)";
+                case AccionTeclado.Cancelar: return "CANCELAR CANCIÓN ACTUAL Y SEGUIR CON LA SIGUIENTE";
                 case AccionTeclado.SiguienteTema: return "IR AL SIGUIENTE TEMA DE LA LISTA DE REPRODUCCIÓN";
                 case AccionTeclado.CambiarModo: return "CAMBIAR GÉNERO MUSICAL (KARAOKE / MÚSICA / VIDEO)";
                 case AccionTeclado.Menu: return "MOSTRAR MENÚ DE CONFIGURACIÓN";
