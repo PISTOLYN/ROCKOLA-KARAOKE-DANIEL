@@ -45,13 +45,15 @@ namespace RockolaKaraoke.Interfaz
         {
             Keys tecla = keyData & Keys.KeyCode;
             AccionTeclado? accion = ConfiguracionTeclado.Buscar(tecla);
-            bool arriba = tecla == Keys.Up || (accion.HasValue && accion.Value == AccionTeclado.Arriba);
-            bool abajo = tecla == Keys.Down || (accion.HasValue && accion.Value == AccionTeclado.Abajo);
+            // Los menús usan las mismas asignaciones que el reproductor.
+            // No forzar flechas, Enter o Escape si el usuario cambió esas teclas.
+            bool arriba = accion.HasValue && accion.Value == AccionTeclado.Arriba;
+            bool abajo = accion.HasValue && accion.Value == AccionTeclado.Abajo;
             // En menús de una sola columna, izquierda/derecha también recorren opciones.
             if (accion.HasValue && accion.Value == AccionTeclado.Izquierda) arriba = true;
             if (accion.HasValue && accion.Value == AccionTeclado.Derecha) abajo = true;
-            bool aceptar = tecla == Keys.Enter || (accion.HasValue && accion.Value == AccionTeclado.Agregar);
-            bool cancelar = tecla == Keys.Escape || (accion.HasValue && (accion.Value == AccionTeclado.Cancelar || accion.Value == AccionTeclado.Menu));
+            bool aceptar = accion.HasValue && accion.Value == AccionTeclado.Agregar;
+            bool cancelar = accion.HasValue && (accion.Value == AccionTeclado.Cancelar || accion.Value == AccionTeclado.Menu);
             if (arriba) { Mover(-1); return true; }
             if (abajo) { Mover(1); return true; }
             if (aceptar) { if (indice >= 0 && indice < opciones.Count) opciones[indice].PerformClick(); return true; }
