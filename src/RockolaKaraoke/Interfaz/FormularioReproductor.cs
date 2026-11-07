@@ -425,13 +425,16 @@ namespace RockolaKaraoke.Interfaz
             panelPortadaPrincipal.Dock = DockStyle.Fill;
             panelPortadaPrincipal.Visible = false;
             contenedorCentral.Controls.Add(panelPortadaPrincipal);
-            panelPortadaPrincipal.BringToFront();
+            contenedorCentral.Controls.SetChildIndex(panelPortadaPrincipal, 0);
+            panelPortadaPrincipal.Dock = DockStyle.Fill;
+            panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
 
             Controls.Add(contenedorCentral);
             Controls.Add(barraAbc);
             Controls.Add(barraEstado);
             Controls.Add(inferior);
             Controls.Add(encabezado);
+            Controls.SetChildIndex(contenedorCentral, Controls.Count - 1);
             Shown += delegate
             {
                 mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80);
@@ -444,10 +447,14 @@ namespace RockolaKaraoke.Interfaz
             temporizadorInactividad.Interval = 3000; // 3 segundos
             temporizadorInactividad.Tick += delegate 
             {
+                // La portada es la pantalla de espera: nunca debe tapar una canción en reproducción.
                 if (reproductor != null && reproductor.IsPlaying)
                 {
-                    panelPortadaPrincipal.Visible = true;
-                    panelPortadaPrincipal.BringToFront();
+                    panelPortadaPrincipal.Visible = false;
+                }
+                else
+                {
+                    MostrarPortadaEnEspera();
                 }
                 temporizadorInactividad.Stop();
             };
@@ -932,8 +939,7 @@ namespace RockolaKaraoke.Interfaz
                 // Combina la caja de CD y la carátula, dejando el disco de colores visible.
                 EstablecerImagenCajaCD(caratulaArtista ?? CargarImagenLeon());
 
-                panelPortadaPrincipal.Visible = true;
-                panelPortadaPrincipal.BringToFront();
+                panelPortadaPrincipal.Visible = false;
             }
             catch (Exception ex) { MessageBox.Show(this, "No se pudo reproducir el archivo.\n" + ex.Message, "Error de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
@@ -988,8 +994,12 @@ namespace RockolaKaraoke.Interfaz
                 if (leon != null) EstablecerImagenCajaCD(leon);
                 else EstablecerImagenCajaCD(null);
             }
+            panelPortadaPrincipal.Dock = DockStyle.Fill;
+            panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
             panelPortadaPrincipal.Visible = true;
             panelPortadaPrincipal.BringToFront();
+            if (panelPortadaPrincipal.Parent != null)
+                panelPortadaPrincipal.Parent.Controls.SetChildIndex(panelPortadaPrincipal, 0);
             pictureBoxPortada.BringToFront();
             lblTituloPortada.BringToFront();
             lblArtistaPortada.BringToFront();
