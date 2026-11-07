@@ -34,6 +34,7 @@ namespace RockolaKaraoke.Interfaz
         private LibVLC motor;
         private MediaPlayer reproductor;
         private Media medioActual;
+        private string rutaActualReproduccion = "";
         private bool moviendoProgreso;
         private string textoLetrero = "QUIERE CANTAR QUIERES ESCUCHA MUSICA";
         private int velocidadLetrero = 180;
@@ -942,7 +943,8 @@ namespace RockolaKaraoke.Interfaz
                 reproductor.Stop();
                 if (medioActual != null) medioActual.Dispose();
                 medioActual = new Media(motor, new Uri(Path.GetFullPath(ruta)));
-                if (!reproductor.Play(medioActual)) throw new InvalidOperationException("VLC pudo iniciar la reproducción.");
+                if (!reproductor.Play(medioActual)) throw new InvalidOperationException("VLC no pudo iniciar la reproducción.");
+                rutaActualReproduccion = Path.GetFullPath(ruta);
                 tituloActual.Text = titulo + "  —  " + artista;
                 reproducir.Text = "Ⅱ PAUSAR";
 
@@ -1062,17 +1064,61 @@ namespace RockolaKaraoke.Interfaz
         {
             if (biblioteca.SelectedIndices.Count == 0)
             {
-                MessageBox.Show(this, "Primero selecciona una canción de la lista. Haz doble clic o usa + AGREGAR.", "Cola de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, "Primero selecciona una o varias canciones de la lista. Haz doble clic o usa + AGREGAR.", "Cola de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            ListViewItem origen = biblioteca.SelectedItems[0];
-            ListViewItem nuevo = new ListViewItem(origen.Text);
-            nuevo.SubItems.Add(origen.SubItems[1].Text);
-            nuevo.Tag = Convert.ToString(origen.Tag);
-            cola.Items.Add(nuevo);
+
+            int agregadas = 0;
+            int duplicadas = 0;
+
+            // SelectedIndices conserva el orden visual de la biblioteca.
+            // Cada tema nuevo se agrega al final, sin interrumpir el que está sonando.
+            foreach (int indice in biblioteca.SelectedIndices)
+            {
+                if (indice < 0 || indice >= biblioteca.Items.Count) continue;
+
+                ListViewItem origen = biblioteca.Items[indice];
+                string ruta = Convert.ToString(origen.Tag);
+                if (String.IsNullOrWhiteSpace(ruta) || !File.Exists(ruta)) continue;
+
+                string rutaNormalizada;
+                try { rutaNormalizada = Path.GetFullPath(ruta); }
+                catch { rutaNormalizada = ruta; }
+
+                bool yaExiste = !String.IsNullOrWhiteSpace(rutaActualReproduccion) &&
+                    String.Equals(rutaActualReproduccion, rutaNormalizada, StringComparison.OrdinalIgnoreCase);
+
+                for (int i = 0; !yaExiste && i < cola.Items.Count; i++)
+                {
+                    string rutaEnCola = Convert.ToString(cola.Items[i].Tag);
+                    if (String.IsNullOrWhiteSpace(rutaEnCola)) continue;
+                    try { rutaEnCola = Path.GetFullPath(rutaEnCola); } catch { }
+                    yaExiste = String.Equals(rutaEnCola, rutaNormalizada, StringComparison.OrdinalIgnoreCase);
+                }
+
+                if (yaExiste)
+                {
+                    duplicadas++;
+                    continue;
+                }
+
+                ListViewItem nuevo = new ListViewItem(origen.Text);
+                nuevo.SubItems.Add(origen.SubItems[1].Text);
+                nuevo.Tag = rutaNormalizada;
+                cola.Items.Add(nuevo);
+                agregadas++;
+            }
+
             ActualizarContadorCola();
+
             if (ConfiguracionTeclado.MostrarMensajeAlAgregar)
-                MessageBox.Show(this, "Tema agregado a la lista de reproducción.", "Lista de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            {
+                string mensaje = agregadas == 1 ? "Se agregó 1 tema a la lista de reproducción." :
+                    "Se agregaron " + agregadas + " temas a la lista de reproducción.";
+                if (duplicadas > 0) mensaje += "\nSe omitieron " + duplicadas + " temas que ya estaban sonando o en la cola.";
+                if (agregadas == 0 && duplicadas == 0) mensaje = "No se agregaron temas. Comprueba que los archivos existan.";
+                MessageBox.Show(this, mensaje, "Lista de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         private void ReproducirElementoDeCola()
