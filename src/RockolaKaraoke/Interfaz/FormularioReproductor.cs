@@ -1054,6 +1054,8 @@ namespace RockolaKaraoke.Interfaz
             nuevo.Tag = Convert.ToString(origen.Tag);
             cola.Items.Add(nuevo);
             ActualizarContadorCola();
+            if (ConfiguracionTeclado.MostrarMensajeAlAgregar)
+                MessageBox.Show(this, "Tema agregado a la lista de reproducción.", "Lista de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void ReproducirElementoDeCola()
@@ -1386,6 +1388,7 @@ namespace RockolaKaraoke.Interfaz
                 }
             }
             foreach (string nombre in nombresGenero) filtros.Controls.Add(CrearBotonGenero(nombre, 132, 36));
+            filtros.Visible = ConfiguracionTeclado.MostrarListaGeneros;
             foreach (string nombre in ListaModos())
             {
                 Button estilo = CrearBotonGenero(nombre, 180, 43);
@@ -1413,7 +1416,14 @@ namespace RockolaKaraoke.Interfaz
         {
             List<string> modos = ListaModos();
             int actual = modos.FindIndex(delegate(string v) { return IgualNormal(v, filtroTipo); });
-            filtroTipo = modos[(actual + 1) % modos.Count];
+            if (ConfiguracionTeclado.IrSiguienteGeneroDirectamente && modos.Count > 1)
+            {
+                if (actual < 1) actual = 0;
+                int siguiente = actual + 1;
+                if (siguiente >= modos.Count) siguiente = 1;
+                filtroTipo = modos[siguiente];
+            }
+            else filtroTipo = modos[(actual + 1) % modos.Count];
             ConstruirMosaico();
         }
 
