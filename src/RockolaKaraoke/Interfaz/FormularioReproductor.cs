@@ -537,8 +537,9 @@ namespace RockolaKaraoke.Interfaz
             {
                 temporizadorInactividad.Stop();
                 // Durante la reproducción, volver a mostrar la portada roja de la caja del CD.
-                if (reproductor != null && reproductor.IsPlaying)
-                    MostrarPortadaEnEspera();
+                if (reproductor != null && reproductor.IsPlaying &&
+                    !String.IsNullOrWhiteSpace(rutaActualReproduccion))
+                    MostrarPortadaCancion();
             };
 
             // Detectar movimiento del mouse en toda la interfaz, no solo sobre el formulario.
@@ -1051,9 +1052,10 @@ namespace RockolaKaraoke.Interfaz
                     EstablecerImagenCajaCD(portadaFinal);
                 }
 
-                // Al iniciar cada tema se muestra la portada; cualquier movimiento la oculta
-                // temporalmente y, tras 3 segundos sin actividad, vuelve a aparecer.
-                MostrarPortadaEnEspera();
+                // Mostrar inmediatamente: no esperar a que VLC actualice IsPlaying.
+                // Si el usuario navega con las flechas, NotificarActividadUsuario la oculta
+                // y el temporizador la vuelve a mostrar tras 3 segundos sin actividad.
+                MostrarPortadaCancion();
                 temporizadorInactividad.Stop();
                 temporizadorInactividad.Start();
             }
@@ -1102,21 +1104,25 @@ namespace RockolaKaraoke.Interfaz
 
         private void MostrarPortadaEnEspera()
         {
-            // Si hay una canción activa, conservar su carátula y sus datos.
-            // Cuando no hay reproducción, mostrar la portada general de espera.
-            bool hayTemaActivo = !String.IsNullOrWhiteSpace(rutaActualReproduccion) &&
-                reproductor != null && (reproductor.IsPlaying || reproductor.State == VLCState.Paused);
+            // La ruta se establece inmediatamente después de Play(). No depender de
+            // IsPlaying aquí: VLC puede tardar unos instantes en actualizar ese estado.
+            bool hayTemaActivo = !String.IsNullOrWhiteSpace(rutaActualReproduccion);
 
             if (!hayTemaActivo)
             {
-                // Sin una canción reproduciéndose, la pantalla de portada no debe
-                // bloquear la biblioteca: dejar visible la lista para elegir temas.
                 lblTituloPortada.Text = "";
                 lblArtistaPortada.Text = "";
                 lblDuracionPortada.Text = "";
                 MostrarContenidoReproductor();
                 return;
             }
+
+            MostrarPortadaCancion();
+        }
+
+        private void MostrarPortadaCancion()
+        {
+            if (String.IsNullOrWhiteSpace(rutaActualReproduccion)) return;
 
             panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
             panelPortadaPrincipal.Dock = DockStyle.Fill;
