@@ -334,11 +334,11 @@ namespace RockolaKaraoke.Interfaz
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
 
-            // --- CREACIÓN DEL PANEL DE PORTADA (Toma el color del Skin) ---
+            // --- CREACIÓN DEL PANEL DE PORTADA (Fondo transparente para ver el Skin) ---
             panelPortadaPrincipal = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = ConfiguracionSkin.Fondo, // Usa el color de fondo de tu Skin
+                BackColor = Color.Transparent, 
                 Visible = false
             };
 
@@ -359,6 +359,8 @@ namespace RockolaKaraoke.Interfaz
                 BackColor = Color.Transparent
             };
 
+            // Fondo semitransparente para los textos, para que se lean bien sobre cualquier imagen
+            Panel contenedorTextos = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(150, 0, 0, 0) };
             FlowLayoutPanel panelTextos = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -374,9 +376,10 @@ namespace RockolaKaraoke.Interfaz
             panelTextos.Controls.Add(lblTituloPortada);
             panelTextos.Controls.Add(lblArtistaPortada);
             panelTextos.Controls.Add(lblDuracionPortada);
+            contenedorTextos.Controls.Add(panelTextos);
 
             tablaPortada.Controls.Add(pictureBoxPortada, 0, 0);
-            tablaPortada.Controls.Add(panelTextos, 0, 1);
+            tablaPortada.Controls.Add(contenedorTextos, 0, 1);
             panelPortadaPrincipal.Controls.Add(tablaPortada);
             // ------------------------------------------
 
