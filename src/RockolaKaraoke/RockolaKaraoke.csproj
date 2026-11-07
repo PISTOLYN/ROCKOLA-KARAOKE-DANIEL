@@ -46,6 +46,15 @@
     <Compile Include="Datos\BaseDatos.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="PortadaVacia.png.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\Assets\LeonDefault.jpg">
+      <Link>Assets\LeonDefault.jpg</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
