@@ -42,11 +42,15 @@ namespace RockolaKaraoke.Interfaz
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            AccionTeclado? accion = ConfiguracionTeclado.Buscar(keyData);
-            bool arriba = keyData == Keys.Up || (accion.HasValue && (accion.Value == AccionTeclado.Arriba || accion.Value == AccionTeclado.Izquierda));
-            bool abajo = keyData == Keys.Down || (accion.HasValue && (accion.Value == AccionTeclado.Abajo || accion.Value == AccionTeclado.Derecha));
-            bool aceptar = keyData == Keys.Enter || (accion.HasValue && accion.Value == AccionTeclado.Agregar);
-            bool cancelar = keyData == Keys.Escape || (accion.HasValue && (accion.Value == AccionTeclado.Cancelar || accion.Value == AccionTeclado.Menu));
+            Keys tecla = keyData & Keys.KeyCode;
+            AccionTeclado? accion = ConfiguracionTeclado.Buscar(tecla);
+            bool arriba = tecla == Keys.Up || (accion.HasValue && accion.Value == AccionTeclado.Arriba);
+            bool abajo = tecla == Keys.Down || (accion.HasValue && accion.Value == AccionTeclado.Abajo);
+            // En menús de una sola columna, izquierda/derecha también recorren opciones.
+            if (accion.HasValue && accion.Value == AccionTeclado.Izquierda) arriba = true;
+            if (accion.HasValue && accion.Value == AccionTeclado.Derecha) abajo = true;
+            bool aceptar = tecla == Keys.Enter || (accion.HasValue && accion.Value == AccionTeclado.Agregar);
+            bool cancelar = tecla == Keys.Escape || (accion.HasValue && (accion.Value == AccionTeclado.Cancelar || accion.Value == AccionTeclado.Menu));
             if (arriba) { Mover(-1); return true; }
             if (abajo) { Mover(1); return true; }
             if (aceptar) { if (indice >= 0 && indice < opciones.Count) opciones[indice].PerformClick(); return true; }
