@@ -90,6 +90,64 @@ namespace RockolaKaraoke.Interfaz
 
             KeyPreview = true;
             CrearInterfaz();
+
+            // Capturar las teclas en el formulario antes que los controles hijos.
+            // Así las acciones configuradas siguen funcionando aunque el foco esté
+            // en un botón, la lista, el control de volumen o el cuadro de búsqueda.
+            KeyDown += delegate(object sender, KeyEventArgs e)
+            {
+                Keys teclaBase = e.KeyCode;
+                AccionTeclado? accion = ConfiguracionTeclado.Buscar(teclaBase);
+
+                if (ActiveControl is TextBoxBase && !accion.HasValue)
+                {
+                    if (teclaBase == Keys.Escape || teclaBase == Keys.Down)
+                    {
+                        ActiveControl = biblioteca;
+                        e.Handled = true;
+                        e.SuppressKeyPress = true;
+                    }
+                    return;
+                }
+
+                if (teclaBase == Keys.F12)
+                {
+                    MostrarAdministracion();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
+
+                if (!accion.HasValue) return;
+
+                NotificarActividadUsuario();
+                if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value))
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
+
+                if (ConfiguracionTeclado.MostrarAbecedarioAlMantenerFlecha &&
+                    (accion.Value == AccionTeclado.Izquierda || accion.Value == AccionTeclado.Derecha))
+                {
+                    if (!direccionFlechaPendiente.HasValue)
+                    {
+                        direccionFlechaPendiente = accion.Value;
+                        abecedarioAbiertoPorEspera = false;
+                        temporizadorAbecedario.Interval = ConfiguracionTeclado.TiempoEsperaAbecedario * 1000;
+                        temporizadorAbecedario.Start();
+                    }
+                }
+                else
+                {
+                    EjecutarAccion(accion.Value);
+                }
+
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            };
+
             temporizadorAbecedario = new Timer();
             temporizadorAbecedario.Interval = ConfiguracionTeclado.TiempoEsperaAbecedario * 1000;
             temporizadorAbecedario.Tick += delegate
@@ -1327,49 +1385,16 @@ namespace RockolaKaraoke.Interfaz
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            // Las flechas también cuentan como actividad: ocultan la portada roja
-            // mientras se navega y reinician el contador de inactividad.
+            // La navegación configurable se procesa en KeyDown con KeyPreview,
+            // para que tenga prioridad sobre el control que recibió el clic del mouse.
+            // Aquí solo queda la tecla administrativa de acceso directo.
             Keys teclaBase = keyData & Keys.KeyCode;
-            if (teclaBase == Keys.Left || teclaBase == Keys.Right ||
-                teclaBase == Keys.Up || teclaBase == Keys.Down)
-                NotificarActividadUsuario();
-
-            AccionTeclado? accion = ConfiguracionTeclado.Buscar(teclaBase);
-
-            // El cuadro de búsqueda no debe bloquear la tecla configurada para AGREGAR.
-            // Las demás teclas alfabéticas siguen escribiéndose normalmente en el buscador.
-            if (ActiveControl is TextBoxBase)
+            if (teclaBase == Keys.F12)
             {
-                if (accion.HasValue && accion.Value == AccionTeclado.Agregar)
-                {
-                    EjecutarAccion(accion.Value);
-                    return true;
-                }
-                if (teclaBase == Keys.Escape ||
-                    (accion.HasValue && accion.Value == AccionTeclado.Cancelar))
-                {
-                    ActiveControl = biblioteca;
-                    return true;
-                }
-                return base.ProcessCmdKey(ref msg, keyData);
-            }
-            if (teclaBase == Keys.F12) { MostrarAdministracion(); return true; }
-            if (!accion.HasValue) return base.ProcessCmdKey(ref msg, keyData);
-            if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value)) return true;
-            if (ConfiguracionTeclado.MostrarAbecedarioAlMantenerFlecha &&
-                (accion.Value == AccionTeclado.Izquierda || accion.Value == AccionTeclado.Derecha))
-            {
-                if (!direccionFlechaPendiente.HasValue)
-                {
-                    direccionFlechaPendiente = accion.Value;
-                    abecedarioAbiertoPorEspera = false;
-                    temporizadorAbecedario.Interval = ConfiguracionTeclado.TiempoEsperaAbecedario * 1000;
-                    temporizadorAbecedario.Start();
-                }
+                MostrarAdministracion();
                 return true;
             }
-            EjecutarAccion(accion.Value);
-            return true;
+            return base.ProcessCmdKey(ref msg, keyData);
         }
 
         private void EjecutarAccion(AccionTeclado accion)
