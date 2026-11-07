@@ -392,6 +392,14 @@ namespace RockolaKaraoke.Interfaz
             panelPortadaPrincipal.Controls.Add(lblTituloPortada);
             panelPortadaPrincipal.Controls.Add(lblArtistaPortada);
             panelPortadaPrincipal.Controls.Add(lblDuracionPortada);
+
+            // Fijar explícitamente el orden visual: rojo al fondo, caja y textos delante.
+            cuadroRojoDebajoPortada.SendToBack();
+            pictureBoxPortada.BringToFront();
+            lblTituloPortada.BringToFront();
+            lblArtistaPortada.BringToFront();
+            lblDuracionPortada.BringToFront();
+
             panelPortadaPrincipal.Resize += delegate { AjustarComposicionPortada(); };
             // ------------------------------------------------------------
 
@@ -982,6 +990,11 @@ namespace RockolaKaraoke.Interfaz
             }
             panelPortadaPrincipal.Visible = true;
             panelPortadaPrincipal.BringToFront();
+            cuadroRojoDebajoPortada.SendToBack();
+            pictureBoxPortada.BringToFront();
+            lblTituloPortada.BringToFront();
+            lblArtistaPortada.BringToFront();
+            lblDuracionPortada.BringToFront();
             AjustarComposicionPortada();
         }
 
