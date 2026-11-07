@@ -20,6 +20,11 @@ namespace RockolaKaraoke.Servicios
         public static bool CancelarQuitaUltimo = true;
         public static bool ConfirmarSalida = true;
         public static int PasoVolumen = 5;
+        public static bool MostrarMensajeAlAgregar = true;
+        public static bool MostrarListaGeneros = true;
+        public static bool IrSiguienteGeneroDirectamente = false;
+        public static bool MostrarAbecedarioAlMantenerFlecha = true;
+        public static int TiempoEsperaAbecedario = 2;
 
         static ConfiguracionTeclado()
         {
@@ -134,6 +139,11 @@ namespace RockolaKaraoke.Servicios
                 lineas.Add("Otros.CancelarQuitaUltimo=" + (CancelarQuitaUltimo ? "1" : "0"));
                 lineas.Add("Otros.ConfirmarSalida=" + (ConfirmarSalida ? "1" : "0"));
                 lineas.Add("Otros.PasoVolumen=" + PasoVolumen);
+                lineas.Add("Musica.MostrarMensajeAlAgregar=" + (MostrarMensajeAlAgregar ? "1" : "0"));
+                lineas.Add("Musica.MostrarListaGeneros=" + (MostrarListaGeneros ? "1" : "0"));
+                lineas.Add("Musica.IrSiguienteGeneroDirectamente=" + (IrSiguienteGeneroDirectamente ? "1" : "0"));
+                lineas.Add("Musica.MostrarAbecedarioAlMantenerFlecha=" + (MostrarAbecedarioAlMantenerFlecha ? "1" : "0"));
+                lineas.Add("Musica.TiempoEsperaAbecedario=" + TiempoEsperaAbecedario);
                 File.WriteAllLines(Archivo, lineas.ToArray());
             }
             catch { }
@@ -155,6 +165,11 @@ namespace RockolaKaraoke.Servicios
                         if (clave == "Otros.CancelarQuitaUltimo") CancelarQuitaUltimo = valor == "1";
                         else if (clave == "Otros.ConfirmarSalida") ConfirmarSalida = valor == "1";
                         else if (clave == "Otros.PasoVolumen") PasoVolumen = Math.Max(1, Math.Min(20, Int32.Parse(valor)));
+                        else if (clave == "Musica.MostrarMensajeAlAgregar") MostrarMensajeAlAgregar = valor == "1";
+                        else if (clave == "Musica.MostrarListaGeneros") MostrarListaGeneros = valor == "1";
+                        else if (clave == "Musica.IrSiguienteGeneroDirectamente") IrSiguienteGeneroDirectamente = valor == "1";
+                        else if (clave == "Musica.MostrarAbecedarioAlMantenerFlecha") MostrarAbecedarioAlMantenerFlecha = valor == "1";
+                        else if (clave == "Musica.TiempoEsperaAbecedario") TiempoEsperaAbecedario = Math.Max(1, Math.Min(15, Int32.Parse(valor)));
                         else
                         {
                             AccionTeclado accion = (AccionTeclado)Enum.Parse(typeof(AccionTeclado), clave);
