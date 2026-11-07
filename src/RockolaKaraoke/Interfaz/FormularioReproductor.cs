@@ -20,6 +20,9 @@ namespace RockolaKaraoke.Interfaz
         private readonly TextBox busquedaMosaico = new TextBox();
         private string filtroTipo = "Todos";
         private readonly ListView cola = new ListView();
+        // La lista visible conserva el historial completo; esta colección contiene solo los temas pendientes.
+        private readonly List<ListViewItem> cancionesPendientes = new List<ListViewItem>();
+        private ListViewItem temaActualLista;
         private readonly Label etiquetaCola = new Label();
         private readonly VideoView pantalla = new VideoView();
         private readonly Label tituloActual = new Label();
@@ -376,7 +379,7 @@ namespace RockolaKaraoke.Interfaz
             cola.Dock = DockStyle.Fill; cola.View = View.Details; cola.FullRowSelect = true; cola.GridLines = false;
             cola.HideSelection = false; cola.BackColor = Color.FromArgb(4, 12, 25); cola.ForeColor = Color.White;
             cola.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            cola.Columns.Clear(); cola.Columns.Add("TEMA EN LA LISTA", 220); cola.Columns.Add("ARTISTA", 130);
+            cola.Columns.Clear(); cola.Columns.Add("TEMA", 190); cola.Columns.Add("ARTISTA", 115); cola.Columns.Add("ESTADO", 105);
             cola.DoubleClick += delegate { ReproducirElementoDeCola(); };
             FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(2) };
             Button agregar = new Button { Text = "+ AGREGAR", Width = 92, Height = 32 };
@@ -386,7 +389,7 @@ namespace RockolaKaraoke.Interfaz
             Button vaciar = new Button { Text = "VACIAR", Width = 78, Height = 32 };
             foreach (Button b in new Button[] { agregar, quitar, subir, bajar, vaciar }) { Estilizar(b); accionesCola.Controls.Add(b); }
             agregar.Click += delegate { AgregarSeleccionALaCola(); }; quitar.Click += delegate { QuitarDeLaCola(); }; subir.Click += delegate { MoverEnCola(-1); };
-            bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { cola.Items.Clear(); ActualizarContadorCola(); };
+            bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { VaciarPendientes(); };
             panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
             panelDerecho.Controls.Add(panelCola); panelDerecho.Controls.Add(controlesRockola); panelDerecho.Controls.Add(botonesModo); panelDerecho.Controls.Add(panelPublicidad);
             distribucionInferior.Controls.Add(lado, 0, 0);
@@ -882,17 +885,12 @@ namespace RockolaKaraoke.Interfaz
                 {
                     if (!IsDisposed && IsHandleCreated) BeginInvoke((Action)delegate
                     {
-                        // Al terminar una canción, continuar únicamente con la cola.
-                        // No avanzar automáticamente por toda la biblioteca.
-                        // Tampoco comprobar IsPlaying justo después de Play(): VLC puede
-                        // tardar unos instantes en cambiar de estado y tapar la nueva canción.
-                        if (cola.Items.Count > 0)
-                        {
-                            ReproducirSiguiente();
-                        }
+                        if (temaActualLista != null) EstablecerEstadoTema(temaActualLista, "REPRODUCIDA");
+                        temaActualLista = null;
+                        rutaActualReproduccion = "";
+                        if (cancionesPendientes.Count > 0) ReproducirSiguiente();
                         else
                         {
-                            rutaActualReproduccion = "";
                             MostrarPortadaEnEspera();
                             ActualizarLetreroInferior();
                             reproducir.Text = "▶ REPRODUCIR";
@@ -1138,17 +1136,14 @@ namespace RockolaKaraoke.Interfaz
 
         private void AgregarSeleccionALaCola(bool mostrarMensaje = true)
         {
-            // Recuperar la fila enfocada si el control todavía no actualizó SelectedIndices.
             if (biblioteca.SelectedIndices.Count == 0 && biblioteca.FocusedItem != null)
                 biblioteca.FocusedItem.Selected = true;
-
             if (biblioteca.SelectedIndices.Count == 0) return;
 
             int agregadas = 0;
             foreach (int indice in biblioteca.SelectedIndices)
             {
                 if (indice < 0 || indice >= biblioteca.Items.Count) continue;
-
                 ListViewItem origen = biblioteca.Items[indice];
                 string ruta = Convert.ToString(origen.Tag);
                 if (String.IsNullOrWhiteSpace(ruta) || !File.Exists(ruta)) continue;
@@ -1157,19 +1152,26 @@ namespace RockolaKaraoke.Interfaz
                 try { rutaNormalizada = Path.GetFullPath(ruta); }
                 catch { rutaNormalizada = ruta; }
 
-                // Se permiten canciones repetidas, incluso la que está sonando.
-                // Cada selección genera una entrada independiente en la cola.
+                // Cada OK agrega una entrada nueva; se permiten canciones repetidas.
                 ListViewItem nuevo = new ListViewItem(origen.Text);
                 nuevo.SubItems.Add(origen.SubItems[1].Text);
+                nuevo.SubItems.Add("EN ESPERA");
                 nuevo.Tag = rutaNormalizada;
                 cola.Items.Add(nuevo);
+                cancionesPendientes.Add(nuevo);
                 agregadas++;
             }
 
             ActualizarContadorCola();
 
-            // Los movimientos automáticos de selección no deben abrir ventanas
-            // que interrumpan la navegación. El mensaje queda para la tecla AGREGAR.
+            // Si no hay canción activa, el primer tema agregado comienza inmediatamente.
+            if (String.IsNullOrWhiteSpace(rutaActualReproduccion) ||
+                reproductor == null ||
+                (reproductor.State != VLCState.Playing && reproductor.State != VLCState.Paused))
+            {
+                if (cancionesPendientes.Count > 0) ReproducirSiguiente();
+            }
+
             if (mostrarMensaje && ConfiguracionTeclado.MostrarMensajeAlAgregar && agregadas > 0)
             {
                 string mensaje = agregadas == 1 ? "Se agregó 1 tema a la lista de reproducción." :
@@ -1178,44 +1180,66 @@ namespace RockolaKaraoke.Interfaz
             }
         }
 
+        private void EstablecerEstadoTema(ListViewItem tema, string estado)
+        {
+            if (tema == null || tema.ListView != cola) return;
+            while (tema.SubItems.Count < 3) tema.SubItems.Add("");
+            tema.SubItems[2].Text = estado;
+            tema.ForeColor = estado == "SONANDO" ? Color.Lime :
+                estado == "EN ESPERA" ? Color.White :
+                estado == "CANCELADA" ? Color.OrangeRed : Color.Silver;
+        }
+
         private void ReproducirElementoDeCola()
         {
-            if (cola.SelectedIndices.Count == 0) return;
-            int indice = cola.SelectedIndices[0];
-            ListViewItem elemento = cola.Items[indice];
-            string ruta = Convert.ToString(elemento.Tag);
-            string titulo = elemento.Text;
-            string artista = elemento.SubItems[1].Text;
-            cola.Items.RemoveAt(indice);
+            if (cola.SelectedItems.Count == 0) return;
+            ListViewItem elegido = cola.SelectedItems[0];
+            if (!cancionesPendientes.Contains(elegido)) return;
+
+            // Doble clic adelanta el tema elegido en la lista, pero nunca corta el actual.
+            cancionesPendientes.Remove(elegido);
+            cancionesPendientes.Insert(0, elegido);
+            if (String.IsNullOrWhiteSpace(rutaActualReproduccion) ||
+                reproductor == null ||
+                (reproductor.State != VLCState.Playing && reproductor.State != VLCState.Paused))
+                ReproducirSiguiente();
             ActualizarContadorCola();
-            ReproducirArchivo(ruta, titulo, artista);
-            SeleccionarEnBiblioteca(ruta);
         }
 
         private void QuitarDeLaCola()
         {
-            if (cola.SelectedIndices.Count == 0) return;
-            cola.Items.RemoveAt(cola.SelectedIndices[0]);
+            if (cola.SelectedItems.Count == 0) return;
+            ListViewItem elegido = cola.SelectedItems[0];
+            if (!cancionesPendientes.Remove(elegido)) return;
+            EstablecerEstadoTema(elegido, "QUITADA");
             ActualizarContadorCola();
         }
 
         private void MoverEnCola(int desplazamiento)
         {
-            if (cola.SelectedIndices.Count == 0) return;
-            int indice = cola.SelectedIndices[0];
+            if (cola.SelectedItems.Count == 0) return;
+            ListViewItem elegido = cola.SelectedItems[0];
+            int indice = cancionesPendientes.IndexOf(elegido);
             int destino = indice + desplazamiento;
-            if (destino < 0 || destino >= cola.Items.Count) return;
-            ListViewItem elemento = (ListViewItem)cola.Items[indice].Clone();
-            cola.Items.RemoveAt(indice);
-            cola.Items.Insert(destino, elemento);
-            elemento.Selected = true;
-            elemento.EnsureVisible();
+            if (indice < 0 || destino < 0 || destino >= cancionesPendientes.Count) return;
+            cancionesPendientes.RemoveAt(indice);
+            cancionesPendientes.Insert(destino, elegido);
+            elegido.Selected = true;
+            elegido.EnsureVisible();
+            ActualizarContadorCola();
+        }
+
+        private void VaciarPendientes()
+        {
+            foreach (ListViewItem tema in cancionesPendientes)
+                EstablecerEstadoTema(tema, "QUITADA");
+            cancionesPendientes.Clear();
             ActualizarContadorCola();
         }
 
         private void ActualizarContadorCola()
         {
-            etiquetaCola.Text = "LISTA DE REPRODUCCIÓN (" + cola.Items.Count + ")";
+            etiquetaCola.Text = "LISTA DE REPRODUCCIÓN (" + cola.Items.Count + ") • EN ESPERA: " + cancionesPendientes.Count;
             ActualizarLetreroInferior();
         }
 
@@ -1249,35 +1273,38 @@ namespace RockolaKaraoke.Interfaz
 
         private void ReproducirSiguiente()
         {
-            // Siguiente siempre significa la siguiente canción agregada a la cola.
-            // Nunca recorrer automáticamente la biblioteca completa.
-            while (cola.Items.Count > 0)
+            // Se avanza solo por los temas agregados explícitamente a la lista.
+            while (cancionesPendientes.Count > 0)
             {
-                ListViewItem elemento = cola.Items[0];
+                ListViewItem elemento = cancionesPendientes[0];
+                cancionesPendientes.RemoveAt(0);
                 string ruta = Convert.ToString(elemento.Tag);
-                string titulo = elemento.Text;
-                string artista = elemento.SubItems[1].Text;
-
-                // Retirar el elemento de la cola antes de intentar reproducirlo
-                // evita que un archivo inexistente bloquee el avance.
-                cola.Items.RemoveAt(0);
-                ActualizarContadorCola();
 
                 if (String.IsNullOrWhiteSpace(ruta) || !File.Exists(ruta))
+                {
+                    EstablecerEstadoTema(elemento, "NO DISPONIBLE");
                     continue;
+                }
 
-                ReproducirArchivo(ruta, titulo, artista);
+                if (temaActualLista != null && temaActualLista != elemento)
+                    EstablecerEstadoTema(temaActualLista, "REPRODUCIDA");
+
+                temaActualLista = elemento;
+                EstablecerEstadoTema(elemento, "SONANDO");
+                ActualizarContadorCola();
+                ReproducirArchivo(ruta, elemento.Text, elemento.SubItems[1].Text);
                 SeleccionarEnBiblioteca(ruta);
                 return;
             }
 
-            // La cola terminó: detenerse y mostrar la pantalla de espera.
-            // No saltar a la canción siguiente de la biblioteca.
+            if (temaActualLista != null)
+                EstablecerEstadoTema(temaActualLista, "REPRODUCIDA");
+            temaActualLista = null;
             if (reproductor != null) reproductor.Stop();
             rutaActualReproduccion = "";
             reproducir.Text = "▶ REPRODUCIR";
             MostrarPortadaEnEspera();
-            ActualizarLetreroInferior();
+            ActualizarContadorCola();
         }
 
         private void Reloj_Tick(object sender, EventArgs e)
@@ -1290,7 +1317,7 @@ namespace RockolaKaraoke.Interfaz
             VLCState estado = reproductor.State;
             if (estado == VLCState.Ended || estado == VLCState.Stopped || estado == VLCState.NothingSpecial)
             {
-                if (estado == VLCState.Ended && cola.Items.Count == 0)
+                if (estado == VLCState.Ended && cancionesPendientes.Count == 0)
                 {
                     // Respaldo por si VLC no entrega EndReached: al finalizar,
                     // quitar siempre la pantalla roja y dejar disponible la biblioteca.
@@ -1299,7 +1326,7 @@ namespace RockolaKaraoke.Interfaz
                     ActualizarLetreroInferior();
                     reproducir.Text = "▶ REPRODUCIR";
                 }
-                else if (cola.Items.Count == 0 && !panelPortadaPrincipal.Visible)
+                else if (cancionesPendientes.Count == 0 && !panelPortadaPrincipal.Visible)
                 {
                     MostrarPortadaEnEspera();
                     ActualizarLetreroInferior();
@@ -1483,52 +1510,30 @@ namespace RockolaKaraoke.Interfaz
 
         private void CancelarUltimo()
         {
-            if (ConfiguracionTeclado.CancelarQuitaUltimo && cola.Items.Count > 0)
+            // CANCELAR detiene la canción actual y pasa inmediatamente a la siguiente.
+            if (temaActualLista != null && reproductor != null &&
+                (reproductor.State == VLCState.Playing || reproductor.State == VLCState.Paused))
             {
-                // Primero quitar de la cola la canción que está seleccionada en la
-                // biblioteca. Antes siempre se borraba el último tema, aunque el
-                // usuario estuviera intentando cancelar otra canción concreta.
-                string rutaSeleccionada = null;
-                if (biblioteca.SelectedIndices.Count > 0)
+                reproductor.Stop();
+                EstablecerEstadoTema(temaActualLista, "CANCELADA");
+                temaActualLista = null;
+                rutaActualReproduccion = "";
+                if (cancionesPendientes.Count > 0) ReproducirSiguiente();
+                else
                 {
-                    int indiceBiblioteca = biblioteca.SelectedIndices[0];
-                    if (indiceBiblioteca >= 0 && indiceBiblioteca < biblioteca.Items.Count)
-                        rutaSeleccionada = Convert.ToString(biblioteca.Items[indiceBiblioteca].Tag);
+                    reproducir.Text = "▶ REPRODUCIR";
+                    MostrarPortadaEnEspera();
+                    ActualizarContadorCola();
                 }
-                else if (biblioteca.FocusedItem != null)
-                {
-                    rutaSeleccionada = Convert.ToString(biblioteca.FocusedItem.Tag);
-                }
+                return;
+            }
 
-                int indiceQuitar = -1;
-                if (!String.IsNullOrWhiteSpace(rutaSeleccionada))
-                {
-                    string rutaNormalizada;
-                    try { rutaNormalizada = Path.GetFullPath(rutaSeleccionada); }
-                    catch { rutaNormalizada = rutaSeleccionada; }
-
-                    for (int i = 0; i < cola.Items.Count; i++)
-                    {
-                        string rutaEnCola = Convert.ToString(cola.Items[i].Tag);
-                        if (String.IsNullOrWhiteSpace(rutaEnCola)) continue;
-                        try { rutaEnCola = Path.GetFullPath(rutaEnCola); }
-                        catch { }
-                        if (String.Equals(rutaEnCola, rutaNormalizada, StringComparison.OrdinalIgnoreCase))
-                        {
-                            indiceQuitar = i;
-                            break;
-                        }
-                    }
-                }
-
-                // Si el foco está en la propia lista de reproducción, respetar
-                // también la fila marcada. Si no hay canción concreta, quitar la última.
-                if (indiceQuitar < 0 && cola.SelectedIndices.Count > 0)
-                    indiceQuitar = cola.SelectedIndices[0];
-                if (indiceQuitar < 0)
-                    indiceQuitar = cola.Items.Count - 1;
-
-                cola.Items.RemoveAt(indiceQuitar);
+            // Si no hay canción sonando, cancelar elimina el último tema pendiente.
+            if (ConfiguracionTeclado.CancelarQuitaUltimo && cancionesPendientes.Count > 0)
+            {
+                ListViewItem ultimo = cancionesPendientes[cancionesPendientes.Count - 1];
+                cancionesPendientes.RemoveAt(cancionesPendientes.Count - 1);
+                EstablecerEstadoTema(ultimo, "CANCELADA");
                 ActualizarContadorCola();
                 return;
             }
