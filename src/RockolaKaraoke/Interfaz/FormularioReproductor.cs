@@ -66,8 +66,8 @@ namespace RockolaKaraoke.Interfaz
         private Label lblTituloPortada;
         private Label lblArtistaPortada;
         private Label lblDuracionPortada;
-        private string rutaCajaVacia = "PortadaVacia.png";
-        private string rutaLeonDefecto = "LeonDefault.jpg";
+        private string rutaCajaVacia = Path.Combine(Application.StartupPath, "PortadaVacia.png.png");
+        private string rutaLeonDefecto = Path.Combine(Application.StartupPath, "LeonDefault.jpg.jpg");
         private Timer temporizadorInactividad;
 
         private string ArchivoLetrero { get { return Path.Combine(Application.UserAppDataPath, "letrero-led.txt"); } }
@@ -84,7 +84,13 @@ namespace RockolaKaraoke.Interfaz
 
             KeyPreview = true;
             CrearInterfaz();
-            Load += delegate { InicializarMotor(); CargarBiblioteca(); ActiveControl = biblioteca; };
+            Load += delegate
+            {
+                InicializarMotor();
+                CargarBiblioteca();
+                MostrarPortadaEnEspera();
+                ActiveControl = biblioteca;
+            };
             FormClosing += delegate { LiberarMotor(); };
             reloj.Interval = 500;
             reloj.Tick += Reloj_Tick;
@@ -171,8 +177,8 @@ namespace RockolaKaraoke.Interfaz
             { 
                 if (reproductor != null) reproductor.Stop(); 
                 reproducir.Text = "▶ REPRODUCIR";
-                panelPortadaPrincipal.Visible = false;
                 if (temporizadorInactividad != null) temporizadorInactividad.Stop();
+                MostrarPortadaEnEspera();
                 ActualizarLetreroInferior(); 
             };
 
@@ -332,51 +338,51 @@ namespace RockolaKaraoke.Interfaz
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
 
-            // --- CREACIÓN DEL PANEL DE PORTADA (Fondo Rojo Sólido) ---
+            // --- PORTADA DE ESPERA: CAJA DE CD ABIERTA SOBRE FONDO ROJO ---
             panelPortadaPrincipal = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.DarkRed,
+                BackColor = Color.FromArgb(150, 0, 0),
                 Visible = false
             };
 
-            TableLayoutPanel tablaPortada = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 2,
-                Padding = new Padding(30)
-            };
-            tablaPortada.RowStyles.Add(new RowStyle(SizeType.Percent, 70));
-            tablaPortada.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
-
             pictureBoxPortada = new PictureBox
             {
-                Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent,
+                Anchor = AnchorStyles.Top
+            };
+            lblTituloPortada = new Label
+            {
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleLeft,
+                BackColor = Color.Transparent
+            };
+            lblArtistaPortada = new Label
+            {
+                ForeColor = Color.Gainsboro,
+                Font = new Font("Segoe UI", 11F),
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleLeft,
+                BackColor = Color.Transparent
+            };
+            lblDuracionPortada = new Label
+            {
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleLeft,
                 BackColor = Color.Transparent
             };
 
-            FlowLayoutPanel panelTextos = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                BackColor = Color.Transparent,
-                Padding = new Padding(10)
-            };
-            lblTituloPortada = new Label { ForeColor = Color.White, Font = new Font("Segoe UI", 26F, FontStyle.Bold), AutoSize = true };
-            lblArtistaPortada = new Label { ForeColor = Color.LightGray, Font = new Font("Segoe UI", 18F), AutoSize = true };
-            lblDuracionPortada = new Label { ForeColor = Color.White, Font = new Font("Segoe UI", 14F), AutoSize = true };
-            
-            panelTextos.Controls.Add(lblTituloPortada);
-            panelTextos.Controls.Add(lblArtistaPortada);
-            panelTextos.Controls.Add(lblDuracionPortada);
-
-            tablaPortada.Controls.Add(pictureBoxPortada, 0, 0);
-            tablaPortada.Controls.Add(panelTextos, 0, 1);
-            panelPortadaPrincipal.Controls.Add(tablaPortada);
-            // ------------------------------------------
+            panelPortadaPrincipal.Controls.Add(pictureBoxPortada);
+            panelPortadaPrincipal.Controls.Add(lblTituloPortada);
+            panelPortadaPrincipal.Controls.Add(lblArtistaPortada);
+            panelPortadaPrincipal.Controls.Add(lblDuracionPortada);
+            panelPortadaPrincipal.Resize += delegate { AjustarComposicionPortada(); };
+            // ------------------------------------------------------------
 
             // --- BARRA DE ESTADO INFERIOR (SIN LOS TEXTOS DE VENTA Y KARAOKE) ---
             Panel barraEstado = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = Color.FromArgb(0, 105, 145) };
@@ -886,50 +892,84 @@ namespace RockolaKaraoke.Interfaz
                     caratulaArtista = Image.FromFile(rutaLeonDefecto);
                 }
 
-                // OBLIGAMOS A USAR LA CAJA DE CD
-                if (File.Exists(rutaCajaVacia))
-                {
-                    using (Image cajaVacia = Image.FromFile(rutaCajaVacia))
-                    {
-                        Bitmap lienzoFinal = new Bitmap(cajaVacia.Width, cajaVacia.Height);
-                        using (Graphics g = Graphics.FromImage(lienzoFinal))
-                        {
-                            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                            
-                            g.DrawImage(cajaVacia, 0, 0, cajaVacia.Width, cajaVacia.Height);
-
-                            if (caratulaArtista != null)
-                            {
-                                int x = (int)(cajaVacia.Width * 0.03);   
-                                int y = (int)(cajaVacia.Height * 0.03);  
-                                int ancho = (int)(cajaVacia.Width * 0.42); 
-                                int alto = (int)(cajaVacia.Height * 0.94); 
-
-                                g.DrawImage(caratulaArtista, new Rectangle(x, y, ancho, alto));
-                            }
-                        }
-                        pictureBoxPortada.Image = lienzoFinal;
-                    }
-                }
-                else
-                {
-                    Bitmap lienzoError = new Bitmap(500, 500);
-                    using (Graphics g = Graphics.FromImage(lienzoError))
-                    {
-                        g.Clear(Color.Black);
-                        using (Font fuente = new Font("Arial", 20, FontStyle.Bold))
-                        using (SolidBrush pincel = new SolidBrush(Color.Red))
-                        {
-                            g.DrawString("FALTA EL ARCHIVO:\nPortadaVacia.png\nJunto al .exe", fuente, pincel, new PointF(10, 10));
-                        }
-                    }
-                    pictureBoxPortada.Image = lienzoError;
-                }
+                // Combina la caja de CD y la carátula, dejando el disco de colores visible.
+                EstablecerImagenCajaCD(caratulaArtista ?? CargarImagenLeon());
 
                 panelPortadaPrincipal.Visible = true;
                 panelPortadaPrincipal.BringToFront();
             }
             catch (Exception ex) { MessageBox.Show(this, "No se pudo reproducir el archivo.\n" + ex.Message, "Error de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+
+        private Image CargarImagenLeon()
+        {
+            if (!File.Exists(rutaLeonDefecto)) return null;
+            using (Image origen = Image.FromFile(rutaLeonDefecto))
+                return new Bitmap(origen);
+        }
+
+        private void EstablecerImagenCajaCD(Image caratula)
+        {
+            if (!File.Exists(rutaCajaVacia))
+            {
+                throw new FileNotFoundException("No se encontró PortadaVacia.png.png junto al programa.", rutaCajaVacia);
+            }
+
+            using (Image caja = Image.FromFile(rutaCajaVacia))
+            using (Bitmap resultado = new Bitmap(caja.Width, caja.Height))
+            using (Graphics g = Graphics.FromImage(resultado))
+            {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.DrawImage(caja, 0, 0, caja.Width, caja.Height);
+
+                if (caratula != null)
+                {
+                    // La portada ocupa el espacio negro izquierdo; no invade el CD arcoíris.
+                    Rectangle destino = new Rectangle(
+                        (int)(caja.Width * 0.055),
+                        (int)(caja.Height * 0.018),
+                        (int)(caja.Width * 0.505),
+                        (int)(caja.Height * 0.964));
+                    g.DrawImage(caratula, destino);
+                }
+                pictureBoxPortada.Image = new Bitmap(resultado);
+            }
+            AjustarComposicionPortada();
+        }
+
+        private void MostrarPortadaEnEspera()
+        {
+            lblTituloPortada.Text = "";
+            lblArtistaPortada.Text = "";
+            lblDuracionPortada.Text = "";
+            using (Image leon = CargarImagenLeon())
+            {
+                if (leon != null) EstablecerImagenCajaCD(leon);
+                else EstablecerImagenCajaCD(null);
+            }
+            panelPortadaPrincipal.Visible = true;
+            panelPortadaPrincipal.BringToFront();
+            AjustarComposicionPortada();
+        }
+
+        private void AjustarComposicionPortada()
+        {
+            if (panelPortadaPrincipal == null || pictureBoxPortada == null) return;
+            int ancho = Math.Max(420, (int)(panelPortadaPrincipal.ClientSize.Width * 0.62));
+            int alto = Math.Max(230, (int)(panelPortadaPrincipal.ClientSize.Height * 0.69));
+            ancho = Math.Min(ancho, panelPortadaPrincipal.ClientSize.Width - 30);
+            alto = Math.Min(alto, panelPortadaPrincipal.ClientSize.Height - 110);
+            pictureBoxPortada.Bounds = new Rectangle(
+                (panelPortadaPrincipal.ClientSize.Width - ancho) / 2,
+                Math.Max(8, (panelPortadaPrincipal.ClientSize.Height - alto) / 2 - 18),
+                ancho, alto);
+
+            int margen = Math.Max(24, (int)(panelPortadaPrincipal.ClientSize.Width * 0.025));
+            int y = panelPortadaPrincipal.ClientSize.Height - 82;
+            lblTituloPortada.Bounds = new Rectangle(margen, y, panelPortadaPrincipal.ClientSize.Width - margen * 2, 30);
+            lblArtistaPortada.Bounds = new Rectangle(margen, y + 29, panelPortadaPrincipal.ClientSize.Width - margen * 2, 22);
+            lblDuracionPortada.Bounds = new Rectangle(margen, y + 50, panelPortadaPrincipal.ClientSize.Width - margen * 2, 22);
         }
 
         private void AgregarSeleccionALaCola()
