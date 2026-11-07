@@ -66,8 +66,8 @@ namespace RockolaKaraoke.Interfaz
         private Label lblTituloPortada;
         private Label lblArtistaPortada;
         private Label lblDuracionPortada;
-        private string rutaCajaVacia = Path.Combine(Application.StartupPath, "PortadaVacia.png.png");
-        private string rutaLeonDefecto = Path.Combine(Application.StartupPath, "Assets", "LeonDefault.jpg");
+        private string rutaCajaVacia = "PortadaVacia.png";
+        private string rutaLeonDefecto = "LeonDefault.jpg";
         private Timer temporizadorInactividad;
 
         private string ArchivoLetrero { get { return Path.Combine(Application.UserAppDataPath, "letrero-led.txt"); } }
@@ -104,16 +104,15 @@ namespace RockolaKaraoke.Interfaz
                 menu.FormBorderStyle = FormBorderStyle.FixedDialog;
                 menu.MaximizeBox = false;
                 menu.MinimizeBox = false;
-                menu.ClientSize = new Size(430, 315);
+                menu.ClientSize = new Size(430, 260);
                 menu.BackColor = Color.FromArgb(5, 14, 32);
                 menu.ForeColor = Color.White;
 
                 Label titulo = new Label { Text = "PANEL DE ADMINISTRACIÓN", Dock = DockStyle.Top, Height = 55, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 16F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 220, 235) };
                 Button bibliotecaAdmin = new Button { Text = "BIBLIOTECA Y ESCANEO DE MÚSICA", Width = 340, Height = 45, Left = 45, Top = 75 };
                 Button skinAdmin = new Button { Text = "CONFIGURAR SKIN", Width = 340, Height = 45, Left = 45, Top = 130 };
-                Button tecladoAdmin = new Button { Text = "CONFIGURAR TECLADO", Width = 340, Height = 45, Left = 45, Top = 185 };
-                Button cerrar = new Button { Text = "CERRAR", Width = 340, Height = 38, Left = 45, Top = 245 };
-                foreach (Button b in new Button[] { bibliotecaAdmin, skinAdmin, tecladoAdmin, cerrar })
+                Button cerrar = new Button { Text = "CERRAR", Width = 340, Height = 38, Left = 45, Top = 190 };
+                foreach (Button b in new Button[] { bibliotecaAdmin, skinAdmin, cerrar })
                 {
                     Estilizar(b);
                     b.BackColor = Color.FromArgb(0, 100, 165);
@@ -130,16 +129,10 @@ namespace RockolaKaraoke.Interfaz
                     using (FormularioSkin ventana = new FormularioSkin())
                         ventana.ShowDialog(menu);
                 };
-                tecladoAdmin.Click += delegate
-                {
-                    using (FormularioTeclado ventana = new FormularioTeclado())
-                        ventana.ShowDialog(menu);
-                };
                 cerrar.Click += delegate { menu.Close(); };
                 menu.Controls.Add(titulo);
                 menu.Controls.Add(bibliotecaAdmin);
                 menu.Controls.Add(skinAdmin);
-                menu.Controls.Add(tecladoAdmin);
                 menu.Controls.Add(cerrar);
                 menu.ShowDialog(this);
             }
@@ -339,11 +332,11 @@ namespace RockolaKaraoke.Interfaz
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
 
-            // --- CREACIÓN DEL PANEL DE PORTADA (Fondo transparente para ver el Skin) ---
+            // --- CREACIÓN DEL PANEL DE PORTADA (Fondo Rojo Sólido) ---
             panelPortadaPrincipal = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.Transparent, 
+                BackColor = Color.DarkRed, // Fondo Rojo Sólido
                 Visible = false
             };
 
@@ -364,7 +357,6 @@ namespace RockolaKaraoke.Interfaz
                 BackColor = Color.Transparent
             };
 
-            Panel contenedorTextos = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(150, 0, 0, 0) };
             FlowLayoutPanel panelTextos = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -380,10 +372,9 @@ namespace RockolaKaraoke.Interfaz
             panelTextos.Controls.Add(lblTituloPortada);
             panelTextos.Controls.Add(lblArtistaPortada);
             panelTextos.Controls.Add(lblDuracionPortada);
-            contenedorTextos.Controls.Add(panelTextos);
 
             tablaPortada.Controls.Add(pictureBoxPortada, 0, 0);
-            tablaPortada.Controls.Add(contenedorTextos, 0, 1);
+            tablaPortada.Controls.Add(panelTextos, 0, 1);
             panelPortadaPrincipal.Controls.Add(tablaPortada);
             // ------------------------------------------
 
@@ -920,7 +911,21 @@ namespace RockolaKaraoke.Interfaz
                         pictureBoxPortada.Image = lienzoFinal;
                     }
                 }
-                // (Si borras el else, si no encuentra la caja no muestra nada y te avisa)
+                else
+                {
+                    // Si no encuentra la caja, mostramos un aviso para que sepas que falta el archivo
+                    Bitmap lienzoError = new Bitmap(500, 500);
+                    using (Graphics g = Graphics.FromImage(lienzoError))
+                    {
+                        g.Clear(Color.Black);
+                        using (Font fuente = new Font("Arial", 20, FontStyle.Bold))
+                        using (SolidBrush pincel = new SolidBrush(Color.Red))
+                        {
+                            g.DrawString("FALTA EL ARCHIVO:\nPortadaVacia.png\nJunto al .exe", fuente, pincel, new PointF(10, 10));
+                        }
+                    }
+                    pictureBoxPortada.Image = lienzoError;
+                }
 
                 panelPortadaPrincipal.Visible = true;
                 panelPortadaPrincipal.BringToFront();
@@ -1067,20 +1072,13 @@ namespace RockolaKaraoke.Interfaz
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == Keys.F12) { MostrarAdministracion(); return true; }
-
-            AccionTeclado? accion = ConfiguracionTeclado.Buscar(keyData);
             if (ActiveControl is TextBoxBase)
             {
-                Keys tecla = keyData & Keys.KeyCode;
-                bool teclaDeControl = tecla == Keys.Up || tecla == Keys.Down ||
-                    tecla == Keys.Left || tecla == Keys.Right || tecla == Keys.Enter ||
-                    tecla == Keys.Escape || (tecla >= Keys.F1 && tecla <= Keys.F24);
-                if (!teclaDeControl) return base.ProcessCmdKey(ref msg, keyData);
-                if (tecla == Keys.Escape && !accion.HasValue) { ActiveControl = biblioteca; return true; }
-                if (!accion.HasValue) return base.ProcessCmdKey(ref msg, keyData);
+                if (keyData == Keys.Escape || keyData == Keys.Down) { ActiveControl = biblioteca; return true; }
+                return base.ProcessCmdKey(ref msg, keyData);
             }
-
+            if (keyData == Keys.F12) { MostrarAdministracion(); return true; }
+            AccionTeclado? accion = ConfiguracionTeclado.Buscar(keyData);
             if (!accion.HasValue) return base.ProcessCmdKey(ref msg, keyData);
             if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value)) return true;
             EjecutarAccion(accion.Value);
