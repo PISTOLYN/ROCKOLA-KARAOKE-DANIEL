@@ -1352,6 +1352,21 @@ namespace RockolaKaraoke.Interfaz
             return string.Format(CultureInfo.InvariantCulture, "{0:00}:{1:00}", minutos, segundos);
         }
 
+        private TextBoxBase ObtenerCuadroTextoConFoco(Control raiz)
+        {
+            if (raiz == null || !raiz.ContainsFocus) return null;
+            TextBoxBase cuadro = raiz as TextBoxBase;
+            if (cuadro != null && cuadro.Focused) return cuadro;
+
+            foreach (Control hijo in raiz.Controls)
+            {
+                if (!hijo.ContainsFocus) continue;
+                cuadro = ObtenerCuadroTextoConFoco(hijo);
+                if (cuadro != null) return cuadro;
+            }
+            return null;
+        }
+
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             // Centralizar aquí las teclas configurables evita que ListView, botones,
@@ -1368,15 +1383,26 @@ namespace RockolaKaraoke.Interfaz
                 return true;
             }
 
-            if (ActiveControl is TextBoxBase)
+            // Detectar también cuadros de texto dentro de paneles y contenedores.
+            // Si el usuario está escribiendo una búsqueda, no convertir sus letras
+            // en atajos del reproductor.
+            TextBoxBase cuadroConFoco = ObtenerCuadroTextoConFoco(this);
+            if (cuadroConFoco != null)
             {
                 if (teclaBase == Keys.Escape)
                 {
-                    ActiveControl = biblioteca;
+                    biblioteca.Focus();
                     return true;
                 }
                 return base.ProcessCmdKey(ref msg, keyData);
             }
+
+            // Windows puede repetir WM_KEYDOWN mientras se mantiene pulsada una tecla.
+            // Ignorar repeticiones evita agregar varias veces una canción o ejecutar
+            // varias acciones sensibles por una sola pulsación sostenida.
+            bool repeticion = (msg.Msg == 0x0100 || msg.Msg == 0x0104) &&
+                ((((long)msg.LParam) & 0x40000000L) != 0);
+            if (repeticion) return true;
 
             AccionTeclado? accion = ConfiguracionTeclado.Buscar(teclaBase);
             if (!accion.HasValue)
