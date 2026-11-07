@@ -1036,14 +1036,13 @@ namespace RockolaKaraoke.Interfaz
 
             if (!hayTemaActivo)
             {
+                // Sin una canción reproduciéndose, la pantalla de portada no debe
+                // bloquear la biblioteca: dejar visible la lista para elegir temas.
                 lblTituloPortada.Text = "";
                 lblArtistaPortada.Text = "";
                 lblDuracionPortada.Text = "";
-                using (Image leon = CargarImagenLeon())
-                {
-                    if (leon != null) EstablecerImagenCajaCD(leon);
-                    else EstablecerImagenCajaCD(null);
-                }
+                MostrarContenidoReproductor();
+                return;
             }
 
             panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
