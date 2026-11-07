@@ -1254,7 +1254,7 @@ namespace RockolaKaraoke.Interfaz
             if (tarjetas.Count == 0) return;
             if (panelPortadaPrincipal.Visible)
             {
-                panelPortadaPrincipal.Visible = false;
+                MostrarContenidoReproductor();
             }
             if (temporizadorInactividad != null)
             {
