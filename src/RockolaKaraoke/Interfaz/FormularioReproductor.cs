@@ -1030,14 +1030,23 @@ namespace RockolaKaraoke.Interfaz
 
         private void MostrarPortadaEnEspera()
         {
-            lblTituloPortada.Text = "";
-            lblArtistaPortada.Text = "";
-            lblDuracionPortada.Text = "";
-            using (Image leon = CargarImagenLeon())
+            // Si hay una canción activa, conservar su carátula y sus datos.
+            // Cuando no hay reproducción, mostrar la portada general de espera.
+            bool hayTemaActivo = !String.IsNullOrWhiteSpace(rutaActualReproduccion) &&
+                reproductor != null && (reproductor.IsPlaying || reproductor.State == VLCState.Paused);
+
+            if (!hayTemaActivo)
             {
-                if (leon != null) EstablecerImagenCajaCD(leon);
-                else EstablecerImagenCajaCD(null);
+                lblTituloPortada.Text = "";
+                lblArtistaPortada.Text = "";
+                lblDuracionPortada.Text = "";
+                using (Image leon = CargarImagenLeon())
+                {
+                    if (leon != null) EstablecerImagenCajaCD(leon);
+                    else EstablecerImagenCajaCD(null);
+                }
             }
+
             panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
             panelPortadaPrincipal.Dock = DockStyle.Fill;
             panelPortadaPrincipal.Visible = true;
