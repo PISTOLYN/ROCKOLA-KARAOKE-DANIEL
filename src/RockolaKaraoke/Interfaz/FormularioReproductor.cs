@@ -60,7 +60,7 @@ namespace RockolaKaraoke.Interfaz
         private int indicePortada;
         private Dictionary<string, string> aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        // --- VARIABLES PARA LA PORTADA ROJA Y SKINS ---
+        // --- VARIABLES PARA LA PORTADA Y SKINS ---
         private Panel panelPortadaPrincipal;
         private PictureBox pictureBoxPortada;
         private Label lblTituloPortada;
@@ -68,7 +68,7 @@ namespace RockolaKaraoke.Interfaz
         private Label lblDuracionPortada;
         private string rutaCajaVacia = "PortadaVacia.png";
         private string rutaLeonDefecto = "LeonDefault.jpg";
-        private Timer temporizadorInactividad; // Temporizador para volver a la portada
+        private Timer temporizadorInactividad;
 
         private string ArchivoLetrero { get { return Path.Combine(Application.UserAppDataPath, "letrero-led.txt"); } }
 
@@ -287,7 +287,6 @@ namespace RockolaKaraoke.Interfaz
                 b.Click += delegate { filtroTipo = modo == "AUDIO" ? "Musica" : modo == "VIDEO" ? "Video" : "Karaoke"; ConstruirMosaico(); };
             }
 
-            // Controles de navegación y reproducción al estilo de la rockola de referencia.
             FlowLayoutPanel controlesRockola = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 92, Padding = new Padding(5, 5, 2, 2), WrapContents = true, BackColor = Color.FromArgb(3, 10, 24) };
             Button btnAnteriorRockola = new Button { Text = "◀", Width = 48, Height = 38, Font = new Font("Segoe UI", 17F, FontStyle.Bold) };
             Button btnPlayRockola = new Button { Text = "▶", Width = 58, Height = 38, Font = new Font("Segoe UI", 17F, FontStyle.Bold) };
@@ -335,11 +334,11 @@ namespace RockolaKaraoke.Interfaz
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
 
-            // --- CREACIÓN DEL PANEL ROJO DE PORTADA ---
+            // --- CREACIÓN DEL PANEL DE PORTADA (Toma el color del Skin) ---
             panelPortadaPrincipal = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.DarkRed,
+                BackColor = ConfiguracionSkin.Fondo, // Usa el color de fondo de tu Skin
                 Visible = false
             };
 
@@ -404,7 +403,6 @@ namespace RockolaKaraoke.Interfaz
             temporizadorInactividad.Interval = 3000; // 3 segundos
             temporizadorInactividad.Tick += delegate 
             {
-                // Si el reproductor está sonando, volvemos a la portada roja
                 if (reproductor != null && reproductor.IsPlaying)
                 {
                     panelPortadaPrincipal.Visible = true;
@@ -768,7 +766,6 @@ namespace RockolaKaraoke.Interfaz
                     if (!IsDisposed && IsHandleCreated) BeginInvoke((Action)delegate 
                     { 
                         ReproducirSiguiente(); 
-                        // Si no hay más canciones en la cola, quitamos la portada
                         if (cola.Items.Count == 0 && (reproductor == null || !reproductor.IsPlaying)) 
                         {
                             panelPortadaPrincipal.Visible = false;
@@ -826,7 +823,6 @@ namespace RockolaKaraoke.Interfaz
         {
             if (biblioteca.Items.Count == 0) return;
             
-            // Al mover las flechas, regresamos al buscador y reiniciamos el temporizador
             if (panelPortadaPrincipal.Visible)
             {
                 panelPortadaPrincipal.Visible = false;
@@ -881,20 +877,17 @@ namespace RockolaKaraoke.Interfaz
                 tituloActual.Text = titulo + "  —  " + artista;
                 reproducir.Text = "Ⅱ PAUSAR";
 
-                // --- MOSTRAR PORTADA Y DATOS ---
                 lblTituloPortada.Text = titulo;
                 lblArtistaPortada.Text = artista;
                 
                 string carpetaCancion = Path.GetDirectoryName(ruta);
                 Image caratulaArtista = BuscarPortada(carpetaCancion);
                 
-                // Si no hay carátula, usamos la del León
                 if (caratulaArtista == null && File.Exists(rutaLeonDefecto))
                 {
                     caratulaArtista = Image.FromFile(rutaLeonDefecto);
                 }
 
-                // Ahora creamos la imagen combinada
                 if (File.Exists(rutaCajaVacia))
                 {
                     using (Image cajaVacia = Image.FromFile(rutaCajaVacia))
@@ -904,10 +897,8 @@ namespace RockolaKaraoke.Interfaz
                         {
                             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                             
-                            // 1. Dibujamos la caja de CD vacía
                             g.DrawImage(cajaVacia, 0, 0, cajaVacia.Width, cajaVacia.Height);
 
-                            // 2. Dibujamos la carátula del artista (o el león) ENCIMA, ajustando las coordenadas
                             if (caratulaArtista != null)
                             {
                                 int x = 30;   
@@ -1151,7 +1142,6 @@ namespace RockolaKaraoke.Interfaz
         private void MoverPortada(int paso)
         {
             if (tarjetas.Count == 0) return;
-            // Al mover las portadas, regresamos al buscador y reiniciamos el temporizador
             if (panelPortadaPrincipal.Visible)
             {
                 panelPortadaPrincipal.Visible = false;
