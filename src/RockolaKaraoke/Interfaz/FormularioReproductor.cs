@@ -377,6 +377,17 @@ namespace RockolaKaraoke.Interfaz
                 BackColor = Color.Transparent
             };
 
+            // Fondo rojo independiente, colocado explícitamente debajo de la caja/portada.
+            // No depende de la transparencia del PNG ni del BackColor del PictureBox.
+            Panel cuadroRojoDebajoPortada = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(190, 0, 0),
+                Margin = Padding.Empty
+            };
+            panelPortadaPrincipal.Controls.Add(cuadroRojoDebajoPortada);
+            cuadroRojoDebajoPortada.SendToBack();
+
             panelPortadaPrincipal.Controls.Add(pictureBoxPortada);
             panelPortadaPrincipal.Controls.Add(lblTituloPortada);
             panelPortadaPrincipal.Controls.Add(lblArtistaPortada);
