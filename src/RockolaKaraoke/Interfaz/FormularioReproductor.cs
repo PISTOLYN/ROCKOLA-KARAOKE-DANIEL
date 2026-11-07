@@ -869,7 +869,7 @@ namespace RockolaKaraoke.Interfaz
             
             if (panelPortadaPrincipal.Visible)
             {
-                panelPortadaPrincipal.Visible = false;
+                MostrarContenidoReproductor();
             }
             if (temporizadorInactividad != null)
             {
