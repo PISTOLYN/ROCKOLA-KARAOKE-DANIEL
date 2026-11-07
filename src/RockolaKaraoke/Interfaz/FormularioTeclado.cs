@@ -61,7 +61,7 @@ namespace RockolaKaraoke.Interfaz
             Label tituloVolumen = new Label { Text = "PASO DE VOLUMEN al usar las teclas de subir / bajar (1 a 20):", Left = 15, Top = 25, Width = 560, Height = 26, ForeColor = Color.Black };
             NumericUpDown paso = new NumericUpDown { Left = 590, Top = 22, Width = 80, Minimum = 1, Maximum = 20, Value = Math.Max(1, Math.Min(20, ConfiguracionTeclado.PasoVolumen)) };
             paso.ValueChanged += delegate { ConfiguracionTeclado.PasoVolumen = Decimal.ToInt32(paso.Value); ConfiguracionTeclado.Guardar(); };
-            CheckBox quitaUltimo = new CheckBox { Text = "AL PRESIONAR CANCELAR, QUITAR EL ÚLTIMO TEMA DE LA LISTA DE ESPERA", Left = 15, Top = 75, Width = 800, Height = 28, Checked = ConfiguracionTeclado.CancelarQuitaUltimo, ForeColor = Color.Black };
+            CheckBox quitaUltimo = new CheckBox { Text = "SI NO HAY CANCIÓN SONANDO, CANCELAR TAMBIÉN QUITA EL ÚLTIMO TEMA EN ESPERA", Left = 15, Top = 75, Width = 850, Height = 28, Checked = ConfiguracionTeclado.CancelarQuitaUltimo, ForeColor = Color.Black };
             quitaUltimo.CheckedChanged += delegate { ConfiguracionTeclado.CancelarQuitaUltimo = quitaUltimo.Checked; ConfiguracionTeclado.Guardar(); };
             CheckBox confirmar = new CheckBox { Text = "PEDIR CONFIRMACIÓN ANTES DE CERRAR EL PROGRAMA O APAGAR LA PC", Left = 15, Top = 120, Width = 800, Height = 28, Checked = ConfiguracionTeclado.ConfirmarSalida, ForeColor = Color.Black };
             confirmar.CheckedChanged += delegate { ConfiguracionTeclado.ConfirmarSalida = confirmar.Checked; ConfiguracionTeclado.Guardar(); };
