@@ -32,7 +32,7 @@ namespace RockolaKaraoke.Interfaz
             lista.Dock = DockStyle.Fill; lista.View = View.Details; lista.FullRowSelect = true; lista.HideSelection = false;
             lista.MultiSelect = false; lista.Font = new Font("Segoe UI", 11F, FontStyle.Bold); lista.BackColor = Color.White; lista.ForeColor = Color.Black;
             lista.Columns.Add("ACCIÓN", 600); lista.Columns.Add("TECLA", 250);
-            lista.ItemActivate += delegate { CambiarTeclaSeleccionada(); };
+            lista.DoubleClick += delegate { CambiarTeclaSeleccionada(); };
             // ENTER debe abrir la captura aunque la fila solo tenga el foco.
             lista.KeyDown += delegate(object sender, KeyEventArgs e)
             {
