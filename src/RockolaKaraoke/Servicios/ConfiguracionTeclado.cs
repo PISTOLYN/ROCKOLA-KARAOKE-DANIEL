@@ -86,8 +86,11 @@ namespace RockolaKaraoke.Servicios
 
         public static AccionTeclado? Buscar(Keys teclaPresionada)
         {
+            // Comparar únicamente el código de tecla: los modificadores (Shift, Ctrl,
+            // Alt) no deben impedir que una tecla configurada sea reconocida.
+            Keys tecla = teclaPresionada & Keys.KeyCode;
             foreach (KeyValuePair<AccionTeclado, Keys> par in teclas)
-                if (par.Value == teclaPresionada) return par.Key;
+                if ((par.Value & Keys.KeyCode) == tecla) return par.Key;
             return null;
         }
 
