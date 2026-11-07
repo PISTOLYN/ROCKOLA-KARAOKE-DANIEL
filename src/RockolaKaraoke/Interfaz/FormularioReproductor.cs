@@ -459,20 +459,34 @@ namespace RockolaKaraoke.Interfaz
 
             // --- CONFIGURACIÓN DEL TEMPORIZADOR DE INACTIVIDAD ---
             temporizadorInactividad = new Timer();
-            temporizadorInactividad.Interval = 3000; // 3 segundos
-            temporizadorInactividad.Tick += delegate 
+            temporizadorInactividad.Interval = 3000; // 3 segundos sin actividad
+            temporizadorInactividad.Tick += delegate
             {
-                // La portada es la pantalla de espera: nunca debe tapar una canción en reproducción.
-                if (reproductor != null && reproductor.IsPlaying)
-                {
-                    MostrarContenidoReproductor();
-                }
-                else
-                {
-                    MostrarPortadaEnEspera();
-                }
                 temporizadorInactividad.Stop();
+                // Durante la reproducción, volver a mostrar la portada roja de la caja del CD.
+                if (reproductor != null && reproductor.IsPlaying)
+                    MostrarPortadaEnEspera();
             };
+
+            // Detectar movimiento del mouse en toda la interfaz, no solo sobre el formulario.
+            RegistrarMovimientoMouse(this);
+        }
+
+        private void RegistrarMovimientoMouse(Control control)
+        {
+            if (control == null) return;
+            control.MouseMove += delegate { NotificarActividadUsuario(); };
+            foreach (Control hijo in control.Controls)
+                RegistrarMovimientoMouse(hijo);
+        }
+
+        private void NotificarActividadUsuario()
+        {
+            if (reproductor == null || !reproductor.IsPlaying) return;
+            if (panelPortadaPrincipal.Visible)
+                MostrarContenidoReproductor();
+            temporizadorInactividad.Stop();
+            temporizadorInactividad.Start();
         }
 
         private static Color LeerColor(string html, Color porDefecto)
@@ -965,7 +979,11 @@ namespace RockolaKaraoke.Interfaz
                 // Combina la caja de CD y la carátula, dejando el disco de colores visible.
                 EstablecerImagenCajaCD(caratulaArtista ?? CargarImagenLeon());
 
-                MostrarContenidoReproductor();
+                // Al iniciar cada tema se muestra la portada; cualquier movimiento la oculta
+                // temporalmente y, tras 3 segundos sin actividad, vuelve a aparecer.
+                MostrarPortadaEnEspera();
+                temporizadorInactividad.Stop();
+                temporizadorInactividad.Start();
             }
             catch (Exception ex) { MessageBox.Show(this, "No se pudo reproducir el archivo.\n" + ex.Message, "Error de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
@@ -1279,6 +1297,13 @@ namespace RockolaKaraoke.Interfaz
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            // Las flechas también cuentan como actividad: ocultan la portada roja
+            // mientras se navega y reinician el contador de inactividad.
+            Keys teclaBase = keyData & Keys.KeyCode;
+            if (teclaBase == Keys.Left || teclaBase == Keys.Right ||
+                teclaBase == Keys.Up || teclaBase == Keys.Down)
+                NotificarActividadUsuario();
+
             if (ActiveControl is TextBoxBase)
             {
                 if (keyData == Keys.Escape || keyData == Keys.Down) { ActiveControl = biblioteca; return true; }
