@@ -1405,7 +1405,7 @@ namespace RockolaKaraoke.Interfaz
                 case AccionTeclado.Derecha: MoverPortada(1); break;
                 case AccionTeclado.Arriba: MoverSeleccionCancion(-1); break;
                 case AccionTeclado.Abajo: MoverSeleccionCancion(1); break;
-                case AccionTeclado.Agregar: if (biblioteca.SelectedIndices.Count > 0) AgregarSeleccionALaCola(); break;
+                case AccionTeclado.Agregar: AgregarSeleccionALaCola(); break;
                 case AccionTeclado.Cancelar: CancelarUltimo(); break;
                 case AccionTeclado.SiguienteTema: ReproducirSiguiente(); break;
                 case AccionTeclado.CambiarModo: CambiarGenero(); break;
