@@ -115,7 +115,38 @@ namespace RockolaKaraoke.Interfaz
 
             cuerpo.Controls.Add(grupoGeneros, 0, 0);
             cuerpo.Controls.Add(grupoCarpetas, 0, 1);
-            Controls.Add(cuerpo); Controls.Add(instrucciones); Controls.Add(estado); Controls.Add(titulo);
+            TabControl pestanas = new TabControl { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F, FontStyle.Bold) };
+            TabPage paginaGeneros = new TabPage("GÉNEROS Y ARTISTAS") { BackColor = BackColor };
+            TabPage paginaLista = new TabPage("LISTA DE REPRODUCCIÓN") { BackColor = BackColor };
+            paginaGeneros.Controls.Add(cuerpo);
+            paginaGeneros.Controls.Add(instrucciones);
+            paginaGeneros.Controls.Add(estado);
+            FlowLayoutPanel opcionesLista = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(24), BackColor = Color.FromArgb(5, 14, 32) };
+            Label tituloLista = new Label { Text = "CONFIGURACIÓN DE LISTA DE REPRODUCCIÓN", AutoSize = true, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 15F, FontStyle.Bold), Margin = new Padding(3, 8, 3, 18) };
+            CheckBox chkMensaje = CrearOpcion("MOSTRAR UN MENSAJE AL AGREGAR TEMA A LA LISTA DE REPRODUCCIÓN", ConfiguracionTeclado.MostrarMensajeAlAgregar);
+            CheckBox chkGeneros = CrearOpcion("MOSTRAR LA LISTA DE GÉNERO MUSICAL", ConfiguracionTeclado.MostrarListaGeneros);
+            CheckBox chkSiguienteGenero = CrearOpcion("IR DIRECTAMENTE AL SIGUIENTE GÉNERO MUSICAL DE LA LISTA", ConfiguracionTeclado.IrSiguienteGeneroDirectamente);
+            CheckBox chkAbecedario = CrearOpcion("MOSTRAR ABECEDARIO PARA SALTAR A UNA LETRA DESPUÉS DE MANTENER PRESIONADOS LOS BOTONES DE IZQUIERDA O DERECHA SOLO CON TECLADO", ConfiguracionTeclado.MostrarAbecedarioAlMantenerFlecha);
+            FlowLayoutPanel filaTiempo = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Margin = new Padding(3, 12, 3, 8) };
+            Label lblTiempo = new Label { Text = "TIEMPO DE ESPERA EN SEGUNDOS ANTES DE MOSTRAR EL MENÚ ABECEDARIO:", AutoSize = true, ForeColor = Color.White, Font = new Font("Segoe UI", 10F, FontStyle.Bold), Margin = new Padding(0, 8, 12, 0) };
+            NumericUpDown numTiempo = new NumericUpDown { Minimum = 1, Maximum = 15, Value = Math.Max(1, Math.Min(15, ConfiguracionTeclado.TiempoEsperaAbecedario)), Width = 90, Font = new Font("Segoe UI", 12F, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            filaTiempo.Controls.Add(lblTiempo); filaTiempo.Controls.Add(numTiempo);
+            opcionesLista.Controls.Add(tituloLista); opcionesLista.Controls.Add(chkMensaje); opcionesLista.Controls.Add(chkGeneros); opcionesLista.Controls.Add(chkSiguienteGenero); opcionesLista.Controls.Add(chkAbecedario); opcionesLista.Controls.Add(filaTiempo);
+            paginaLista.Controls.Add(opcionesLista);
+            pestanas.TabPages.Add(paginaGeneros); pestanas.TabPages.Add(paginaLista);
+            Controls.Add(pestanas); Controls.Add(titulo);
+            EventHandler guardarOpciones = delegate
+            {
+                ConfiguracionTeclado.MostrarMensajeAlAgregar = chkMensaje.Checked;
+                ConfiguracionTeclado.MostrarListaGeneros = chkGeneros.Checked;
+                ConfiguracionTeclado.IrSiguienteGeneroDirectamente = chkSiguienteGenero.Checked;
+                ConfiguracionTeclado.MostrarAbecedarioAlMantenerFlecha = chkAbecedario.Checked;
+                ConfiguracionTeclado.TiempoEsperaAbecedario = (int)numTiempo.Value;
+                ConfiguracionTeclado.Guardar();
+            };
+            chkMensaje.CheckedChanged += guardarOpciones; chkGeneros.CheckedChanged += guardarOpciones;
+            chkSiguienteGenero.CheckedChanged += guardarOpciones; chkAbecedario.CheckedChanged += guardarOpciones;
+            numTiempo.ValueChanged += guardarOpciones;
 
             agregarGenero.Click += delegate { AgregarGenero(); };
             borrarGenero.Click += delegate { BorrarGenero(); };
@@ -131,6 +162,11 @@ namespace RockolaKaraoke.Interfaz
             agregarArchivos.Click += delegate { AgregarArchivos(); };
 
             Load += delegate { CargarGeneros(-1); };
+        }
+
+        private static CheckBox CrearOpcion(string texto, bool valor)
+        {
+            return new CheckBox { Text = texto, Checked = valor, AutoSize = true, MaximumSize = new Size(900, 0), ForeColor = Color.White, Font = new Font("Segoe UI", 10F, FontStyle.Bold), Margin = new Padding(3, 8, 3, 8), CheckAlign = ContentAlignment.MiddleLeft };
         }
 
         private static Button CrearBoton(string texto, Control padre)
