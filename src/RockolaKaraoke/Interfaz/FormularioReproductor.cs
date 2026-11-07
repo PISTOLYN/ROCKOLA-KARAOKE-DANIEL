@@ -342,7 +342,7 @@ namespace RockolaKaraoke.Interfaz
             panelPortadaPrincipal = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(150, 0, 0),
+                BackColor = Color.FromArgb(190, 0, 0),
                 Visible = false
             };
 
@@ -393,8 +393,11 @@ namespace RockolaKaraoke.Interfaz
 
             CrearBarraAbc();
             
-            Controls.Add(centro); 
-            Controls.Add(panelPortadaPrincipal);
+            Controls.Add(centro);
+            // La pantalla de portada debe ser hija del área central para cubrir
+            // la interfaz oscura completa y mostrar el fondo rojo de referencia.
+            centro.Controls.Add(panelPortadaPrincipal);
+            panelPortadaPrincipal.BringToFront();
             Controls.Add(barraAbc); 
             Controls.Add(barraEstado); 
             Controls.Add(inferior); 
@@ -921,7 +924,7 @@ namespace RockolaKaraoke.Interfaz
             {
                 // El PNG de la caja tiene zonas transparentes: rellenarlas con rojo
                 // antes de dibujar conserva el fondo rojo visible alrededor del CD.
-                g.Clear(Color.FromArgb(150, 0, 0));
+                g.Clear(Color.FromArgb(190, 0, 0));
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
                 g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 g.DrawImage(caja, 0, 0, caja.Width, caja.Height);
