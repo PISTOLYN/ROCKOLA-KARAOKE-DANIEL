@@ -888,6 +888,7 @@ namespace RockolaKaraoke.Interfaz
                     caratulaArtista = Image.FromFile(rutaLeonDefecto);
                 }
 
+                // OBLIGAMOS A USAR LA CAJA DE CD
                 if (File.Exists(rutaCajaVacia))
                 {
                     using (Image cajaVacia = Image.FromFile(rutaCajaVacia))
@@ -901,10 +902,10 @@ namespace RockolaKaraoke.Interfaz
 
                             if (caratulaArtista != null)
                             {
-                                int x = 30;   
-                                int y = 30;   
-                                int ancho = (int)(cajaVacia.Width * 0.43); 
-                                int alto = cajaVacia.Height - 60;          
+                                int x = (int)(cajaVacia.Width * 0.03);   
+                                int y = (int)(cajaVacia.Height * 0.03);  
+                                int ancho = (int)(cajaVacia.Width * 0.42); 
+                                int alto = (int)(cajaVacia.Height * 0.94); 
 
                                 g.DrawImage(caratulaArtista, new Rectangle(x, y, ancho, alto));
                             }
@@ -912,10 +913,7 @@ namespace RockolaKaraoke.Interfaz
                         pictureBoxPortada.Image = lienzoFinal;
                     }
                 }
-                else
-                {
-                    pictureBoxPortada.Image = caratulaArtista;
-                }
+                // (Si borras el else, si no encuentra la caja no muestra nada y te avisa)
 
                 panelPortadaPrincipal.Visible = true;
                 panelPortadaPrincipal.BringToFront();
