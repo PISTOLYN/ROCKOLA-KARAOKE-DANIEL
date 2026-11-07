@@ -68,6 +68,7 @@ namespace RockolaKaraoke.Interfaz
         private Label lblDuracionPortada;
         private string rutaCajaVacia = "PortadaVacia.png";
         private string rutaLeonDefecto = "LeonDefault.jpg";
+        private Timer temporizadorInactividad; // Temporizador para volver a la portada
 
         private string ArchivoLetrero { get { return Path.Combine(Application.UserAppDataPath, "letrero-led.txt"); } }
 
@@ -171,6 +172,7 @@ namespace RockolaKaraoke.Interfaz
                 if (reproductor != null) reproductor.Stop(); 
                 reproducir.Text = "▶ REPRODUCIR";
                 panelPortadaPrincipal.Visible = false;
+                if (temporizadorInactividad != null) temporizadorInactividad.Stop();
                 ActualizarLetreroInferior(); 
             };
 
@@ -396,6 +398,20 @@ namespace RockolaKaraoke.Interfaz
             Controls.Add(encabezado);
             
             Shown += delegate { mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80); };
+
+            // --- CONFIGURACIÓN DEL TEMPORIZADOR DE INACTIVIDAD ---
+            temporizadorInactividad = new Timer();
+            temporizadorInactividad.Interval = 3000; // 3 segundos
+            temporizadorInactividad.Tick += delegate 
+            {
+                // Si el reproductor está sonando, volvemos a la portada roja
+                if (reproductor != null && reproductor.IsPlaying)
+                {
+                    panelPortadaPrincipal.Visible = true;
+                    panelPortadaPrincipal.BringToFront();
+                }
+                temporizadorInactividad.Stop();
+            };
         }
 
         private static Color LeerColor(string html, Color porDefecto)
@@ -462,7 +478,6 @@ namespace RockolaKaraoke.Interfaz
             ActualizarLetreroInferior();
         }
 
-        /// <summary>Letrero de abajo: "NO HAY TEMAS EN ESPERA" o la lista de temas en espera.</summary>
         private void ActualizarLetreroInferior()
         {
             if (letreroInferior == null) return;
@@ -644,7 +659,6 @@ namespace RockolaKaraoke.Interfaz
             SeleccionarPortada(0);
         }
 
-        /// <summary>Pinta de amarillo la miniatura seleccionada.</summary>
         private void ResaltarPortadas()
         {
             for (int i = 0; i < tarjetas.Count; i++)
@@ -812,10 +826,15 @@ namespace RockolaKaraoke.Interfaz
         {
             if (biblioteca.Items.Count == 0) return;
             
-            // Al mover las flechas, regresamos al buscador
+            // Al mover las flechas, regresamos al buscador y reiniciamos el temporizador
             if (panelPortadaPrincipal.Visible)
             {
                 panelPortadaPrincipal.Visible = false;
+            }
+            if (temporizadorInactividad != null)
+            {
+                temporizadorInactividad.Stop();
+                temporizadorInactividad.Start();
             }
 
             int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] : 0;
@@ -1050,8 +1069,6 @@ namespace RockolaKaraoke.Interfaz
             return string.Format(CultureInfo.InvariantCulture, "{0:00}:{1:00}", minutos, segundos);
         }
 
-        // ===================== TECLADO: control de toda la rockola sin mouse =====================
-
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (ActiveControl is TextBoxBase)
@@ -1131,15 +1148,18 @@ namespace RockolaKaraoke.Interfaz
             if (TextoBuscado().Length > 0) ActualizarTextoBusqueda("");
         }
 
-        // ===================== Miniaturas de álbumes (cuadro amarillo) =====================
-
         private void MoverPortada(int paso)
         {
             if (tarjetas.Count == 0) return;
-            // Al mover las portadas, regresamos al buscador
+            // Al mover las portadas, regresamos al buscador y reiniciamos el temporizador
             if (panelPortadaPrincipal.Visible)
             {
                 panelPortadaPrincipal.Visible = false;
+            }
+            if (temporizadorInactividad != null)
+            {
+                temporizadorInactividad.Stop();
+                temporizadorInactividad.Start();
             }
             SeleccionarPortada((indicePortada + paso + tarjetas.Count) % tarjetas.Count);
         }
@@ -1176,8 +1196,6 @@ namespace RockolaKaraoke.Interfaz
             int posicion = modos.FindIndex(delegate(string v) { return IgualNormal(v, filtroTipo); }) + 1;
             tituloPortadas.Text = "MINIATURAS DE ÁLBUMES  •  " + (tarjetas.Count > 0 ? indicePortada + 1 : 0) + " DE " + tarjetas.Count + "  •  GÉNERO " + posicion + " DE " + modos.Count;
         }
-
-        // ===================== Géneros: KARAOKE / MÚSICA / VIDEO (cuadro amarillo) =====================
 
         private List<string> ListaModos()
         {
@@ -1218,7 +1236,6 @@ namespace RockolaKaraoke.Interfaz
             return boton;
         }
 
-        /// <summary>Crea las pestañas de género a partir de los géneros que el dueño configuró.</summary>
         private void ConstruirBotonesGenero()
         {
             nombresGenero.Clear();
@@ -1249,7 +1266,6 @@ namespace RockolaKaraoke.Interfaz
             ResaltarTipos();
         }
 
-        /// <summary>El cuadro amarillo marca el género activo (KARAOKE / MÚSICA / VIDEO).</summary>
         private void ResaltarTipos()
         {
             foreach (KeyValuePair<Button, string> par in botonesTipo)
@@ -1268,8 +1284,6 @@ namespace RockolaKaraoke.Interfaz
             filtroTipo = modos[(actual + 1) % modos.Count];
             ConstruirMosaico();
         }
-
-        // ===================== Buscador y barra ABC =====================
 
         private string TextoBuscado()
         {
@@ -1371,8 +1385,6 @@ namespace RockolaKaraoke.Interfaz
             }
             return false;
         }
-
-        // ===================== Menú (tecla M) =====================
 
         private void MostrarMenuPrincipal()
         {
