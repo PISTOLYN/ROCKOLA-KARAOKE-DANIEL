@@ -1105,9 +1105,17 @@ namespace RockolaKaraoke.Interfaz
 
         private void AgregarSeleccionALaCola()
         {
+            // Al pulsar la tecla de agregar desde el buscador, ListView puede conservar
+            // el elemento enfocado sin reportarlo en SelectedIndices. Recuperar esa fila.
+            if (biblioteca.SelectedIndices.Count == 0 && biblioteca.FocusedItem != null)
+            {
+                biblioteca.FocusedItem.Selected = true;
+            }
+
             if (biblioteca.SelectedIndices.Count == 0)
             {
-                MessageBox.Show(this, "Primero selecciona una o varias canciones de la lista. Haz doble clic o usa + AGREGAR.", "Cola de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ActiveControl = biblioteca;
+                MessageBox.Show(this, "Selecciona una canción de la lista y después presiona la tecla configurada como AGREGAR.", "Cola de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -1326,13 +1334,26 @@ namespace RockolaKaraoke.Interfaz
                 teclaBase == Keys.Up || teclaBase == Keys.Down)
                 NotificarActividadUsuario();
 
+            AccionTeclado? accion = ConfiguracionTeclado.Buscar(teclaBase);
+
+            // El cuadro de búsqueda no debe bloquear la tecla configurada para AGREGAR.
+            // Las demás teclas alfabéticas siguen escribiéndose normalmente en el buscador.
             if (ActiveControl is TextBoxBase)
             {
-                if (keyData == Keys.Escape || keyData == Keys.Down) { ActiveControl = biblioteca; return true; }
+                if (accion.HasValue && accion.Value == AccionTeclado.Agregar)
+                {
+                    EjecutarAccion(accion.Value);
+                    return true;
+                }
+                if (teclaBase == Keys.Escape ||
+                    (accion.HasValue && accion.Value == AccionTeclado.Cancelar))
+                {
+                    ActiveControl = biblioteca;
+                    return true;
+                }
                 return base.ProcessCmdKey(ref msg, keyData);
             }
-            if (keyData == Keys.F12) { MostrarAdministracion(); return true; }
-            AccionTeclado? accion = ConfiguracionTeclado.Buscar(teclaBase);
+            if (teclaBase == Keys.F12) { MostrarAdministracion(); return true; }
             if (!accion.HasValue) return base.ProcessCmdKey(ref msg, keyData);
             if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value)) return true;
             if (ConfiguracionTeclado.MostrarAbecedarioAlMantenerFlecha &&
