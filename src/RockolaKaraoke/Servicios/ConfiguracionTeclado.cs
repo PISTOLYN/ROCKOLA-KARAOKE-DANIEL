@@ -86,20 +86,36 @@ namespace RockolaKaraoke.Servicios
 
         public static AccionTeclado? Buscar(Keys teclaPresionada)
         {
-            // Comparar únicamente el código de tecla: los modificadores (Shift, Ctrl,
-            // Alt) no deben impedir que una tecla configurada sea reconocida.
+            // Comparar por código base, ignorando modificadores y evitando que
+            // Keys.None coincida accidentalmente con alguna acción.
             Keys tecla = teclaPresionada & Keys.KeyCode;
-            foreach (KeyValuePair<AccionTeclado, Keys> par in teclas)
-                if ((par.Value & Keys.KeyCode) == tecla) return par.Key;
+            if (tecla == Keys.None) return null;
+
+            foreach (AccionTeclado accion in Acciones)
+            {
+                Keys asignada = teclas[accion] & Keys.KeyCode;
+                if (asignada != Keys.None && asignada == tecla) return accion;
+            }
             return null;
         }
 
         /// <summary>Asigna una tecla. Si otra acción ya la usaba, intercambian teclas.</summary>
         public static void Asignar(AccionTeclado accion, Keys tecla)
         {
-            Keys anterior = teclas[accion];
+            tecla &= Keys.KeyCode;
+            if (tecla == Keys.None) return;
+
+            Keys anterior = teclas[accion] & Keys.KeyCode;
             foreach (AccionTeclado otra in Acciones)
-                if (otra != accion && teclas[otra] == tecla) { teclas[otra] = anterior; break; }
+            {
+                if (otra == accion) continue;
+                if ((teclas[otra] & Keys.KeyCode) == tecla)
+                {
+                    teclas[otra] = anterior;
+                    break;
+                }
+            }
+
             teclas[accion] = tecla;
             Guardar();
         }
