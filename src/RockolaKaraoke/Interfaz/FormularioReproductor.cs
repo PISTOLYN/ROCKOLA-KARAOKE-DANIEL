@@ -969,15 +969,14 @@ namespace RockolaKaraoke.Interfaz
                 lblArtistaPortada.Text = artista;
                 
                 string carpetaCancion = Path.GetDirectoryName(ruta);
-                Image caratulaArtista = BuscarPortada(carpetaCancion);
-                
-                if (caratulaArtista == null && File.Exists(rutaLeonDefecto))
+                // Si el tema no tiene una portada válida, usar siempre la imagen del León.
+                // Ambas imágenes se liberan al terminar de componer la caja del CD.
+                using (Image caratulaEncontrada = BuscarPortada(carpetaCancion))
+                using (Image portadaLeon = caratulaEncontrada == null ? CargarImagenLeon() : null)
                 {
-                    caratulaArtista = Image.FromFile(rutaLeonDefecto);
+                    Image portadaFinal = caratulaEncontrada ?? portadaLeon;
+                    EstablecerImagenCajaCD(portadaFinal);
                 }
-
-                // Combina la caja de CD y la carátula, dejando el disco de colores visible.
-                EstablecerImagenCajaCD(caratulaArtista ?? CargarImagenLeon());
 
                 // Al iniciar cada tema se muestra la portada; cualquier movimiento la oculta
                 // temporalmente y, tras 3 segundos sin actividad, vuelve a aparecer.
