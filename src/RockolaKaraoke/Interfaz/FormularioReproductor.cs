@@ -393,13 +393,22 @@ namespace RockolaKaraoke.Interfaz
 
             CrearBarraAbc();
             
-            // La portada se superpone como hija del área central y usa Dock=Fill.
-            // Así el fondo rojo cubre toda el área de reproducción, no solo la caja.
-            Controls.Add(centro);
-            centro.Controls.Add(panelPortadaPrincipal);
+            // Contenedor independiente para el área central: la portada no debe
+            // agregarse al TableLayoutPanel porque este la asigna a una celda.
+            Panel contenedorCentral = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(190, 0, 0),
+                Margin = Padding.Empty
+            };
+            centro.Dock = DockStyle.Fill;
+            contenedorCentral.Controls.Add(centro);
             panelPortadaPrincipal.Dock = DockStyle.Fill;
             panelPortadaPrincipal.Visible = false;
+            contenedorCentral.Controls.Add(panelPortadaPrincipal);
             panelPortadaPrincipal.BringToFront();
+
+            Controls.Add(contenedorCentral);
             Controls.Add(barraAbc);
             Controls.Add(barraEstado);
             Controls.Add(inferior);
