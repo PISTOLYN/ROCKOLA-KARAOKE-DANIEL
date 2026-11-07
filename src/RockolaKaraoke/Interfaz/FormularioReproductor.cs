@@ -1123,7 +1123,20 @@ namespace RockolaKaraoke.Interfaz
             int ancho = Math.Max(420, (int)(panelPortadaPrincipal.ClientSize.Width * 0.62));
             int alto = Math.Max(230, (int)(panelPortadaPrincipal.ClientSize.Height * 0.69));
             ancho = Math.Min(ancho, panelPortadaPrincipal.ClientSize.Width - 30);
-            alto = Math.Min(a        private void AgregarSeleccionALaCola(bool mostrarMensaje = true)
+            alto = Math.Min(alto, panelPortadaPrincipal.ClientSize.Height - 110);
+            pictureBoxPortada.Bounds = new Rectangle(
+                (panelPortadaPrincipal.ClientSize.Width - ancho) / 2,
+                Math.Max(8, (panelPortadaPrincipal.ClientSize.Height - alto) / 2 - 18),
+                ancho, alto);
+
+            int margen = Math.Max(24, (int)(panelPortadaPrincipal.ClientSize.Width * 0.025));
+            int y = panelPortadaPrincipal.ClientSize.Height - 82;
+            lblTituloPortada.Bounds = new Rectangle(margen, y, panelPortadaPrincipal.ClientSize.Width - margen * 2, 30);
+            lblArtistaPortada.Bounds = new Rectangle(margen, y + 29, panelPortadaPrincipal.ClientSize.Width - margen * 2, 22);
+            lblDuracionPortada.Bounds = new Rectangle(margen, y + 50, panelPortadaPrincipal.ClientSize.Width - margen * 2, 22);
+        }
+
+        private void AgregarSeleccionALaCola(bool mostrarMensaje = true)
         {
             // Recuperar la fila enfocada si el control todavía no actualizó SelectedIndices.
             if (biblioteca.SelectedIndices.Count == 0 && biblioteca.FocusedItem != null)
@@ -1161,24 +1174,6 @@ namespace RockolaKaraoke.Interfaz
             {
                 string mensaje = agregadas == 1 ? "Se agregó 1 tema a la lista de reproducción." :
                     "Se agregaron " + agregadas + " temas a la lista de reproducción.";
-                MessageBox.Show(this, mensaje, "Lista de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-        }
-
-[1].Text);
-                nuevo.Tag = rutaNormalizada;
-                cola.Items.Add(nuevo);
-                agregadas++;
-            }
-
-            ActualizarContadorCola();
-
-            if (ConfiguracionTeclado.MostrarMensajeAlAgregar)
-            {
-                string mensaje = agregadas == 1 ? "Se agregó 1 tema a la lista de reproducción." :
-                    "Se agregaron " + agregadas + " temas a la lista de reproducción.";
-                if (duplicadas > 0) mensaje += "\nSe omitieron " + duplicadas + " temas que ya estaban sonando o en la cola.";
-                if (agregadas == 0 && duplicadas == 0) mensaje = "No se agregaron temas. Comprueba que los archivos existan.";
                 MessageBox.Show(this, mensaje, "Lista de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
