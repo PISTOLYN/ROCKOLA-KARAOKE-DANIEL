@@ -336,7 +336,7 @@ namespace RockolaKaraoke.Interfaz
             panelPortadaPrincipal = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.DarkRed, // Fondo Rojo Sólido
+                BackColor = Color.DarkRed,
                 Visible = false
             };
 
@@ -913,7 +913,6 @@ namespace RockolaKaraoke.Interfaz
                 }
                 else
                 {
-                    // Si no encuentra la caja, mostramos un aviso para que sepas que falta el archivo
                     Bitmap lienzoError = new Bitmap(500, 500);
                     using (Graphics g = Graphics.FromImage(lienzoError))
                     {
@@ -1161,7 +1160,12 @@ namespace RockolaKaraoke.Interfaz
                 temporizadorInactividad.Stop();
                 temporizadorInactividad.Start();
             }
-            SeleccionarPortada((indicePortada + paso + tarjetas.Count) % tarjetas.Count);
+            
+            indicePortada = (indicePortada + paso + tarjetas.Count) % tarjetas.Count;
+            ResaltarPortadas();
+            mosaico.ScrollControlIntoView(tarjetas[indicePortada]);
+            MostrarCancionesDeAlbum(carpetasTarjetas[indicePortada]);
+            ActualizarTituloPortadas();
         }
 
         private void SeleccionarPortada(int indice)
