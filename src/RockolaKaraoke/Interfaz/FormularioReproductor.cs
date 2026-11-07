@@ -393,15 +393,15 @@ namespace RockolaKaraoke.Interfaz
 
             CrearBarraAbc();
             
+            // La portada es una capa superpuesta al formulario, no una celda
+            // del TableLayoutPanel central: así ocupa todo el espacio disponible.
             Controls.Add(centro);
-            // La pantalla de portada debe ser hija del área central para cubrir
-            // la interfaz oscura completa y mostrar el fondo rojo de referencia.
-            centro.Controls.Add(panelPortadaPrincipal);
-            panelPortadaPrincipal.BringToFront();
-            Controls.Add(barraAbc); 
-            Controls.Add(barraEstado); 
-            Controls.Add(inferior); 
+            Controls.Add(panelPortadaPrincipal);
+            Controls.Add(barraAbc);
+            Controls.Add(barraEstado);
+            Controls.Add(inferior);
             Controls.Add(encabezado);
+            panelPortadaPrincipal.Visible = false;
             
             Shown += delegate { mosaico.Height = Math.Max(150, marcoSuperior.ClientSize.Height - 80); };
 
