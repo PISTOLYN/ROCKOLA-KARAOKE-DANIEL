@@ -60,6 +60,8 @@ namespace RockolaKaraoke.Interfaz
         private readonly List<Panel> tarjetas = new List<Panel>();
         private readonly List<string> carpetasTarjetas = new List<string>();
         private int indicePortada;
+        private int inicioPaginaPortadas;
+        private const int PortadasPorPagina = 7;
         private Dictionary<string, string> aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // --- VARIABLES PARA LA PORTADA Y SKINS ---
@@ -290,7 +292,8 @@ namespace RockolaKaraoke.Interfaz
             AplicarMarcoNeon(marcoSuperior);
             AplicarMarcoNeon(lado);
 
-            mosaico.Dock = DockStyle.Fill; mosaico.AutoScroll = true; mosaico.WrapContents = false;
+            mosaico.Dock = DockStyle.Fill; mosaico.AutoScroll = false; mosaico.WrapContents = false;
+            mosaico.Resize += delegate { ActualizarPaginaPortadas(); };
             mosaico.FlowDirection = FlowDirection.LeftToRight; mosaico.Padding = new Padding(8, 7, 8, 5);
             mosaico.BackColor = Color.FromArgb(3, 10, 27);
 
@@ -305,10 +308,13 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.Visible = true; biblioteca.Dock = DockStyle.Fill; biblioteca.View = View.Details;
             biblioteca.FullRowSelect = true; biblioteca.HideSelection = false; biblioteca.GridLines = false;
             biblioteca.BackColor = Color.FromArgb(2, 7, 17); biblioteca.ForeColor = Color.White;
-            biblioteca.Font = new Font("Segoe UI", 13F, FontStyle.Bold);
-            biblioteca.Columns.Clear(); biblioteca.Columns.Add("[ÁLBUM SELECCIONADO]  •  1 DE 15", 620); biblioteca.Columns.Add("ARTISTA", 260);
+            biblioteca.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            ImageList altoFilas = new ImageList { ImageSize = new Size(1, 40), ColorDepth = ColorDepth.Depth32Bit };
+            altoFilas.Images.Add(new Bitmap(1, 40));
+            biblioteca.SmallImageList = altoFilas;
+            biblioteca.Columns.Clear(); biblioteca.Columns.Add("ÁLBUM SELECCIONADO  •  CANCIÓN 1 DE 15", 620); biblioteca.Columns.Add("ARTISTA", 260);
             biblioteca.OwnerDraw = true;
-            biblioteca.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e) { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(0, 175, 205)), e.Bounds); TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 10F, FontStyle.Bold), e.Bounds, Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left); };
+            biblioteca.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e) { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(0, 175, 205)), e.Bounds); TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 15F, FontStyle.Bold), e.Bounds, Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis); };
             biblioteca.DrawItem += delegate(object sender, DrawListViewItemEventArgs e) { e.DrawDefault = true; };
             biblioteca.DoubleClick += delegate { AgregarSeleccionALaCola(); };
             biblioteca.DrawSubItem += delegate(object sender, DrawListViewSubItemEventArgs e)
@@ -340,6 +346,7 @@ namespace RockolaKaraoke.Interfaz
                 TextRenderer.DrawText(e.Graphics, e.SubItem.Text, biblioteca.Font, zonaTexto, tinta, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
             };
             biblioteca.SelectedIndexChanged += delegate { ActualizarEncabezadoLista(); };
+            biblioteca.Resize += delegate { AjustarColumnasBiblioteca(); };
 
             lado.Controls.Add(biblioteca); lado.Controls.Add(filtros); lado.Controls.Add(busquedaMosaico);
             
@@ -350,13 +357,13 @@ namespace RockolaKaraoke.Interfaz
             Panel cuadroEstilos = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 15, 35), Padding = new Padding(5), Margin = new Padding(3) };
             AplicarMarcoNeon(cuadroPortadas);
             AplicarMarcoNeon(cuadroEstilos);
-            tituloPortadas = new Label { Text = "MINIATURAS DE ÁLBUMES  •  7 DE 54  •  GÉNERO 2 DE 4", Dock = DockStyle.Top, Height = 31, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 11F, FontStyle.Bold) };
-            FlowLayoutPanel navegacionPortadas = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(4, 2, 2, 2) };
-            Button portadaAnterior = new Button { Text = "◀ PORTADA", Width = 58, Height = 32 };
-            Button portadaSiguiente = new Button { Text = "▶", Width = 112, Height = 32 };
-            foreach (Button b in new Button[] { portadaAnterior, portadaSiguiente }) { Estilizar(b); b.BackColor = Color.FromArgb(0, 105, 175); navegacionPortadas.Controls.Add(b); }
-            portadaAnterior.Click += delegate { MoverPortada(-1); };
-            portadaSiguiente.Click += delegate { MoverPortada(1); };
+            tituloPortadas = new Label { Text = "PORTADAS 1–7", Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(0, 235, 245), Font = new Font("Segoe UI", 14F, FontStyle.Bold) };
+            FlowLayoutPanel navegacionPortadas = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 44, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(4, 3, 2, 2) };
+            Button portadaAnterior = new Button { Text = "◀ ANTERIOR 7", Width = 145, Height = 36 };
+            Button portadaSiguiente = new Button { Text = "SIGUIENTE 7 ▶", Width = 155, Height = 36 };
+            foreach (Button b in new Button[] { portadaAnterior, portadaSiguiente }) { Estilizar(b); b.Font = new Font("Segoe UI", 10F, FontStyle.Bold); b.BackColor = Color.FromArgb(0, 105, 175); navegacionPortadas.Controls.Add(b); }
+            portadaAnterior.Click += delegate { MoverPaginaPortadas(-1); };
+            portadaSiguiente.Click += delegate { MoverPaginaPortadas(1); };
             cuadroPortadas.Controls.Add(mosaico);
             cuadroPortadas.Controls.Add(navegacionPortadas);
             cuadroPortadas.Controls.Add(tituloPortadas);
@@ -408,11 +415,13 @@ namespace RockolaKaraoke.Interfaz
             btnFullRockola.Click += delegate { if (WindowState == FormWindowState.Maximized) WindowState = FormWindowState.Normal; else WindowState = FormWindowState.Maximized; };
 
             panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 25) };
-            etiquetaCola.Text = "NO HAY TEMAS EN ESPERA"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 28;
-            etiquetaCola.TextAlign = ContentAlignment.MiddleLeft; etiquetaCola.Padding = new Padding(7, 0, 0, 0); etiquetaCola.ForeColor = Color.Gold;
+            etiquetaCola.Text = "LISTA DE REPRODUCCIÓN • VACÍA"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 38;
+            etiquetaCola.TextAlign = ContentAlignment.MiddleLeft; etiquetaCola.Padding = new Padding(9, 0, 0, 0); etiquetaCola.ForeColor = Color.Gold;
+            etiquetaCola.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             cola.Dock = DockStyle.Fill; cola.View = View.Details; cola.FullRowSelect = true; cola.GridLines = false;
             cola.HideSelection = false; cola.BackColor = Color.FromArgb(4, 12, 25); cola.ForeColor = Color.White;
-            cola.Columns.Clear(); cola.Columns.Add("SIGUIENTE CANCIÓN", 220); cola.Columns.Add("ARTISTA", 130);
+            cola.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            cola.Columns.Clear(); cola.Columns.Add("TEMA EN LA LISTA", 220); cola.Columns.Add("ARTISTA", 130);
             cola.DoubleClick += delegate { ReproducirElementoDeCola(); };
             FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(2) };
             Button agregar = new Button { Text = "+ AGREGAR", Width = 92, Height = 32 };
@@ -780,7 +789,7 @@ namespace RockolaKaraoke.Interfaz
                     bool elegida = tarjetas.IndexOf(p) == indicePortada;
                     using (Pen borde = new Pen(elegida ? Color.FromArgb(255, 215, 0) : Color.FromArgb(0, 220, 245), elegida ? 5F : 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
                 };
-                PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 143, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
+                PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 145, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
                 Image imagen = BuscarPortada(carpeta);
                 if (imagen != null) portada.Image = imagen;
                 else
@@ -793,8 +802,8 @@ namespace RockolaKaraoke.Interfaz
                         using (SolidBrush b = new SolidBrush(Color.White)) e.Graphics.DrawString("♫", f, b, 58, 28);
                     };
                 }
-                Label nombre = new Label { Text = NombreAlbum(carpeta), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 9F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
-                Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 23, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 8F, FontStyle.Bold), Cursor = Cursors.Hand };
+                Label nombre = new Label { Text = NombreAlbum(carpeta), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 10F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
+                Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 25, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 9F, FontStyle.Bold), Cursor = Cursors.Hand };
                 tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
                 EventHandler elegir = delegate { SeleccionarPortada(posicion); };
                 tarjeta.Click += elegir; portada.Click += elegir; nombre.Click += elegir; total.Click += elegir;
@@ -805,6 +814,8 @@ namespace RockolaKaraoke.Interfaz
             mosaico.ResumeLayout();
             ResaltarTipos();
             indicePortada = 0;
+            inicioPaginaPortadas = 0;
+            ActualizarPaginaPortadas();
             SeleccionarPortada(0);
         }
 
@@ -1273,7 +1284,7 @@ namespace RockolaKaraoke.Interfaz
 
         private void ActualizarContadorCola()
         {
-            etiquetaCola.Text = "COLA DE REPRODUCCIÓN (" + cola.Items.Count + ")";
+            etiquetaCola.Text = "LISTA DE REPRODUCCIÓN (" + cola.Items.Count + ")";
             ActualizarLetreroInferior();
         }
 
@@ -1476,6 +1487,51 @@ namespace RockolaKaraoke.Interfaz
             if (TextoBuscado().Length > 0) ActualizarTextoBusqueda("");
         }
 
+        private void MoverPaginaPortadas(int direccion)
+        {
+            if (tarjetas.Count == 0) return;
+            int ultimaPagina = ((tarjetas.Count - 1) / PortadasPorPagina) * PortadasPorPagina;
+            inicioPaginaPortadas = Math.Max(0, Math.Min(ultimaPagina, inicioPaginaPortadas + direccion * PortadasPorPagina));
+            indicePortada = inicioPaginaPortadas;
+            ActualizarPaginaPortadas();
+            SeleccionarPortada(indicePortada);
+        }
+
+        private void ActualizarPaginaPortadas()
+        {
+            if (mosaico == null) return;
+            int disponibles = Math.Max(1, mosaico.ClientSize.Width - mosaico.Padding.Horizontal - 14);
+            int anchoTarjeta = Math.Max(70, Math.Min(220, (disponibles - PortadasPorPagina * 12) / PortadasPorPagina));
+            int altoImagen = Math.Max(90, Math.Min(155, (int)(anchoTarjeta * 0.82)));
+            for (int i = 0; i < tarjetas.Count; i++)
+            {
+                Panel tarjeta = tarjetas[i];
+                tarjeta.Visible = i >= inicioPaginaPortadas && i < inicioPaginaPortadas + PortadasPorPagina;
+                tarjeta.Width = anchoTarjeta;
+                tarjeta.Height = altoImagen + 65;
+                foreach (Control control in tarjeta.Controls)
+                {
+                    PictureBox imagen = control as PictureBox;
+                    if (imagen != null) imagen.Height = altoImagen;
+                }
+            }
+            if (tituloPortadas != null)
+            {
+                int primero = tarjetas.Count == 0 ? 0 : inicioPaginaPortadas + 1;
+                int ultimo = Math.Min(tarjetas.Count, inicioPaginaPortadas + PortadasPorPagina);
+                tituloPortadas.Text = "PORTADAS " + primero + "–" + ultimo + " DE " + tarjetas.Count;
+            }
+            mosaico.AutoScrollPosition = Point.Empty;
+        }
+
+        private void AjustarColumnasBiblioteca()
+        {
+            if (biblioteca.Columns.Count < 2) return;
+            int ancho = Math.Max(320, biblioteca.ClientSize.Width - 18);
+            biblioteca.Columns[1].Width = Math.Max(110, (int)(ancho * 0.30));
+            biblioteca.Columns[0].Width = Math.Max(180, ancho - biblioteca.Columns[1].Width);
+        }
+
         private void MoverPortada(int paso)
         {
             if (tarjetas.Count == 0) return;
@@ -1490,8 +1546,9 @@ namespace RockolaKaraoke.Interfaz
             }
             
             indicePortada = (indicePortada + paso + tarjetas.Count) % tarjetas.Count;
+            inicioPaginaPortadas = (indicePortada / PortadasPorPagina) * PortadasPorPagina;
+            ActualizarPaginaPortadas();
             ResaltarPortadas();
-            mosaico.ScrollControlIntoView(tarjetas[indicePortada]);
             MostrarCancionesDeAlbum(carpetasTarjetas[indicePortada]);
             ActualizarTituloPortadas();
         }
@@ -1507,8 +1564,9 @@ namespace RockolaKaraoke.Interfaz
             }
             indice = Math.Max(0, Math.Min(tarjetas.Count - 1, indice));
             indicePortada = indice;
+            inicioPaginaPortadas = (indice / PortadasPorPagina) * PortadasPorPagina;
+            ActualizarPaginaPortadas();
             ResaltarPortadas();
-            mosaico.ScrollControlIntoView(tarjetas[indice]);
             MostrarCancionesDeAlbum(carpetasTarjetas[indice]);
             ActualizarTituloPortadas();
         }
@@ -1518,7 +1576,7 @@ namespace RockolaKaraoke.Interfaz
             if (biblioteca.Columns.Count == 0) return;
             int total = biblioteca.Items.Count;
             int actual = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] + 1 : (total > 0 ? 1 : 0);
-            biblioteca.Columns[0].Text = "[ÁLBUM SELECCIONADO]  •  " + actual + " DE " + total;
+            biblioteca.Columns[0].Text = "ÁLBUM SELECCIONADO  •  CANCIÓN " + actual + " DE " + total;
         }
 
         private void ActualizarTituloPortadas()
@@ -1526,7 +1584,9 @@ namespace RockolaKaraoke.Interfaz
             if (tituloPortadas == null) return;
             List<string> modos = ListaModos();
             int posicion = modos.FindIndex(delegate(string v) { return IgualNormal(v, filtroTipo); }) + 1;
-            tituloPortadas.Text = "MINIATURAS DE ÁLBUMES  •  " + (tarjetas.Count > 0 ? indicePortada + 1 : 0) + " DE " + tarjetas.Count + "  •  GÉNERO " + posicion + " DE " + modos.Count;
+            int primero = tarjetas.Count == 0 ? 0 : inicioPaginaPortadas + 1;
+            int ultimo = Math.Min(tarjetas.Count, inicioPaginaPortadas + PortadasPorPagina);
+            tituloPortadas.Text = "PORTADAS " + primero + "–" + ultimo + " DE " + tarjetas.Count + "  •  GÉNERO " + posicion + " DE " + modos.Count;
         }
 
         private List<string> ListaModos()
