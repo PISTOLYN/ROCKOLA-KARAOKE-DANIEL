@@ -391,6 +391,8 @@ namespace RockolaKaraoke.Interfaz
             agregar.Click += delegate { AgregarSeleccionALaCola(); }; quitar.Click += delegate { QuitarDeLaCola(); }; subir.Click += delegate { MoverEnCola(-1); };
             bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { VaciarPendientes(); };
             panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
+            // La lista inicia oculta y se despliega desde el panel derecho al pulsar su tecla configurable.
+            panelCola.Visible = false;
             panelDerecho.Controls.Add(panelCola); panelDerecho.Controls.Add(controlesRockola); panelDerecho.Controls.Add(botonesModo); panelDerecho.Controls.Add(panelPublicidad);
             distribucionInferior.Controls.Add(lado, 0, 0);
             distribucionInferior.Controls.Add(panelDerecho, 1, 0);
