@@ -1140,13 +1140,32 @@ namespace RockolaKaraoke.Interfaz
 
         private void Reloj_Tick(object sender, EventArgs e)
         {
-            if (reproductor == null || !reproductor.IsPlaying) return;
+            if (reproductor == null) return;
+
+            // EndReached puede llegar antes de que VLC actualice IsPlaying.
+            // El reloj también vigila el estado final para recuperar la pantalla
+            // de espera aunque el evento de fin no alcance a mostrarla.
+            VLCState estado = reproductor.State;
+            if (estado == VLCState.Ended || estado == VLCState.Stopped || estado == VLCState.NothingSpecial)
+            {
+                if (cola.Items.Count == 0 && !panelPortadaPrincipal.Visible)
+                {
+                    MostrarPortadaEnEspera();
+                    ActualizarLetreroInferior();
+                    reproducir.Text = "▶ REPRODUCIR";
+                }
+                return;
+            }
+
+            // Pausar no equivale a estar en espera: conserva la pantalla del reproductor.
+            if (estado != VLCState.Playing) return;
+
             if (reproductor.Length > 0)
             {
                 moviendoProgreso = true;
                 progreso.Value = Math.Max(0, Math.Min(1000, (int)(reproductor.Position * 1000)));
                 moviendoProgreso = false;
-                
+
                 string tiempoActual = FormatearTiempo(reproductor.Time);
                 string tiempoTotal = FormatearTiempo(reproductor.Length);
                 tiempo.Text = tiempoActual + " / " + tiempoTotal;
