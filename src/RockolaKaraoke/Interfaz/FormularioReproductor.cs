@@ -1389,6 +1389,16 @@ namespace RockolaKaraoke.Interfaz
             TextBoxBase cuadroConFoco = ObtenerCuadroTextoConFoco(this);
             if (cuadroConFoco != null)
             {
+                // CANCELAR es una acción de la rockola: debe funcionar incluso
+                // cuando el foco está en el buscador y no debe quedarse como Escape
+                // para salir del cuadro de texto.
+                AccionTeclado? accionEnBusqueda = ConfiguracionTeclado.Buscar(teclaBase);
+                if (accionEnBusqueda == AccionTeclado.Cancelar)
+                {
+                    NotificarActividadUsuario();
+                    EjecutarAccion(AccionTeclado.Cancelar);
+                    return true;
+                }
                 if (teclaBase == Keys.Escape)
                 {
                     biblioteca.Focus();
@@ -1487,10 +1497,54 @@ namespace RockolaKaraoke.Interfaz
         {
             if (ConfiguracionTeclado.CancelarQuitaUltimo && cola.Items.Count > 0)
             {
-                cola.Items.RemoveAt(cola.Items.Count - 1);
+                // Primero quitar de la cola la canción que está seleccionada en la
+                // biblioteca. Antes siempre se borraba el último tema, aunque el
+                // usuario estuviera intentando cancelar otra canción concreta.
+                string rutaSeleccionada = null;
+                if (biblioteca.SelectedIndices.Count > 0)
+                {
+                    int indiceBiblioteca = biblioteca.SelectedIndices[0];
+                    if (indiceBiblioteca >= 0 && indiceBiblioteca < biblioteca.Items.Count)
+                        rutaSeleccionada = Convert.ToString(biblioteca.Items[indiceBiblioteca].Tag);
+                }
+                else if (biblioteca.FocusedItem != null)
+                {
+                    rutaSeleccionada = Convert.ToString(biblioteca.FocusedItem.Tag);
+                }
+
+                int indiceQuitar = -1;
+                if (!String.IsNullOrWhiteSpace(rutaSeleccionada))
+                {
+                    string rutaNormalizada;
+                    try { rutaNormalizada = Path.GetFullPath(rutaSeleccionada); }
+                    catch { rutaNormalizada = rutaSeleccionada; }
+
+                    for (int i = 0; i < cola.Items.Count; i++)
+                    {
+                        string rutaEnCola = Convert.ToString(cola.Items[i].Tag);
+                        if (String.IsNullOrWhiteSpace(rutaEnCola)) continue;
+                        try { rutaEnCola = Path.GetFullPath(rutaEnCola); }
+                        catch { }
+                        if (String.Equals(rutaEnCola, rutaNormalizada, StringComparison.OrdinalIgnoreCase))
+                        {
+                            indiceQuitar = i;
+                            break;
+                        }
+                    }
+                }
+
+                // Si el foco está en la propia lista de reproducción, respetar
+                // también la fila marcada. Si no hay canción concreta, quitar la última.
+                if (indiceQuitar < 0 && cola.SelectedIndices.Count > 0)
+                    indiceQuitar = cola.SelectedIndices[0];
+                if (indiceQuitar < 0)
+                    indiceQuitar = cola.Items.Count - 1;
+
+                cola.Items.RemoveAt(indiceQuitar);
                 ActualizarContadorCola();
                 return;
             }
+
             if (TextoBuscado().Length > 0) ActualizarTextoBusqueda("");
         }
 
