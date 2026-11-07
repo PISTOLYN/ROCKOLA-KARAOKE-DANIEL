@@ -19,7 +19,8 @@ namespace RockolaKaraoke.Interfaz
             boton.FlatAppearance.BorderSize = 1;
             boton.FlatAppearance.BorderColor = Color.Gray;
             boton.Cursor = Cursors.Hand;
-            boton.MouseEnter += delegate { indice = opciones.IndexOf(boton); ResaltarOpcion(); };
+            // No cambiar la selección del teclado solo porque el puntero esté encima.
+            // El mouse conserva el clic normal; las flechas mantienen su selección propia.
         }
 
         protected virtual void PintarOpcion(Button boton, bool seleccionada)
