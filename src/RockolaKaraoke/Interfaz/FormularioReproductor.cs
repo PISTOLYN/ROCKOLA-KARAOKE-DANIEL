@@ -101,6 +101,21 @@ namespace RockolaKaraoke.Interfaz
                     AlternarAbc();
                 }
             };
+            // KeyPreview permite recibir la liberación aunque el foco esté en la lista
+            // o en otro control. Así las flechas izquierda/derecha siempre se ejecutan.
+            KeyUp += delegate(object sender, KeyEventArgs e)
+            {
+                if (!direccionFlechaPendiente.HasValue) return;
+                Keys teclaLiberada = e.KeyCode;
+                AccionTeclado accionPendiente = direccionFlechaPendiente.Value;
+                Keys teclaEsperada = ConfiguracionTeclado.Obtener(accionPendiente) & Keys.KeyCode;
+                if (teclaLiberada != teclaEsperada) return;
+                direccionFlechaPendiente = null;
+                temporizadorAbecedario.Stop();
+                if (!abecedarioAbiertoPorEspera)
+                    MoverPortada(accionPendiente == AccionTeclado.Izquierda ? -1 : 1);
+                abecedarioAbiertoPorEspera = false;
+            };
             Load += delegate
             {
                 InicializarMotor();
@@ -1317,7 +1332,7 @@ namespace RockolaKaraoke.Interfaz
                 return base.ProcessCmdKey(ref msg, keyData);
             }
             if (keyData == Keys.F12) { MostrarAdministracion(); return true; }
-            AccionTeclado? accion = ConfiguracionTeclado.Buscar(keyData);
+            AccionTeclado? accion = ConfiguracionTeclado.Buscar(teclaBase);
             if (!accion.HasValue) return base.ProcessCmdKey(ref msg, keyData);
             if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value)) return true;
             if (ConfiguracionTeclado.MostrarAbecedarioAlMantenerFlecha &&
@@ -1334,21 +1349,6 @@ namespace RockolaKaraoke.Interfaz
             }
             EjecutarAccion(accion.Value);
             return true;
-        }
-
-        protected override void WndProc(ref Message m)
-        {
-            const int WM_KEYUP = 0x0101;
-            if (m.Msg == WM_KEYUP && direccionFlechaPendiente.HasValue)
-            {
-                AccionTeclado accion = direccionFlechaPendiente.Value;
-                direccionFlechaPendiente = null;
-                temporizadorAbecedario.Stop();
-                if (!abecedarioAbiertoPorEspera)
-                    MoverPortada(accion == AccionTeclado.Izquierda ? -1 : 1);
-                abecedarioAbiertoPorEspera = false;
-            }
-            base.WndProc(ref m);
         }
 
         private void EjecutarAccion(AccionTeclado accion)
