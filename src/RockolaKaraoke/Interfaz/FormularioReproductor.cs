@@ -811,6 +811,13 @@ namespace RockolaKaraoke.Interfaz
         private void MoverSeleccionCancion(int desplazamiento)
         {
             if (biblioteca.Items.Count == 0) return;
+            
+            // Al mover las flechas, regresamos al buscador
+            if (panelPortadaPrincipal.Visible)
+            {
+                panelPortadaPrincipal.Visible = false;
+            }
+
             int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] : 0;
             indice = Math.Max(0, Math.Min(biblioteca.Items.Count - 1, indice + desplazamiento));
             LimpiarSeleccionBiblioteca();
@@ -1129,6 +1136,11 @@ namespace RockolaKaraoke.Interfaz
         private void MoverPortada(int paso)
         {
             if (tarjetas.Count == 0) return;
+            // Al mover las portadas, regresamos al buscador
+            if (panelPortadaPrincipal.Visible)
+            {
+                panelPortadaPrincipal.Visible = false;
+            }
             SeleccionarPortada((indicePortada + paso + tarjetas.Count) % tarjetas.Count);
         }
 
