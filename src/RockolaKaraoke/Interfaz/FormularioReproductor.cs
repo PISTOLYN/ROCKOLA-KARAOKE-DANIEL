@@ -1348,7 +1348,16 @@ namespace RockolaKaraoke.Interfaz
             VLCState estado = reproductor.State;
             if (estado == VLCState.Ended || estado == VLCState.Stopped || estado == VLCState.NothingSpecial)
             {
-                if (cola.Items.Count == 0 && !panelPortadaPrincipal.Visible)
+                if (estado == VLCState.Ended && cola.Items.Count == 0)
+                {
+                    // Respaldo por si VLC no entrega EndReached: al finalizar,
+                    // quitar siempre la pantalla roja y dejar disponible la biblioteca.
+                    rutaActualReproduccion = "";
+                    MostrarPortadaEnEspera();
+                    ActualizarLetreroInferior();
+                    reproducir.Text = "▶ REPRODUCIR";
+                }
+                else if (cola.Items.Count == 0 && !panelPortadaPrincipal.Visible)
                 {
                     MostrarPortadaEnEspera();
                     ActualizarLetreroInferior();
