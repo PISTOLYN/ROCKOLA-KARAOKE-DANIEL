@@ -70,6 +70,9 @@ namespace RockolaKaraoke.Interfaz
         private string rutaCajaVacia = Path.Combine(Application.StartupPath, "PortadaVacia.png.png");
         private string rutaLeonDefecto = Path.Combine(Application.StartupPath, "LeonDefault.jpg.jpg");
         private Timer temporizadorInactividad;
+        private Timer temporizadorAbecedario;
+        private AccionTeclado? direccionFlechaPendiente;
+        private bool abecedarioAbiertoPorEspera;
 
         private string ArchivoLetrero { get { return Path.Combine(Application.UserAppDataPath, "letrero-led.txt"); } }
 
@@ -85,6 +88,17 @@ namespace RockolaKaraoke.Interfaz
 
             KeyPreview = true;
             CrearInterfaz();
+            temporizadorAbecedario = new Timer();
+            temporizadorAbecedario.Interval = ConfiguracionTeclado.TiempoEsperaAbecedario * 1000;
+            temporizadorAbecedario.Tick += delegate
+            {
+                temporizadorAbecedario.Stop();
+                if (direccionFlechaPendiente.HasValue && ConfiguracionTeclado.MostrarAbecedarioAlMantenerFlecha)
+                {
+                    abecedarioAbiertoPorEspera = true;
+                    AlternarAbc();
+                }
+            };
             Load += delegate
             {
                 InicializarMotor();
@@ -1210,8 +1224,35 @@ namespace RockolaKaraoke.Interfaz
             AccionTeclado? accion = ConfiguracionTeclado.Buscar(keyData);
             if (!accion.HasValue) return base.ProcessCmdKey(ref msg, keyData);
             if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value)) return true;
+            if (ConfiguracionTeclado.MostrarAbecedarioAlMantenerFlecha &&
+                (accion.Value == AccionTeclado.Izquierda || accion.Value == AccionTeclado.Derecha))
+            {
+                if (!direccionFlechaPendiente.HasValue)
+                {
+                    direccionFlechaPendiente = accion.Value;
+                    abecedarioAbiertoPorEspera = false;
+                    temporizadorAbecedario.Interval = ConfiguracionTeclado.TiempoEsperaAbecedario * 1000;
+                    temporizadorAbecedario.Start();
+                }
+                return true;
+            }
             EjecutarAccion(accion.Value);
             return true;
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            const int WM_KEYUP = 0x0101;
+            if (m.Msg == WM_KEYUP && direccionFlechaPendiente.HasValue)
+            {
+                AccionTeclado accion = direccionFlechaPendiente.Value;
+                direccionFlechaPendiente = null;
+                temporizadorAbecedario.Stop();
+                if (!abecedarioAbiertoPorEspera)
+                    MoverPortada(accion == AccionTeclado.Izquierda ? -1 : 1);
+                abecedarioAbiertoPorEspera = false;
+            }
+            base.WndProc(ref m);
         }
 
         private void EjecutarAccion(AccionTeclado accion)
@@ -1566,6 +1607,7 @@ namespace RockolaKaraoke.Interfaz
         private void LiberarMotor()
         {
             reloj.Stop();
+            if (temporizadorAbecedario != null) { temporizadorAbecedario.Stop(); temporizadorAbecedario.Dispose(); temporizadorAbecedario = null; }
             if (reproductor != null) { reproductor.Stop(); reproductor.Dispose(); reproductor = null; }
             if (medioActual != null) { medioActual.Dispose(); medioActual = null; }
             if (motor != null) { motor.Dispose(); motor = null; }
