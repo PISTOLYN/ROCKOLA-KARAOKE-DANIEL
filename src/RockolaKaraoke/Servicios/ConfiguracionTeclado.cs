@@ -29,7 +29,9 @@ namespace RockolaKaraoke.Servicios
         static ConfiguracionTeclado()
         {
             RestablecerTeclas();
+            Dictionary<AccionTeclado, Keys> predeterminadas = new Dictionary<AccionTeclado, Keys>(teclas);
             Cargar();
+            NormalizarTeclas(predeterminadas);
         }
 
         private static string Archivo
@@ -124,6 +126,30 @@ namespace RockolaKaraoke.Servicios
         {
             RestablecerTeclas();
             Guardar();
+        }
+
+        // Corrige configuraciones antiguas o dañadas que tengan dos acciones
+        // asignadas a la misma tecla. Una tecla no debe activar dos acciones.
+        private static void NormalizarTeclas(Dictionary<AccionTeclado, Keys> predeterminadas)
+        {
+            HashSet<Keys> usadas = new HashSet<Keys>();
+            foreach (AccionTeclado accion in Acciones)
+            {
+                Keys tecla = teclas.ContainsKey(accion) ? (teclas[accion] & Keys.KeyCode) : Keys.None;
+                if (tecla == Keys.None || usadas.Contains(tecla))
+                {
+                    tecla = predeterminadas[accion] & Keys.KeyCode;
+                    if (tecla == Keys.None || usadas.Contains(tecla))
+                    {
+                        tecla = Keys.F1;
+                        while (usadas.Contains(tecla) && tecla < Keys.F24) tecla++;
+                        if (usadas.Contains(tecla)) tecla = Keys.None;
+                    }
+                }
+
+                teclas[accion] = tecla;
+                if (tecla != Keys.None) usadas.Add(tecla);
+            }
         }
 
         private static void RestablecerTeclas()
