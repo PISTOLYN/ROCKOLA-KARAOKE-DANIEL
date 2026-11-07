@@ -377,24 +377,14 @@ namespace RockolaKaraoke.Interfaz
                 BackColor = Color.Transparent
             };
 
-            // Fondo rojo independiente, colocado explícitamente debajo de la caja/portada.
-            // No depende de la transparencia del PNG ni del BackColor del PictureBox.
-            Panel cuadroRojoDebajoPortada = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(190, 0, 0),
-                Margin = Padding.Empty
-            };
-            panelPortadaPrincipal.Controls.Add(cuadroRojoDebajoPortada);
-            cuadroRojoDebajoPortada.SendToBack();
-
+            // El propio panel es el fondo rojo de toda el área central.
+            // No usar otro Panel Dock=Fill: dos controles Fill superpuestos pueden
+            // repartirse el espacio durante el layout de WinForms.
             panelPortadaPrincipal.Controls.Add(pictureBoxPortada);
             panelPortadaPrincipal.Controls.Add(lblTituloPortada);
             panelPortadaPrincipal.Controls.Add(lblArtistaPortada);
             panelPortadaPrincipal.Controls.Add(lblDuracionPortada);
 
-            // Fijar explícitamente el orden visual: rojo al fondo, caja y textos delante.
-            cuadroRojoDebajoPortada.SendToBack();
             pictureBoxPortada.BringToFront();
             lblTituloPortada.BringToFront();
             lblArtistaPortada.BringToFront();
@@ -422,12 +412,21 @@ namespace RockolaKaraoke.Interfaz
             };
             centro.Dock = DockStyle.Fill;
             contenedorCentral.Controls.Add(centro);
-            panelPortadaPrincipal.Dock = DockStyle.Fill;
+
+            // La capa de espera NO usa Dock=Fill porque centro ya ocupa todo el
+            // contenedor. Se superpone con Bounds sincronizados al tamaño del padre.
+            panelPortadaPrincipal.Dock = DockStyle.None;
+            panelPortadaPrincipal.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
+            panelPortadaPrincipal.Bounds = contenedorCentral.ClientRectangle;
             panelPortadaPrincipal.Visible = false;
             contenedorCentral.Controls.Add(panelPortadaPrincipal);
             contenedorCentral.Controls.SetChildIndex(panelPortadaPrincipal, 0);
-            panelPortadaPrincipal.Dock = DockStyle.Fill;
-            panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
+            contenedorCentral.Resize += delegate
+            {
+                panelPortadaPrincipal.Bounds = contenedorCentral.ClientRectangle;
+                if (panelPortadaPrincipal.Visible) panelPortadaPrincipal.BringToFront();
+            };
 
             Controls.Add(contenedorCentral);
             Controls.Add(barraAbc);
@@ -994,7 +993,8 @@ namespace RockolaKaraoke.Interfaz
                 if (leon != null) EstablecerImagenCajaCD(leon);
                 else EstablecerImagenCajaCD(null);
             }
-            panelPortadaPrincipal.Dock = DockStyle.Fill;
+            if (panelPortadaPrincipal.Parent != null)
+                panelPortadaPrincipal.Bounds = panelPortadaPrincipal.Parent.ClientRectangle;
             panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
             panelPortadaPrincipal.Visible = true;
             panelPortadaPrincipal.BringToFront();
