@@ -34,6 +34,9 @@ namespace RockolaKaraoke.Interfaz
         private readonly Button siguiente = new Button();
         private readonly Button detener = new Button();
         private readonly Timer reloj = new Timer();
+        private readonly Timer temporizadorAvisoAgregar = new Timer();
+        private Panel panelAvisoAgregar;
+        private Label textoAvisoAgregar;
         private LibVLC motor;
         private MediaPlayer reproductor;
         private Media medioActual;
@@ -94,6 +97,13 @@ namespace RockolaKaraoke.Interfaz
             Font = new Font("Segoe UI", 10F);
 
             KeyPreview = true;
+            temporizadorAvisoAgregar.Interval = 1300;
+            temporizadorAvisoAgregar.Tick += delegate
+            {
+                temporizadorAvisoAgregar.Stop();
+                if (panelAvisoAgregar != null) panelAvisoAgregar.Visible = false;
+            };
+            Resize += delegate { CentrarAvisoAgregar(); };
             CrearInterfaz();
 
             temporizadorAbecedario = new Timer();
@@ -254,9 +264,9 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.Visible = true; biblioteca.Dock = DockStyle.Fill; biblioteca.View = View.Details;
             biblioteca.FullRowSelect = true; biblioteca.HideSelection = false; biblioteca.GridLines = false;
             biblioteca.BackColor = Color.FromArgb(2, 7, 17); biblioteca.ForeColor = Color.White;
-            biblioteca.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
-            ImageList altoFilas = new ImageList { ImageSize = new Size(1, 40), ColorDepth = ColorDepth.Depth32Bit };
-            altoFilas.Images.Add(new Bitmap(1, 40));
+            biblioteca.Font = new Font("Segoe UI", 19F, FontStyle.Bold);
+            ImageList altoFilas = new ImageList { ImageSize = new Size(1, 50), ColorDepth = ColorDepth.Depth32Bit };
+            altoFilas.Images.Add(new Bitmap(1, 50));
             biblioteca.SmallImageList = altoFilas;
             biblioteca.Columns.Clear(); biblioteca.Columns.Add("ÁLBUM SELECCIONADO  •  CANCIÓN 1 DE 15", 620); biblioteca.Columns.Add("ARTISTA", 260);
             biblioteca.OwnerDraw = true;
@@ -279,13 +289,14 @@ namespace RockolaKaraoke.Interfaz
             {
                 Color basico = e.ItemIndex % 2 == 0 ? Color.FromArgb(5, 15, 30) : Color.FromArgb(10, 22, 39);
                 bool marcada = e.Item.Selected;
-                Color tinta = marcada ? Color.Black : Color.White;
+                Color tinta = Color.White;
                 Rectangle area = e.Bounds;
                 int sangria = e.ColumnIndex == 0 ? 44 : 0;
                 using (SolidBrush fondoBase = new SolidBrush(basico)) { e.Graphics.FillRectangle(fondoBase, area); }
                 if (marcada)
                 {
-                    using (SolidBrush barraAmarilla = new SolidBrush(Color.FromArgb(245, 195, 0))) { e.Graphics.FillRectangle(barraAmarilla, area.X + sangria, area.Y, area.Width - sangria, area.Height); }
+                    // Franja gris de selección: sigue la canción al navegar arriba y abajo.
+                    using (SolidBrush franjaSeleccion = new SolidBrush(Color.FromArgb(105, 120, 137))) { e.Graphics.FillRectangle(franjaSeleccion, area.X + sangria, area.Y + 2, area.Width - sangria, area.Height - 4); }
                 }
                 if (e.ColumnIndex == 0)
                 {
@@ -293,7 +304,7 @@ namespace RockolaKaraoke.Interfaz
                     Rectangle marca = new Rectangle(area.X + 8 + (26 - tamanoMarca) / 2, area.Y + (area.Height - tamanoMarca) / 2, tamanoMarca, tamanoMarca);
                     if (marcada)
                     {
-                        using (SolidBrush punto = new SolidBrush(Color.FromArgb(245, 195, 0))) { e.Graphics.FillEllipse(punto, marca); }
+                        using (SolidBrush punto = new SolidBrush(Color.FromArgb(0, 230, 245))) { e.Graphics.FillEllipse(punto, marca); }
                     }
                     else
                     {
@@ -378,8 +389,11 @@ namespace RockolaKaraoke.Interfaz
             etiquetaCola.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             cola.Dock = DockStyle.Fill; cola.View = View.Details; cola.FullRowSelect = true; cola.GridLines = false;
             cola.HideSelection = false; cola.BackColor = Color.FromArgb(4, 12, 25); cola.ForeColor = Color.White;
-            cola.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            cola.Columns.Clear(); cola.Columns.Add("TEMA", 190); cola.Columns.Add("ARTISTA", 115); cola.Columns.Add("ESTADO", 105);
+            cola.Font = new Font("Segoe UI", 15F, FontStyle.Bold);
+            ImageList altoFilasCola = new ImageList { ImageSize = new Size(1, 44), ColorDepth = ColorDepth.Depth32Bit };
+            altoFilasCola.Images.Add(new Bitmap(1, 44));
+            cola.SmallImageList = altoFilasCola;
+            cola.Columns.Clear(); cola.Columns.Add("TEMA", 205); cola.Columns.Add("ARTISTA", 125); cola.Columns.Add("ESTADO", 115);
             cola.DoubleClick += delegate { ReproducirElementoDeCola(); };
             FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(2) };
             Button agregar = new Button { Text = "+ AGREGAR", Width = 92, Height = 32 };
@@ -1174,12 +1188,47 @@ namespace RockolaKaraoke.Interfaz
                 if (cancionesPendientes.Count > 0) ReproducirSiguiente();
             }
 
-            if (mostrarMensaje && ConfiguracionTeclado.MostrarMensajeAlAgregar && agregadas > 0)
+            if (mostrarMensaje && agregadas > 0)
+                MostrarAvisoTemaAgregado();
+        }
+
+        private void MostrarAvisoTemaAgregado()
+        {
+            // Aviso visual breve y no modal: no pausa VLC ni bloquea teclado/controles.
+            if (panelAvisoAgregar == null)
             {
-                string mensaje = agregadas == 1 ? "Se agregó 1 tema a la lista de reproducción." :
-                    "Se agregaron " + agregadas + " temas a la lista de reproducción.";
-                MessageBox.Show(this, mensaje, "Lista de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                panelAvisoAgregar = new Panel
+                {
+                    Size = new Size(390, 76),
+                    BackColor = Color.FromArgb(0, 145, 125),
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Visible = false
+                };
+                textoAvisoAgregar = new Label
+                {
+                    Dock = DockStyle.Fill,
+                    Text = "TEMA AGREGADO",
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    ForeColor = Color.White,
+                    BackColor = Color.Transparent,
+                    Font = new Font("Segoe UI", 21F, FontStyle.Bold)
+                };
+                panelAvisoAgregar.Controls.Add(textoAvisoAgregar);
+                Controls.Add(panelAvisoAgregar);
             }
+
+            CentrarAvisoAgregar();
+            panelAvisoAgregar.Visible = true;
+            panelAvisoAgregar.BringToFront();
+            temporizadorAvisoAgregar.Stop();
+            temporizadorAvisoAgregar.Start();
+        }
+
+        private void CentrarAvisoAgregar()
+        {
+            if (panelAvisoAgregar == null) return;
+            panelAvisoAgregar.Left = Math.Max(0, (ClientSize.Width - panelAvisoAgregar.Width) / 2);
+            panelAvisoAgregar.Top = Math.Max(0, (ClientSize.Height - panelAvisoAgregar.Height) / 2);
         }
 
         private void EstablecerEstadoTema(ListViewItem tema, string estado)
