@@ -28,11 +28,21 @@ namespace RockolaKaraoke.Interfaz
             pestanas.TabPages.Add(paginaOtros);
 
             // ---- Pestaña 1: lista de acciones ----
-            Label ayuda = new Label { Text = "DOBLE CLIC (o ENTER) SOBRE LA ACCIÓN PARA CAMBIAR SU TECLA", Dock = DockStyle.Top, Height = 34, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.Black, Font = new Font("Segoe UI", 10F, FontStyle.Bold) };
+            Label ayuda = new Label { Text = "SELECCIONA UNA ACCIÓN Y PULSA CAMBIAR TECLA (TAMBIÉN PUEDES DAR DOBLE CLIC O ENTER)", Dock = DockStyle.Top, Height = 34, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.Black, Font = new Font("Segoe UI", 10F, FontStyle.Bold) };
             lista.Dock = DockStyle.Fill; lista.View = View.Details; lista.FullRowSelect = true; lista.HideSelection = false;
             lista.MultiSelect = false; lista.Font = new Font("Segoe UI", 11F, FontStyle.Bold); lista.BackColor = Color.White; lista.ForeColor = Color.Black;
             lista.Columns.Add("ACCIÓN", 600); lista.Columns.Add("TECLA", 250);
             lista.ItemActivate += delegate { CambiarTeclaSeleccionada(); };
+            // ENTER debe abrir la captura aunque la fila solo tenga el foco.
+            lista.KeyDown += delegate(object sender, KeyEventArgs e)
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    CambiarTeclaSeleccionada();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+            };
             Panel botones = new Panel { Dock = DockStyle.Bottom, Height = 56 };
             Button cambiar = new Button { Text = "CAMBIAR TECLA SELECCIONADA", Left = 8, Top = 8, Width = 300, Height = 40 };
             Button restablecer = new Button { Text = "RESTABLECER", Left = 316, Top = 8, Width = 190, Height = 40 };
