@@ -990,7 +990,6 @@ namespace RockolaKaraoke.Interfaz
             }
             panelPortadaPrincipal.Visible = true;
             panelPortadaPrincipal.BringToFront();
-            cuadroRojoDebajoPortada.SendToBack();
             pictureBoxPortada.BringToFront();
             lblTituloPortada.BringToFront();
             lblArtistaPortada.BringToFront();
