@@ -56,6 +56,7 @@ namespace RockolaKaraoke.Interfaz
         private LetreroLed letreroInferior;
         private Label tituloPortadas;
         private Panel panelCola;
+        private Panel panelPublicidad;
         private Panel barraAbc;
         private FlowLayoutPanel flujoAbc;
         private FlowLayoutPanel listaEstilos;
@@ -271,7 +272,7 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.SmallImageList = altoFilas;
             biblioteca.Columns.Clear(); biblioteca.Columns.Add("ÁLBUM SELECCIONADO  •  CANCIÓN 1 DE 15", 620); biblioteca.Columns.Add("ARTISTA", 260);
             biblioteca.OwnerDraw = true;
-            biblioteca.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e) { e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(0, 175, 205)), e.Bounds); TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 15F, FontStyle.Bold), e.Bounds, Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis); };
+            biblioteca.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e) { e.Graphics.FillRectangle(new SolidBrush(colorInterfaz), e.Bounds); TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 15F, FontStyle.Bold), e.Bounds, Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis); };
             biblioteca.DrawItem += delegate(object sender, DrawListViewItemEventArgs e) { e.DrawDefault = true; };
             // Cada clic sobre una canción la agrega a la lista de reproducción,
             // incluso si ya estaba seleccionada o si aparece repetida en la cola.
@@ -305,11 +306,11 @@ namespace RockolaKaraoke.Interfaz
                     Rectangle marca = new Rectangle(area.X + 8 + (26 - tamanoMarca) / 2, area.Y + (area.Height - tamanoMarca) / 2, tamanoMarca, tamanoMarca);
                     if (marcada)
                     {
-                        using (SolidBrush punto = new SolidBrush(Color.FromArgb(0, 230, 245))) { e.Graphics.FillEllipse(punto, marca); }
+                        using (SolidBrush punto = new SolidBrush(colorInterfaz)) { e.Graphics.FillEllipse(punto, marca); }
                     }
                     else
                     {
-                        using (SolidBrush cuadro = new SolidBrush(Color.Red)) { e.Graphics.FillRectangle(cuadro, marca); }
+                        using (SolidBrush cuadro = new SolidBrush(colorInterfaz)) { e.Graphics.FillRectangle(cuadro, marca); }
                     }
                 }
                 Rectangle zonaTexto = new Rectangle(area.X + sangria, area.Y, area.Width - sangria, area.Height);
@@ -333,7 +334,7 @@ namespace RockolaKaraoke.Interfaz
             marcoSuperior.Controls.Add(zonaSuperior);
             distribucionInferior.Controls.Add(lado, 0, 0);
             Panel panelDerecho = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 7, 17), Padding = new Padding(7) };
-            Panel panelPublicidad = new Panel { Dock = DockStyle.Fill, BackColor = Color.Black, BorderStyle = BorderStyle.None };
+            panelPublicidad = new Panel { Dock = DockStyle.Fill, BackColor = Color.Black, BorderStyle = BorderStyle.None };
             pantalla.Dock = DockStyle.Fill; pantalla.BackColor = Color.Black;
             panelPublicidad.Controls.Add(pantalla);
             panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 25) };
@@ -703,7 +704,7 @@ private static Color LeerColor(string html, Color porDefecto)
                 {
                     Panel p = (Panel)sender;
                     bool elegida = Convert.ToInt32(p.Tag) == indicePortada;
-                    using (Pen borde = new Pen(elegida ? Color.FromArgb(255, 215, 0) : Color.FromArgb(0, 220, 245), elegida ? 5F : 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
+                    using (Pen borde = new Pen(elegida ? Color.FromArgb(255, 215, 0) : colorInterfaz, elegida ? 5F : 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
                 };
                 PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 145, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
                 portada.Tag = carpeta;
