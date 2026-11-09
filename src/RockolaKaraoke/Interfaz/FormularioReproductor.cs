@@ -302,12 +302,25 @@ namespace RockolaKaraoke.Interfaz
             };
             biblioteca.DrawSubItem += delegate(object sender, DrawListViewSubItemEventArgs e)
             {
-                Color basico = e.ItemIndex % 2 == 0 ? Color.FromArgb(5, 15, 30) : Color.FromArgb(10, 22, 39);
                 bool marcada = e.Item.Selected;
                 Color tinta = Color.White;
                 Rectangle area = e.Bounds;
                 int sangria = 0;
-                using (SolidBrush fondoBase = new SolidBrush(basico)) { e.Graphics.FillRectangle(fondoBase, area); }
+                if (marcada)
+                {
+                    using (SolidBrush fondoBase = new SolidBrush(Color.FromArgb(235, 35, 65, 95))) e.Graphics.FillRectangle(fondoBase, area);
+                }
+                else if (imagenFondoPantalla != null)
+                {
+                    // Dibuja la imagen a escala del listado completo para que se vea continua
+                    // detrás de las filas sin alterar el tamaño ni la proporción de las letras.
+                    e.Graphics.DrawImage(imagenFondoPantalla, biblioteca.ClientRectangle);
+                    using (SolidBrush velo = new SolidBrush(Color.FromArgb(155, 2, 10, 24))) e.Graphics.FillRectangle(velo, area);
+                }
+                else
+                {
+                    using (SolidBrush fondoBase = new SolidBrush(e.ItemIndex % 2 == 0 ? Color.FromArgb(5, 15, 30) : Color.FromArgb(10, 22, 39))) e.Graphics.FillRectangle(fondoBase, area);
+                }
                 if (marcada)
                 {
                     // Resaltar toda la fila, incluso cuando el foco cambia entre controles.
