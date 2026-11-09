@@ -17,23 +17,35 @@ namespace RockolaKaraoke
 
             try
             {
+                FormularioReproductor reproductor = null;
                 using (PantallaInicio inicio = new PantallaInicio())
                 {
                     inicio.Show();
-                    inicio.Actualizar(18, "INICIALIZANDO LEON ROCKOLAS...");
+                    inicio.Actualizar(8, "INICIALIZANDO LEON ROCKOLAS...");
                     Application.DoEvents();
+
                     BaseDatos.Inicializar();
-                    inicio.Actualizar(58, "PREPARANDO BIBLIOTECA MUSICAL...");
+                    inicio.Actualizar(35, "PREPARANDO BASE DE DATOS...");
                     Application.DoEvents();
-                    inicio.Actualizar(82, "CARGANDO INTERFAZ...");
+
+                    inicio.Actualizar(55, "CARGANDO BIBLIOTECA MUSICAL...");
                     Application.DoEvents();
-                    System.Threading.Thread.Sleep(350);
-                    inicio.Actualizar(100, "¡LISTO!");
+
+                    // Construir la interfaz y cargar sus datos antes de cerrar
+                    // la pantalla de inicio: el 100% significa que ya está lista.
+                    inicio.Actualizar(78, "PREPARANDO INTERFAZ Y CONTROLES...");
                     Application.DoEvents();
-                    System.Threading.Thread.Sleep(300);
+                    reproductor = new FormularioReproductor();
+
+                    inicio.Actualizar(96, "FINALIZANDO CARGA...");
+                    Application.DoEvents();
+                    System.Threading.Thread.Sleep(180);
+                    inicio.Actualizar(100, "¡LEON ROCKOLAS ESTA LISTO!");
+                    Application.DoEvents();
+                    System.Threading.Thread.Sleep(250);
                 }
 
-                Application.Run(new FormularioReproductor());
+                Application.Run(reproductor);
             }
             catch (Exception ex)
             {
@@ -53,9 +65,12 @@ namespace RockolaKaraoke
             Text = "LEON ROCKOLAS";
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(760, 570);
+            FormBorderStyle = FormBorderStyle.None;
+            WindowState = FormWindowState.Maximized;
             BackColor = Color.FromArgb(8, 12, 22);
             ShowInTaskbar = false;
+            ShowIcon = false;
+            TopMost = true;
 
             PictureBox leon = new PictureBox
             {
