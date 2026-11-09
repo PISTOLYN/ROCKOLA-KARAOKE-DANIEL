@@ -80,6 +80,7 @@ namespace RockolaKaraoke.Interfaz
                 { "CAMBIAR COLOR DE INTERFAZ", "COLOR" },
                 { "CAMBIAR COLOR DE BARRA DE SELECCIÓN", "SELECCION" },
                 { "CONFIGURAR LETREROS LED", "LETREROS" },
+                { "CAMBIAR FONDO DE PANTALLA", "FONDO" },
                 { "CONFIGURAR TECLADO", "TECLADO" },
                 { "CERRAR", "CERRAR" },
                 { "CERRAR PROGRAMA", "SALIR" },
