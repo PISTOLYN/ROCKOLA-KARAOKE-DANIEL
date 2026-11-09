@@ -998,9 +998,8 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             biblioteca.Items[indice].Selected = true;
             biblioteca.Items[indice].Focused = true;
             biblioteca.Items[indice].EnsureVisible();
-            // Al recorrer la biblioteca con las flechas, cada tema seleccionado
-            // se incorpora inmediatamente a la cola, sin ventanas emergentes.
-            AgregarSeleccionALaCola(false);
+            // Las flechas solo cambian la selección. Para agregar o reproducir
+            // una canción se utiliza exclusivamente la tecla configurada como REPRODUCIR.
         }
 
         private void ReproducirSeleccion()
@@ -1585,19 +1584,6 @@ EjecutarAccion(AccionTeclado.Cancelar);
             if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value))
                 return true;
 
-            if (ConfiguracionTeclado.MostrarAbecedarioAlMantenerFlecha &&
-                (accion.Value == AccionTeclado.Izquierda || accion.Value == AccionTeclado.Derecha))
-            {
-                if (!direccionFlechaPendiente.HasValue)
-                {
-                    direccionFlechaPendiente = accion.Value;
-                    abecedarioAbiertoPorEspera = false;
-                    temporizadorAbecedario.Interval = ConfiguracionTeclado.TiempoEsperaAbecedario * 1000;
-                    temporizadorAbecedario.Start();
-                }
-                return true;
-            }
-
             EjecutarAccion(accion.Value);
             return true;
         }
@@ -1612,16 +1598,12 @@ EjecutarAccion(AccionTeclado.Cancelar);
                 case AccionTeclado.Abajo: MoverSeleccionCancion(1); break;
                 case AccionTeclado.Agregar: AgregarSeleccionALaCola(); break;
                 case AccionTeclado.Cancelar: CancelarUltimo(); break;
-                case AccionTeclado.SiguienteTema: ReproducirSiguiente(); break;
                 case AccionTeclado.CambiarModo: CambiarGenero(); break;
                 case AccionTeclado.Menu: MostrarMenuPrincipal(); break;
                 case AccionTeclado.CerrarPrograma: if (ConfirmarSalida("¿Cerrar el programa?")) Application.Exit(); break;
                 case AccionTeclado.SubirVolumen: CambiarVolumen(ConfiguracionTeclado.PasoVolumen); break;
                 case AccionTeclado.BajarVolumen: CambiarVolumen(-ConfiguracionTeclado.PasoVolumen); break;
-                case AccionTeclado.PantallaCompleta: WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized; break;
                 case AccionTeclado.ApagarPC: ApagarComputadora(); break;
-                case AccionTeclado.Pausa: AlternarPausa(); break;
-                case AccionTeclado.ReproducirTema: ReproducirSeleccion(); break;
                 case AccionTeclado.Abecedario: AlternarAbc(); break;
                 case AccionTeclado.MostrarOcultarCola: AlternarListaReproduccion(); break;
                 case AccionTeclado.Buscar: AlternarAbc(); break;
