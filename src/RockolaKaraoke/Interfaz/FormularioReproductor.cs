@@ -1300,6 +1300,19 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
                 estado == "CANCELADA" ? Color.OrangeRed : Color.Silver;
         }
 
+        private void MoverSeleccionCola(int desplazamiento)
+        {
+            if (cola.Items.Count == 0) return;
+            int indice = cola.SelectedIndices.Count > 0 ? cola.SelectedIndices[0] : 0;
+            indice = Math.Max(0, Math.Min(cola.Items.Count - 1, indice + desplazamiento));
+            foreach (ListViewItem item in cola.Items) item.Selected = false;
+            ListViewItem seleccionado = cola.Items[indice];
+            seleccionado.Selected = true;
+            seleccionado.Focused = true;
+            seleccionado.EnsureVisible();
+            cola.Focus();
+        }
+
         private void ReproducirElementoDeCola()
         {
             if (cola.SelectedItems.Count == 0) return;
@@ -1536,16 +1549,36 @@ EjecutarAccion(AccionTeclado.Cancelar);
                 return base.ProcessCmdKey(ref msg, keyData);
             }
 
-            // Windows puede repetir WM_KEYDOWN mientras se mantiene pulsada una tecla.
-            // Ignorar repeticiones evita agregar varias veces una canción o ejecutar
-            // varias acciones sensibles por una sola pulsación sostenida.
+            // Windows repite WM_KEYDOWN cuando se mantiene una tecla.
+            // La navegación vertical y el volumen sí admiten repetición continua;
+            // las acciones de una sola pulsación no deben duplicarse.
             bool repeticion = (msg.Msg == 0x0100 || msg.Msg == 0x0104) &&
                 ((((long)msg.LParam) & 0x40000000L) != 0);
-            if (repeticion) return true;
 
             AccionTeclado? accion = ConfiguracionTeclado.Buscar(teclaBase);
             if (!accion.HasValue)
                 return base.ProcessCmdKey(ref msg, keyData);
+
+            bool admiteRepeticion = accion.Value == AccionTeclado.Arriba ||
+                accion.Value == AccionTeclado.Abajo ||
+                accion.Value == AccionTeclado.SubirVolumen ||
+                accion.Value == AccionTeclado.BajarVolumen;
+            if (repeticion && !admiteRepeticion) return true;
+
+            // Cuando la lista de reproducción tiene el foco, las flechas y OK
+            // deben controlar esa lista, no mover canciones de la biblioteca.
+            if (cola != null && cola.Visible && cola.ContainsFocus &&
+                (accion.Value == AccionTeclado.Arriba || accion.Value == AccionTeclado.Abajo))
+            {
+                MoverSeleccionCola(accion.Value == AccionTeclado.Arriba ? -1 : 1);
+                return true;
+            }
+            if (cola != null && cola.Visible && cola.ContainsFocus &&
+                accion.Value == AccionTeclado.Agregar)
+            {
+                ReproducirElementoDeCola();
+                return true;
+            }
 
             if (barraAbc != null && barraAbc.Visible && ManejarTeclaAbc(accion.Value))
                 return true;
