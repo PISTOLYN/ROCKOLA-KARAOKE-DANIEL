@@ -28,6 +28,9 @@ namespace RockolaKaraoke.Interfaz
         private readonly List<ListViewItem> cancionesPendientes = new List<ListViewItem>();
         private ListViewItem temaActualLista;
         private readonly Label etiquetaCola = new Label();
+        private Label encabezadoListaCompleto;
+        private Label encabezadoArtistaCompleto;
+        private Panel franjaListaCompleta;
         private readonly VideoView pantalla = new VideoView();
         private readonly Label tituloActual = new Label();
         private readonly Label tiempo = new Label();
@@ -267,6 +270,7 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.Visible = true; biblioteca.Dock = DockStyle.Fill; biblioteca.View = View.Details;
             biblioteca.FullRowSelect = true; biblioteca.HideSelection = false; biblioteca.GridLines = false;
             biblioteca.MultiSelect = false;
+            biblioteca.HeaderStyle = ColumnHeaderStyle.None;
             biblioteca.BackColor = Color.FromArgb(2, 7, 17); biblioteca.ForeColor = Color.White;
             biblioteca.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
             ImageList altoFilas = new ImageList { ImageSize = new Size(1, 64), ColorDepth = ColorDepth.Depth32Bit };
@@ -347,7 +351,22 @@ namespace RockolaKaraoke.Interfaz
             etiquetaCola.TextAlign = ContentAlignment.MiddleLeft; etiquetaCola.Padding = new Padding(9, 0, 0, 0); etiquetaCola.ForeColor = Color.Gold;
             etiquetaCola.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             cola.Dock = DockStyle.Fill; cola.View = View.Details; cola.FullRowSelect = true; cola.GridLines = false;
-            cola.HideSelection = false; cola.BackColor = Color.FromArgb(82, 18, 0); cola.ForeColor = Color.White;
+            cola.HideSelection = false; cola.BackColor = Color.FromArgb(190, 0, 0); cola.ForeColor = Color.White;
+            cola.OwnerDraw = true;
+            cola.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e)
+            {
+                using (SolidBrush fondo = new SolidBrush(Color.FromArgb(225, 55, 0, 0))) e.Graphics.FillRectangle(fondo, e.Bounds);
+                TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 11F, FontStyle.Bold), e.Bounds, Color.Gold, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+            };
+            cola.DrawItem += delegate(object sender, DrawListViewItemEventArgs e) { e.DrawDefault = false; };
+            cola.DrawSubItem += delegate(object sender, DrawListViewSubItemEventArgs e)
+            {
+                Color fondo = e.Item.Selected ? Color.FromArgb(210, 100, 20, 0) : Color.FromArgb(165, 65, 0, 0);
+                using (SolidBrush pincel = new SolidBrush(fondo)) e.Graphics.FillRectangle(pincel, e.Bounds);
+                Color tinta = e.Item.SubItems.Count > 3 && e.Item.SubItems[3].Text == "SONANDO" ? Color.Lime : Color.White;
+                TextRenderer.DrawText(e.Graphics, e.SubItem.Text, cola.Font, e.Bounds, tinta, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+                if (e.Item.Selected) using (Pen borde = new Pen(Color.Gold, 2F)) e.Graphics.DrawRectangle(borde, e.Bounds.X + 1, e.Bounds.Y + 1, Math.Max(1, e.Bounds.Width - 3), Math.Max(1, e.Bounds.Height - 3));
+            };
             cola.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
             ImageList altoFilasCola = new ImageList { ImageSize = new Size(1, 52), ColorDepth = ColorDepth.Depth32Bit };
             altoFilasCola.Images.Add(new Bitmap(1, 52));
@@ -463,6 +482,13 @@ namespace RockolaKaraoke.Interfaz
             panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
             panelPortadaPrincipal.Visible = true;
             contenedorCentral.Controls.Add(panelPortadaPrincipal);
+            franjaListaCompleta = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Color.FromArgb(225, 0, 0), Padding = new Padding(12, 0, 12, 0) };
+            encabezadoListaCompleto = new Label { Dock = DockStyle.Fill, Text = "ÁLBUM SELECCIONADO • CANCIÓN 1", ForeColor = Color.White, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 17F, FontStyle.Bold) };
+            encabezadoArtistaCompleto = new Label { Dock = DockStyle.Right, Width = 270, Text = "ARTISTA", ForeColor = Color.White, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 15F, FontStyle.Bold) };
+            franjaListaCompleta.Controls.Add(encabezadoListaCompleto);
+            franjaListaCompleta.Controls.Add(encabezadoArtistaCompleto);
+            contenedorCentral.Controls.Add(franjaListaCompleta);
+            franjaListaCompleta.BringToFront();
             panelPortadaPrincipal.BringToFront();
 
             Panel panelVolumenVertical = new Panel { Dock = DockStyle.Right, Width = 62, BackColor = Color.FromArgb(5, 10, 24), Padding = new Padding(3, 8, 3, 8) };
@@ -1223,6 +1249,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             panelPortadaPrincipal.Dock = DockStyle.Fill;
             panelPortadaPrincipal.Visible = true;
             if (contenidoCentral != null) contenidoCentral.Visible = false;
+            franjaListaCompleta.Visible = false;
             panelPortadaPrincipal.BringToFront();
             panelCola.Visible = mostrarColaEnPortada && cola.Items.Count > 0;
             panelPortadaPrincipal.PerformLayout();
@@ -1248,6 +1275,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
 
         private void MostrarContenidoReproductor()
         {
+            if (franjaListaCompleta != null) franjaListaCompleta.Visible = true;
             panelPortadaPrincipal.Visible = false;
             if (panelCola != null) panelCola.Visible = false;
             if (contenidoCentral != null)
@@ -1866,7 +1894,8 @@ EjecutarAccion(AccionTeclado.Cancelar);
             if (biblioteca.Columns.Count == 0) return;
             int total = biblioteca.Items.Count;
             int actual = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] + 1 : (total > 0 ? 1 : 0);
-            biblioteca.Columns[0].Text = "ÁLBUM SELECCIONADO  •  CANCIÓN " + actual + " DE " + total;
+            string texto = "ÁLBUM SELECCIONADO  •  CANCIÓN " + actual + " DE " + total;
+            if (encabezadoListaCompleto != null) encabezadoListaCompleto.Text = texto;
             AjustarColumnasBiblioteca();
         }
 
@@ -2099,16 +2128,21 @@ EjecutarAccion(AccionTeclado.Cancelar);
                 selector.Shown += delegate { lista.Focus(); };
                 selector.KeyDown += delegate(object sender, KeyEventArgs e)
                 {
-                    if (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down)
+                    AccionTeclado? accionSelector = ConfiguracionTeclado.Buscar(e.KeyCode);
+                    bool arriba = e.KeyCode == Keys.Up || (accionSelector.HasValue && accionSelector.Value == AccionTeclado.Arriba);
+                    bool abajo = e.KeyCode == Keys.Down || (accionSelector.HasValue && accionSelector.Value == AccionTeclado.Abajo);
+                    bool seleccionar = e.KeyCode == Keys.Enter || (accionSelector.HasValue && accionSelector.Value == AccionTeclado.Agregar);
+                    bool cancelarSelector = e.KeyCode == Keys.Escape || (accionSelector.HasValue && accionSelector.Value == AccionTeclado.Cancelar);
+                    if (arriba || abajo)
                     {
                         if (lista.Items.Count > 0)
                         {
-                            int paso = e.KeyCode == Keys.Up ? -1 : 1;
+                            int paso = arriba ? -1 : 1;
                             lista.SelectedIndex = Math.Max(0, Math.Min(lista.Items.Count - 1, lista.SelectedIndex + paso));
                         }
                         e.Handled = true; e.SuppressKeyPress = true;
                     }
-                    else if (e.KeyCode == Keys.Enter)
+                    else if (seleccionar)
                     {
                         if (lista.SelectedItem != null) { selector.DialogResult = DialogResult.OK; selector.Close(); }
                         e.Handled = true; e.SuppressKeyPress = true;
