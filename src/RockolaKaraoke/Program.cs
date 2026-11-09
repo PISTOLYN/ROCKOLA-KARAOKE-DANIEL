@@ -57,7 +57,7 @@ namespace RockolaKaraoke
             }
             catch (Exception ex)
             {
-                MessageBox.Show("No se pudo iniciar la Rockola.\\n\\n" + ex.Message,
+                MessageBox.Show("No se pudo iniciar la Rockola.\n\n" + ex.Message,
                     "Error de inicio", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
