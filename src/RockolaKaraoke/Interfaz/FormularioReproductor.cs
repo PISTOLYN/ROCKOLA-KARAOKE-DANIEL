@@ -360,12 +360,10 @@ namespace RockolaKaraoke.Interfaz
             bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { VaciarPendientes(); };
             panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
             // La lista inicia oculta y se despliega desde el panel derecho al pulsar su tecla configurable.
-            panelCola.Visible = false;
             panelDerecho.Controls.Add(panelPublicidad);
             panelDerecho.Controls.Add(panelCola);
             panelCola.Visible = false;
             panelPublicidad.BringToFront();
-            distribucionInferior.Controls.Add(lado, 0, 0);
             distribucionInferior.Controls.Add(panelDerecho, 1, 0);
             filaInferior.Controls.Add(distribucionInferior);
             centro.Controls.Add(marcoSuperior, 0, 0);
@@ -1935,7 +1933,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
 
         private void CrearBarraAbc()
         {
-            barraAbc = new Panel { Dock = DockStyle.Bottom, Height = 120, BackColor = Color.FromArgb(2, 10, 30), Visible = false, Padding = new Padding(6) };
+            barraAbc = new Panel { Dock = DockStyle.Bottom, Height = 170, BackColor = Color.FromArgb(2, 10, 30), Visible = false, Padding = new Padding(6) };
             AplicarMarcoNeon(barraAbc);
             flujoAbc = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, FlowDirection = FlowDirection.LeftToRight, BackColor = Color.FromArgb(2, 10, 30) };
             List<string> teclas = new List<string>();
