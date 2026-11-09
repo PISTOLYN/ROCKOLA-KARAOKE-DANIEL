@@ -70,7 +70,7 @@ namespace RockolaKaraoke.Interfaz
         private const int PortadasPorPagina = 7;
         private Dictionary<string, string> aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        // --- VARIABLES PARA LA PORTADA Y SKINS ---
+        // --- VARIABLES PARA LA PORTADA ---
         private Panel panelPortadaPrincipal;
         private Control contenidoCentral;
         private PictureBox pictureBoxPortada;
@@ -146,8 +146,6 @@ namespace RockolaKaraoke.Interfaz
             CargarConfiguracionLetrero();
             AplicarConfiguracionLetreros();
 
-            // Aplicar el skin guardado al iniciar
-            ConfiguracionSkin.Aplicar(this);
         }
 
         private void MostrarAdministracion()
@@ -165,9 +163,8 @@ namespace RockolaKaraoke.Interfaz
 
                 Label titulo = new Label { Text = "PANEL DE ADMINISTRACIÓN", Dock = DockStyle.Top, Height = 55, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 16F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 220, 235) };
                 Button bibliotecaAdmin = new Button { Text = "BIBLIOTECA Y ESCANEO DE MÚSICA", Width = 340, Height = 45, Left = 45, Top = 75 };
-                Button skinAdmin = new Button { Text = "CONFIGURAR SKIN", Width = 340, Height = 45, Left = 45, Top = 130 };
                 Button cerrar = new Button { Text = "CERRAR", Width = 340, Height = 38, Left = 45, Top = 190 };
-                foreach (Button b in new Button[] { bibliotecaAdmin, skinAdmin, cerrar })
+                foreach (Button b in new Button[] { bibliotecaAdmin, cerrar })
                 {
                     Estilizar(b);
                     b.BackColor = Color.FromArgb(0, 100, 165);
@@ -179,15 +176,9 @@ namespace RockolaKaraoke.Interfaz
                         ventana.ShowDialog(menu);
                     CargarBiblioteca();
                 };
-                skinAdmin.Click += delegate
-                {
-                    using (FormularioSkin ventana = new FormularioSkin())
-                        ventana.ShowDialog(menu);
-                };
                 cerrar.Click += delegate { menu.Close(); };
                 menu.Controls.Add(titulo);
                 menu.Controls.Add(bibliotecaAdmin);
-                menu.Controls.Add(skinAdmin);
                 menu.Controls.Add(cerrar);
                 menu.ShowDialog(this);
             }
@@ -1916,11 +1907,6 @@ namespace RockolaKaraoke.Interfaz
                         break;
                     }
                 case "LETREROS": MostrarConfigLetreros(); break;
-                case "SKIN":
-                    {
-                        using (FormularioSkin ventana = new FormularioSkin()) { ventana.ShowDialog(this); }
-                        break;
-                    }
                 case "TECLADO":
                     {
                         using (FormularioTeclado ventana = new FormularioTeclado()) { ventana.ShowDialog(this); }
