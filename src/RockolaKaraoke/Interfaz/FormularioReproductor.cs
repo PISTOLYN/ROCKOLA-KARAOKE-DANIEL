@@ -225,21 +225,21 @@ namespace RockolaKaraoke.Interfaz
 
         private void CrearInterfaz()
         {
-            Panel encabezado = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = Color.FromArgb(2, 5, 12), Padding = new Padding(8, 5, 8, 5) };
+            Panel encabezado = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = Color.Transparent, Padding = new Padding(8, 5, 8, 5) };
             letreroLed = new LetreroLed { Dock = DockStyle.Fill, ForeColor = colorLetrero, BackColor = Color.FromArgb(5, 5, 8), Font = new Font("Consolas", 24F, FontStyle.Bold) };
             letreroLed.Texto = textoLetrero;
             encabezado.Controls.Add(letreroLed);
 
-            Panel inferior = new Panel { Dock = DockStyle.Bottom, Height = 58, BackColor = Color.FromArgb(5, 10, 24), Padding = new Padding(6, 2, 6, 2) };
+            Panel inferior = new Panel { Dock = DockStyle.Bottom, Height = 58, BackColor = Color.Transparent, Padding = new Padding(6, 2, 6, 2) };
             tituloActual.Text = "No hay tema en reproducción";
             tituloActual.Dock = DockStyle.Fill; tituloActual.TextAlign = ContentAlignment.MiddleLeft;
             tituloActual.Padding = new Padding(10, 0, 0, 0); tituloActual.ForeColor = Color.White; tituloActual.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             progreso.Minimum = 0; progreso.Maximum = 1000; progreso.TickStyle = TickStyle.None; progreso.Dock = DockStyle.Fill; progreso.Height = 20;
             progreso.Scroll += delegate { if (reproductor != null && reproductor.IsSeekable && reproductor.Length > 0) reproductor.Position = progreso.Value / 1000f; };
             tiempo.Text = "00:00 / 00:00"; tiempo.Dock = DockStyle.Right; tiempo.Width = 135; tiempo.TextAlign = ContentAlignment.MiddleCenter; tiempo.ForeColor = Color.LightGray;
-            Panel filaProgreso = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(5, 10, 24), Height = 24 };
+            Panel filaProgreso = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Height = 24 };
             filaProgreso.Controls.Add(progreso); filaProgreso.Controls.Add(tiempo);
-            TableLayoutPanel distribucionPie = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, BackColor = Color.FromArgb(5, 10, 24) };
+            TableLayoutPanel distribucionPie = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, BackColor = Color.Transparent };
             distribucionPie.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
             distribucionPie.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             distribucionPie.Controls.Add(tituloActual, 0, 0);
@@ -491,7 +491,7 @@ namespace RockolaKaraoke.Interfaz
             // ------------------------------------------------------------
 
             // --- BARRA DE ESTADO INFERIOR (SIN LOS TEXTOS DE VENTA Y KARAOKE) ---
-            Panel barraEstado = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = Color.FromArgb(0, 105, 145) };
+            Panel barraEstado = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = Color.Transparent };
             letreroInferior = new LetreroLed { Dock = DockStyle.Fill, ForeColor = colorInferior, BackColor = fondoInferior, Font = new Font("Arial Black", 22F, FontStyle.Bold) };
             letreroInferior.Texto = textoSinTemas;
             barraEstado.Controls.Add(letreroInferior);
@@ -528,7 +528,7 @@ namespace RockolaKaraoke.Interfaz
             franjaListaCompleta.BringToFront();
             panelPortadaPrincipal.BringToFront();
 
-            Panel panelVolumenVertical = new Panel { Dock = DockStyle.Right, Width = 62, BackColor = Color.FromArgb(5, 10, 24), Padding = new Padding(3, 8, 3, 8) };
+            Panel panelVolumenVertical = new Panel { Dock = DockStyle.Right, Width = 62, BackColor = Color.Transparent, Padding = new Padding(3, 8, 3, 8) };
             volumen.Minimum = 0; volumen.Maximum = 100; volumen.Value = 70;
             volumen.Orientation = Orientation.Vertical; volumen.TickFrequency = 10; volumen.TickStyle = TickStyle.Both;
             volumen.Dock = DockStyle.Fill; volumen.AutoSize = false;
