@@ -19,7 +19,8 @@ Construir por etapas un sistema comercial con biblioteca multimedia, reproductor
 
 ## Principios del proyecto
 
-- Interfaz de cliente sencilla, visual y con controles grandes.
+- Una sola interfaz fija para el cliente, sencilla, visual y con controles grandes.
+- Sin selector ni sistema de skins.
 - Panel de administración separado.
 - Código, nombres y comentarios en español cuando sea práctico.
 - No modificar otros repositorios del propietario.

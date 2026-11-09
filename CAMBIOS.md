@@ -12,7 +12,7 @@
 - Botón **ABC**: abre una barra con el abecedario, números, espacio, borrar y cerrar; se maneja con las mismas teclas.
 
 ## Menú (tecla M)
-Configurar música, letreros LED, skins, teclado, cerrar, cerrar programa, apagar PC, acerca de.
+Configurar música, letreros LED, teclado, cerrar, cerrar programa, apagar PC, acerca de.
 
 ## Configurar música (géneros y artistas)
 1. Crear género (ej. KARAOKE, MÚSICA, VIDEO).
