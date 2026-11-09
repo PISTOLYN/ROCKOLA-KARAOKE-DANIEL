@@ -414,7 +414,7 @@ namespace RockolaKaraoke.Interfaz
             centro.Controls.Add(filaInferior, 0, 1);
 
             // --- PORTADA DE ESPERA: CAJA DE CD ABIERTA SOBRE FONDO ROJO ---
-            panelPortadaPrincipal = new Panel
+            panelPortadaPrincipal = new PanelDobleBuffer
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(190, 0, 0),
@@ -422,7 +422,7 @@ namespace RockolaKaraoke.Interfaz
             };
 
             equalizadorPortada = new EqualizadorVisual { Anchor = AnchorStyles.Top };
-            pictureBoxPortada = new PictureBox
+            pictureBoxPortada = new PictureBoxDobleBuffer
             {
                 SizeMode = PictureBoxSizeMode.Zoom,
                 // Permite que el fondo general de la aplicación se vea detrás de la portada.
@@ -640,6 +640,28 @@ private sealed class EqualizadorVisual : Control
             {
                 if (disposing && animacion != null) animacion.Dispose();
                 base.Dispose(disposing);
+            }
+        }
+
+        // Panel con doble búfer para evitar parpadeos al repintar la portada.
+        private sealed class PanelDobleBuffer : Panel
+        {
+            public PanelDobleBuffer()
+            {
+                DoubleBuffered = true;
+                SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                    ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+                UpdateStyles();
+            }
+        }
+
+        private sealed class PictureBoxDobleBuffer : PictureBox
+        {
+            public PictureBoxDobleBuffer()
+            {
+                DoubleBuffered = true;
+                SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
+                UpdateStyles();
             }
         }
 
