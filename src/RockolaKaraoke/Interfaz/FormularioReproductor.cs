@@ -15,7 +15,7 @@ namespace RockolaKaraoke.Interfaz
 {
     public class FormularioReproductor : Form
     {
-        private readonly ListView biblioteca = new ListView();
+        private readonly ListView biblioteca = new ListViewDobleBuffer();
         private readonly System.Collections.Generic.List<ListViewItem> todosLosElementos = new System.Collections.Generic.List<ListViewItem>();
         private readonly FlowLayoutPanel mosaico = new FlowLayoutPanel();
         private readonly TextBox busquedaMosaico = new TextBox();
@@ -367,9 +367,9 @@ namespace RockolaKaraoke.Interfaz
                 TextRenderer.DrawText(e.Graphics, e.SubItem.Text, cola.Font, e.Bounds, tinta, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
                 if (e.Item.Selected) using (Pen borde = new Pen(Color.Gold, 2F)) e.Graphics.DrawRectangle(borde, e.Bounds.X + 1, e.Bounds.Y + 1, Math.Max(1, e.Bounds.Width - 3), Math.Max(1, e.Bounds.Height - 3));
             };
-            cola.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
-            ImageList altoFilasCola = new ImageList { ImageSize = new Size(1, 52), ColorDepth = ColorDepth.Depth32Bit };
-            altoFilasCola.Images.Add(new Bitmap(1, 52));
+            cola.Font = new Font("Segoe UI", 17F, FontStyle.Bold);
+            ImageList altoFilasCola = new ImageList { ImageSize = new Size(1, 60), ColorDepth = ColorDepth.Depth32Bit };
+            altoFilasCola.Images.Add(new Bitmap(1, 60));
             cola.SmallImageList = altoFilasCola;
             cola.Columns.Clear(); cola.Columns.Add("#", 42); cola.Columns.Add("CANCIÓN", 205); cola.Columns.Add("ARTISTA", 145); cola.Columns.Add("", 0);
             cola.Resize += delegate { AjustarColumnasCola(); };
@@ -435,7 +435,9 @@ namespace RockolaKaraoke.Interfaz
             // No usar otro Panel Dock=Fill: dos controles Fill superpuestos pueden
             // repartirse el espacio durante el layout de WinForms.
             panelCola.Dock = DockStyle.Right;
-            panelCola.Width = 350;
+            panelCola.Width = 480;
+            panelCola.MinimumSize = new Size(390, 0);
+            panelCola.MaximumSize = new Size(560, 0);
             panelCola.BackColor = Color.FromArgb(18, 10, 18, 30);
             panelCola.Visible = false;
             panelPortadaPrincipal.Controls.Add(pictureBoxPortada);
@@ -450,7 +452,16 @@ namespace RockolaKaraoke.Interfaz
             lblArtistaPortada.BringToFront();
             lblDuracionPortada.BringToFront();
 
-            panelPortadaPrincipal.Resize += delegate { AjustarComposicionPortada(); };
+            panelPortadaPrincipal.Resize += delegate
+            {
+                if (panelCola != null)
+                {
+                    int anchoLista = Math.Max(390, Math.Min(560, (int)(panelPortadaPrincipal.ClientSize.Width * 0.34)));
+                    panelCola.Width = anchoLista;
+                    AjustarColumnasCola();
+                }
+                AjustarComposicionPortada();
+            };
             // ------------------------------------------------------------
 
             // --- BARRA DE ESTADO INFERIOR (SIN LOS TEXTOS DE VENTA Y KARAOKE) ---
@@ -530,7 +541,17 @@ namespace RockolaKaraoke.Interfaz
             // El movimiento del mouse ya no cambia de vista.
         }
 
-private sealed class PanelTransparente : Panel
+private sealed class ListViewDobleBuffer : ListView
+        {
+            public ListViewDobleBuffer()
+            {
+                DoubleBuffered = true;
+                SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+                UpdateStyles();
+            }
+        }
+
+        private sealed class PanelTransparente : Panel
         {
             public PanelTransparente()
             {
@@ -1864,9 +1885,10 @@ EjecutarAccion(AccionTeclado.Cancelar);
         {
             if (cola.Columns.Count < 4) return;
             int ancho = Math.Max(180, cola.ClientSize.Width - 12);
-            cola.Columns[0].Width = 42;
-            cola.Columns[1].Width = Math.Max(100, (int)(ancho * 0.56));
-            cola.Columns[2].Width = Math.Max(85, ancho - cola.Columns[0].Width - cola.Columns[1].Width);
+            cola.Columns[0].Width = 46;
+            int anchoCancion = Math.Max(120, (int)(ancho * 0.58));
+            cola.Columns[1].Width = anchoCancion;
+            cola.Columns[2].Width = Math.Max(100, ancho - cola.Columns[0].Width - anchoCancion);
             cola.Columns[3].Width = 0;
         }
 
