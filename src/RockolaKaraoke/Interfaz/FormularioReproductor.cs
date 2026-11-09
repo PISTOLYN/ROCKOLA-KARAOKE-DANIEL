@@ -964,6 +964,7 @@ private static Color LeerColor(string html, Color porDefecto)
                         }
                         temaActualLista = null;
                         rutaActualReproduccion = "";
+                        ActualizarContadorCola();
                         if (cancionesPendientes.Count > 0) ReproducirSiguiente();
                         else
                         {
