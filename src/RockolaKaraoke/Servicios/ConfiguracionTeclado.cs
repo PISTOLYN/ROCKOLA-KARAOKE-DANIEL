@@ -23,7 +23,7 @@ namespace RockolaKaraoke.Servicios
         public static bool MostrarMensajeAlAgregar = true;
         public static bool MostrarListaGeneros = true;
         public static bool IrSiguienteGeneroDirectamente = false;
-        public static bool MostrarAbecedarioAlMantenerFlecha = true;
+        public static bool MostrarAbecedarioAlMantenerFlecha = false;
         public static int TiempoEsperaAbecedario = 2;
 
         static ConfiguracionTeclado()
@@ -39,9 +39,24 @@ namespace RockolaKaraoke.Servicios
             get { return Path.Combine(Application.UserAppDataPath, "teclado.txt"); }
         }
 
+        // Solo se muestran y se pueden asignar las acciones solicitadas.
+        // Las acciones antiguas permanecen en el enum para leer configuraciones previas.
         public static AccionTeclado[] Acciones
         {
-            get { return (AccionTeclado[])Enum.GetValues(typeof(AccionTeclado)); }
+            get
+            {
+                return new AccionTeclado[]
+                {
+                    AccionTeclado.Arriba, AccionTeclado.Abajo,
+                    AccionTeclado.Izquierda, AccionTeclado.Derecha,
+                    AccionTeclado.Agregar, AccionTeclado.Cancelar,
+                    AccionTeclado.CambiarModo, AccionTeclado.Menu,
+                    AccionTeclado.CerrarPrograma, AccionTeclado.SubirVolumen,
+                    AccionTeclado.BajarVolumen, AccionTeclado.ApagarPC,
+                    AccionTeclado.Abecedario, AccionTeclado.MostrarOcultarCola,
+                    AccionTeclado.Buscar
+                };
+            }
         }
 
         public static string Nombre(AccionTeclado accion)
@@ -52,18 +67,14 @@ namespace RockolaKaraoke.Servicios
                 case AccionTeclado.Abajo: return "BAJAR EN LA LISTA DE TEMAS";
                 case AccionTeclado.Izquierda: return "IR A LA IZQUIERDA EN LA LISTA DE ÁLBUMES";
                 case AccionTeclado.Derecha: return "IR A LA DERECHA EN LA LISTA DE ÁLBUMES";
-                case AccionTeclado.Agregar: return "OK (REPRODUCIR O AGREGAR A LA LISTA)";
+                case AccionTeclado.Agregar: return "REPRODUCIR / AGREGAR CANCIÓN A LA LISTA";
                 case AccionTeclado.Cancelar: return "CANCELAR CANCIÓN ACTUAL Y SEGUIR CON LA SIGUIENTE";
-                case AccionTeclado.SiguienteTema: return "IR AL SIGUIENTE TEMA DE LA LISTA DE REPRODUCCIÓN";
                 case AccionTeclado.CambiarModo: return "CAMBIAR GÉNERO MUSICAL (KARAOKE / MÚSICA / VIDEO)";
                 case AccionTeclado.Menu: return "MOSTRAR MENÚ DE CONFIGURACIÓN";
                 case AccionTeclado.CerrarPrograma: return "CERRAR EL PROGRAMA";
                 case AccionTeclado.SubirVolumen: return "SUBIR VOLUMEN";
                 case AccionTeclado.BajarVolumen: return "BAJAR VOLUMEN";
-                case AccionTeclado.PantallaCompleta: return "IR A PANTALLA COMPLETA";
                 case AccionTeclado.ApagarPC: return "APAGAR LA COMPUTADORA";
-                case AccionTeclado.Pausa: return "PAUSA";
-                case AccionTeclado.ReproducirTema: return "REPRODUCIR TEMA";
                 case AccionTeclado.Abecedario: return "MOSTRAR EL MENÚ ABECEDARIO";
                 case AccionTeclado.MostrarOcultarCola: return "MOSTRAR / OCULTAR LISTA DE REPRODUCCIÓN";
                 default: return "BUSCAR TEMAS";
@@ -160,16 +171,12 @@ namespace RockolaKaraoke.Servicios
             teclas[AccionTeclado.Derecha] = Keys.Right;
             teclas[AccionTeclado.Agregar] = Keys.Enter;
             teclas[AccionTeclado.Cancelar] = Keys.Escape;
-            teclas[AccionTeclado.SiguienteTema] = Keys.N;
             teclas[AccionTeclado.CambiarModo] = Keys.Tab;
             teclas[AccionTeclado.Menu] = Keys.M;
             teclas[AccionTeclado.CerrarPrograma] = Keys.End;
             teclas[AccionTeclado.SubirVolumen] = Keys.Add;
             teclas[AccionTeclado.BajarVolumen] = Keys.Subtract;
-            teclas[AccionTeclado.PantallaCompleta] = Keys.F11;
             teclas[AccionTeclado.ApagarPC] = Keys.Divide;
-            teclas[AccionTeclado.Pausa] = Keys.P;
-            teclas[AccionTeclado.ReproducirTema] = Keys.R;
             teclas[AccionTeclado.Abecedario] = Keys.A;
             teclas[AccionTeclado.MostrarOcultarCola] = Keys.L;
             teclas[AccionTeclado.Buscar] = Keys.B;

@@ -1,7 +1,7 @@
 name: Compilar Rockola Karaoke
 on:
   push:
-    branches: [ main ]
+    branches: [ main, corregir-control-teclado ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
