@@ -39,6 +39,8 @@ namespace RockolaKaraoke.Interfaz
         private readonly Button detener = new Button();
         private readonly Timer reloj = new Timer();
         private readonly Timer temporizadorAvisoAgregar = new Timer();
+        private readonly Timer temporizadorParpadeoAviso = new Timer();
+        private bool avisoColorAlterno;
         private Panel panelAvisoAgregar;
         private Label textoAvisoAgregar;
         private LibVLC motor;
@@ -73,7 +75,8 @@ namespace RockolaKaraoke.Interfaz
         private readonly object candadoImagenCajaCD = new object();
         private int indicePortada;
         private int inicioPaginaPortadas;
-        private const int PortadasPorPagina = 5;
+        private const int PortadasPorPagina = 6;
+        private bool mostrarColaEnPortada = true;
         private Dictionary<string, string> aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // --- VARIABLES PARA LA PORTADA ---
@@ -108,8 +111,17 @@ namespace RockolaKaraoke.Interfaz
             {
                 temporizadorAvisoAgregar.Stop();
                 if (panelAvisoAgregar != null) panelAvisoAgregar.Visible = false;
+                temporizadorParpadeoAviso.Stop();
             };
             Resize += delegate { CentrarAvisoAgregar(); };
+            temporizadorParpadeoAviso.Interval = 280;
+            temporizadorParpadeoAviso.Tick += delegate
+            {
+                if (panelAvisoAgregar == null || !panelAvisoAgregar.Visible) { temporizadorParpadeoAviso.Stop(); return; }
+                avisoColorAlterno = !avisoColorAlterno;
+                panelAvisoAgregar.BackColor = avisoColorAlterno ? Color.FromArgb(0, 145, 125) : Color.FromArgb(35, 95, 155);
+                panelAvisoAgregar.Invalidate();
+            };
             CargarColorInterfaz();
             CrearInterfaz();
 
@@ -351,8 +363,6 @@ namespace RockolaKaraoke.Interfaz
             panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
             // La lista inicia oculta y se despliega desde el panel derecho al pulsar su tecla configurable.
             panelDerecho.Controls.Add(panelPublicidad);
-            panelDerecho.Controls.Add(panelCola);
-            panelCola.Visible = false;
             panelPublicidad.BringToFront();
             distribucionInferior.Controls.Add(panelDerecho, 1, 0);
             filaInferior.Controls.Add(distribucionInferior);
@@ -401,7 +411,13 @@ namespace RockolaKaraoke.Interfaz
             // El propio panel es el fondo rojo de toda el área central.
             // No usar otro Panel Dock=Fill: dos controles Fill superpuestos pueden
             // repartirse el espacio durante el layout de WinForms.
+            panelCola.Dock = DockStyle.Right;
+            panelCola.Width = 350;
+            panelCola.BackColor = Color.FromArgb(18, 10, 18, 30);
+            panelCola.Visible = false;
             panelPortadaPrincipal.Controls.Add(pictureBoxPortada);
+            panelPortadaPrincipal.Controls.Add(panelCola);
+            panelCola.BringToFront();
             panelPortadaPrincipal.Controls.Add(lblTituloPortada);
             panelPortadaPrincipal.Controls.Add(lblArtistaPortada);
             panelPortadaPrincipal.Controls.Add(lblDuracionPortada);
@@ -1182,6 +1198,8 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             panelPortadaPrincipal.Visible = true;
             if (contenidoCentral != null) contenidoCentral.Visible = false;
             panelPortadaPrincipal.BringToFront();
+            panelCola.Visible = mostrarColaEnPortada && cola.Items.Count > 0;
+            if (panelCola.Visible) panelCola.BringToFront();
             panelPortadaPrincipal.PerformLayout();
             pictureBoxPortada.BringToFront();
             lblTituloPortada.BringToFront();
@@ -1205,6 +1223,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
         private void MostrarContenidoReproductor()
         {
             panelPortadaPrincipal.Visible = false;
+            if (panelCola != null) panelCola.Visible = false;
             if (contenidoCentral != null)
             {
                 contenidoCentral.Dock = DockStyle.Fill;
@@ -1281,7 +1300,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             {
                 panelAvisoAgregar = new Panel
                 {
-                    Size = new Size(390, 76),
+                    Size = new Size(430, 82),
                     BackColor = Color.FromArgb(0, 145, 125),
                     BorderStyle = BorderStyle.FixedSingle,
                     Visible = false
@@ -1293,7 +1312,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
                     TextAlign = ContentAlignment.MiddleCenter,
                     ForeColor = Color.White,
                     BackColor = Color.Transparent,
-                    Font = new Font("Segoe UI", 21F, FontStyle.Bold)
+                    Font = new Font("Segoe UI", 22F, FontStyle.Bold)
                 };
                 panelAvisoAgregar.Controls.Add(textoAvisoAgregar);
                 Controls.Add(panelAvisoAgregar);
@@ -1303,6 +1322,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             panelAvisoAgregar.Visible = true;
             panelAvisoAgregar.BringToFront();
             temporizadorAvisoAgregar.Stop();
+            temporizadorParpadeoAviso.Start();
             temporizadorAvisoAgregar.Start();
         }
 
@@ -1712,8 +1732,8 @@ EjecutarAccion(AccionTeclado.Cancelar);
         {
             if (mosaico == null) return;
             int disponibles = Math.Max(1, mosaico.ClientSize.Width - mosaico.Padding.Horizontal - 14);
-            int anchoTarjeta = Math.Max(105, Math.Min(270, (disponibles - PortadasPorPagina * 12) / PortadasPorPagina));
-            int altoImagen = Math.Max(175, Math.Min(330, (int)(anchoTarjeta * 1.35)));
+            int anchoTarjeta = Math.Max(105, Math.Min(290, (disponibles - PortadasPorPagina * 12) / PortadasPorPagina));
+            int altoImagen = Math.Max(185, Math.Min(350, (int)(anchoTarjeta * 1.42)));
             for (int i = 0; i < tarjetas.Count; i++)
             {
                 Panel tarjeta = tarjetas[i];
@@ -1797,6 +1817,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
             int total = biblioteca.Items.Count;
             int actual = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] + 1 : (total > 0 ? 1 : 0);
             biblioteca.Columns[0].Text = "ÁLBUM SELECCIONADO  •  CANCIÓN " + actual + " DE " + total;
+            AjustarColumnasBiblioteca();
         }
 
         private void ActualizarTituloPortadas()
@@ -1902,20 +1923,12 @@ EjecutarAccion(AccionTeclado.Cancelar);
 
         private void AlternarListaReproduccion()
         {
-            if (panelCola == null || panelPublicidad == null) return;
-            panelCola.Visible = !panelCola.Visible;
-            if (panelCola.Visible)
+            if (panelCola == null) return;
+            mostrarColaEnPortada = !mostrarColaEnPortada;
+            if (panelPortadaPrincipal.Visible)
             {
-                if (panelPortadaPrincipal.Visible) MostrarContenidoReproductor();
-                panelCola.BringToFront();
-                cola.Focus();
-            }
-            else
-            {
-                panelPublicidad.Visible = true;
-                panelPublicidad.BringToFront();
-                if (!String.IsNullOrWhiteSpace(rutaActualReproduccion) && !reproduccionActualEsVideo)
-                    MostrarPortadaCancion();
+                panelCola.Visible = mostrarColaEnPortada && cola.Items.Count > 0;
+                if (panelCola.Visible) panelCola.BringToFront();
             }
         }
 
@@ -2010,16 +2023,29 @@ EjecutarAccion(AccionTeclado.Cancelar);
         private void CambiarGenero()
         {
             List<string> modos = ListaModos();
-            int actual = modos.FindIndex(delegate(string v) { return IgualNormal(v, filtroTipo); });
-            if (ConfiguracionTeclado.IrSiguienteGeneroDirectamente && modos.Count > 1)
+            if (modos.Count == 0) return;
+            using (Form selector = new Form())
             {
-                if (actual < 1) actual = 0;
-                int siguiente = actual + 1;
-                if (siguiente >= modos.Count) siguiente = 1;
-                filtroTipo = modos[siguiente];
+                selector.Text = "SELECCIONAR GÉNERO MUSICAL";
+                selector.StartPosition = FormStartPosition.CenterParent;
+                selector.FormBorderStyle = FormBorderStyle.FixedDialog;
+                selector.MinimizeBox = false; selector.MaximizeBox = false;
+                selector.ClientSize = new Size(390, 440);
+                selector.BackColor = Color.FromArgb(8, 16, 32);
+                Label titulo = new Label { Text = "ELIGE UN GÉNERO", Dock = DockStyle.Top, Height = 55, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 16F, FontStyle.Bold) };
+                ListBox lista = new ListBox { Dock = DockStyle.Fill, BackColor = Color.FromArgb(12, 25, 45), ForeColor = Color.White, Font = new Font("Segoe UI", 14F, FontStyle.Bold), IntegralHeight = false };
+                foreach (string modo in modos) lista.Items.Add(modo);
+                int seleccionado = modos.FindIndex(delegate(string v) { return IgualNormal(v, filtroTipo); });
+                lista.SelectedIndex = Math.Max(0, seleccionado);
+                FlowLayoutPanel pie = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 55, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(6) };
+                Button aceptar = new Button { Text = "SELECCIONAR", Width = 125, Height = 38, DialogResult = DialogResult.OK };
+                Button cancelar = new Button { Text = "CANCELAR", Width = 100, Height = 38, DialogResult = DialogResult.Cancel };
+                Estilizar(aceptar); Estilizar(cancelar); pie.Controls.Add(aceptar); pie.Controls.Add(cancelar);
+                selector.Controls.Add(lista); selector.Controls.Add(pie); selector.Controls.Add(titulo);
+                selector.AcceptButton = aceptar; selector.CancelButton = cancelar;
+                if (selector.ShowDialog(this) == DialogResult.OK && lista.SelectedItem != null)
+                { filtroTipo = Convert.ToString(lista.SelectedItem); ConstruirMosaico(); ResaltarTipos(); }
             }
-            else filtroTipo = modos[(actual + 1) % modos.Count];
-            ConstruirMosaico();
         }
 
         private string TextoBuscado()
@@ -2069,6 +2095,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
         {
             if (barraAbc.Visible) { CerrarAbc(); return; }
             if (panelPortadaPrincipal.Visible) MostrarContenidoReproductor();
+            if (panelCola != null) panelCola.Visible = false;
             barraAbc.Visible = true;
             barraAbc.BringToFront();
             indiceAbc = 0;
