@@ -420,7 +420,7 @@ namespace RockolaKaraoke.Interfaz
                 Visible = false
             };
 
-            equalizadorPortada = new EqualizadorVisual { BackColor = Color.Transparent, Anchor = AnchorStyles.Top };
+            equalizadorPortada = new EqualizadorVisual { Anchor = AnchorStyles.Top };
             pictureBoxPortada = new PictureBox
             {
                 SizeMode = PictureBoxSizeMode.Zoom,
@@ -576,9 +576,11 @@ private sealed class EqualizadorVisual : Control
 
             public EqualizadorVisual()
             {
-                BackColor = Color.Transparent;
+                // Habilitar transparencia antes de asignar Color.Transparent.
+                // Si se asigna primero, WinForms lanza "el control no admite colores de fondo transparentes".
                 SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                     ControlStyles.OptimizedDoubleBuffer | ControlStyles.SupportsTransparentBackColor, true);
+                BackColor = Color.Transparent;
                 for (int i = 0; i < objetivos.Length; i++) objetivos[i] = aleatorio.Next(2, 19);
 
                 animacion = new System.Windows.Forms.Timer();
