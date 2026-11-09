@@ -1117,34 +1117,86 @@ private sealed class EqualizadorVisual : Control
             catch { return null; }
         }
 
+        private void LiberarSolicitudMiniatura(string carpeta)
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+            try
+            {
+                BeginInvoke((Action)delegate
+                {
+                    if (!IsDisposed)
+                        miniaturasSolicitadas.Remove(carpeta);
+                });
+            }
+            catch { }
+        }
+
         private void CargarMiniaturaPortadaAsync(PictureBox cuadro, string carpeta)
         {
-            if (cuadro == null || cuadro.IsDisposed || !miniaturasSolicitadas.Add(carpeta)) return;
+            if (cuadro == null || cuadro.IsDisposed || String.IsNullOrWhiteSpace(carpeta) ||
+                !miniaturasSolicitadas.Add(carpeta)) return;
+
             cuadro.Tag = carpeta;
-            Task.Run(() => BuscarMiniaturaPortada(carpeta)).ContinueWith(tarea =>
+            try
             {
-                if (tarea.IsFaulted || tarea.IsCanceled) return;
-                Image miniatura = tarea.Result;
-                if (miniatura == null) return;
-                if (IsDisposed || !IsHandleCreated) { miniatura.Dispose(); return; }
-                try
+                Task.Run(() => BuscarMiniaturaPortada(carpeta)).ContinueWith(tarea =>
                 {
-                    BeginInvoke((Action)delegate
+                    if (tarea.IsFaulted || tarea.IsCanceled)
                     {
-                        if (IsDisposed || cuadro.IsDisposed ||
-                            !String.Equals(Convert.ToString(cuadro.Tag), carpeta, StringComparison.OrdinalIgnoreCase))
+                        LiberarSolicitudMiniatura(carpeta);
+                        return;
+                    }
+
+                    Image miniatura = tarea.Result;
+                    if (miniatura == null)
+                    {
+                        // Si no hay portada o el archivo está temporalmente inaccesible,
+                        // permitir que se vuelva a intentar al regresar a esta página.
+                        LiberarSolicitudMiniatura(carpeta);
+                        return;
+                    }
+
+                    if (IsDisposed || !IsHandleCreated)
+                    {
+                        miniatura.Dispose();
+                        return;
+                    }
+
+                    try
+                    {
+                        BeginInvoke((Action)delegate
                         {
-                            miniatura.Dispose();
-                            return;
-                        }
-                        Image anterior = cuadro.Image;
-                        cuadro.Image = miniatura;
-                        if (anterior != null) anterior.Dispose();
-                        cuadro.Invalidate();
-                    });
-                }
-                catch { miniatura.Dispose(); }
-            }, TaskScheduler.Default);
+                            if (IsDisposed)
+                            {
+                                miniatura.Dispose();
+                                return;
+                            }
+
+                            if (cuadro.IsDisposed ||
+                                !String.Equals(Convert.ToString(cuadro.Tag), carpeta, StringComparison.OrdinalIgnoreCase))
+                            {
+                                miniatura.Dispose();
+                                miniaturasSolicitadas.Remove(carpeta);
+                                return;
+                            }
+
+                            Image anterior = cuadro.Image;
+                            cuadro.Image = miniatura;
+                            if (anterior != null) anterior.Dispose();
+                            cuadro.Invalidate();
+                        });
+                    }
+                    catch
+                    {
+                        miniatura.Dispose();
+                        LiberarSolicitudMiniatura(carpeta);
+                    }
+                }, TaskScheduler.Default);
+            }
+            catch
+            {
+                LiberarSolicitudMiniatura(carpeta);
+            }
         }
 
         private void SeleccionarElemento(ListViewItem elemento)
@@ -1240,9 +1292,9 @@ private sealed class EqualizadorVisual : Control
 
         private void CargarBiblioteca()
         {
-            biblioteca.BeginUpdate();
-            biblioteca.Items.Clear();
-            todosLosElementos.Clear();
+            // Primero consultar a una lista temporal. Si SQLite falla, no borrar
+            // la biblioteca que ya estaba visible ni mostrar un falso conteo de cero.
+            List<ListViewItem> elementosCargados = new List<ListViewItem>();
             try
             {
                 using (SQLiteConnection conexion = Datos.BaseDatos.CrearConexion())
@@ -1259,23 +1311,33 @@ private sealed class EqualizadorVisual : Control
                             elemento.Tag = Convert.ToString(lector[2]);
                             elemento.ToolTipText = Convert.ToString(lector[3]);
                             elemento.Name = Convert.ToString(lector[4]);
-                            biblioteca.Items.Add(elemento);
-                            todosLosElementos.Add(elemento);
+                            elementosCargados.Add(elemento);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
+                tituloActual.Text = "No se pudo actualizar la biblioteca.";
                 MessageBox.Show(this, "No se pudo cargar la biblioteca.\n" + ex.Message,
                     "Biblioteca", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            biblioteca.BeginUpdate();
+            try
+            {
+                biblioteca.Items.Clear();
+                todosLosElementos.Clear();
+                todosLosElementos.AddRange(elementosCargados);
+                biblioteca.Items.AddRange(elementosCargados.ToArray());
             }
             finally
             {
                 biblioteca.EndUpdate();
             }
 
-            tituloActual.Text = "Biblioteca cargada: " + biblioteca.Items.Count + " canciones y videos";
+            tituloActual.Text = "Biblioteca cargada: " + elementosCargados.Count + " canciones y videos";
             try { aliasCarpetas = ServicioGeneros.AliasPorCarpeta(); }
             catch { aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); }
             try
