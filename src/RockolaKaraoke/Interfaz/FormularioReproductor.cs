@@ -1517,6 +1517,11 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
                 // cuando el foco está en el buscador y no debe quedarse como Escape
                 // para salir del cuadro de texto.
                 AccionTeclado? accionEnBusqueda = ConfiguracionTeclado.Buscar(teclaBase);
+                if (accionEnBusqueda == AccionTeclado.Buscar)
+                {
+                    AlternarAbc();
+                    return true;
+                }
                 if (accionEnBusqueda == AccionTeclado.Cancelar)
                 {
 EjecutarAccion(AccionTeclado.Cancelar);
@@ -1970,6 +1975,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
             barraAbc.BringToFront();
             indiceAbc = 0;
             ResaltarAbc();
+            biblioteca.Focus();
         }
 
         private void CerrarAbc()
