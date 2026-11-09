@@ -1240,6 +1240,7 @@ private sealed class EqualizadorVisual : Control
 
         private void CargarBiblioteca()
         {
+            biblioteca.BeginUpdate();
             biblioteca.Items.Clear();
             todosLosElementos.Clear();
             try
@@ -1263,12 +1264,29 @@ private sealed class EqualizadorVisual : Control
                         }
                     }
                 }
-                tituloActual.Text = "Biblioteca cargada: " + biblioteca.Items.Count + " canciones y videos";
-                try { aliasCarpetas = ServicioGeneros.AliasPorCarpeta(); } catch { aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "No se pudo cargar la biblioteca.\n" + ex.Message,
+                    "Biblioteca", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                biblioteca.EndUpdate();
+            }
+
+            tituloActual.Text = "Biblioteca cargada: " + biblioteca.Items.Count + " canciones y videos";
+            try { aliasCarpetas = ServicioGeneros.AliasPorCarpeta(); }
+            catch { aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); }
+            try
+            {
                 ConstruirBotonesGenero();
                 ConstruirMosaico();
             }
-            catch (Exception ex) { MessageBox.Show(this, "No se pudo cargar la biblioteca.\n" + ex.Message, "Biblioteca", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex)
+            {
+                tituloActual.Text = "Biblioteca cargada con un problema al preparar las portadas: " + ex.Message;
+            }
         }
 
         private void MoverSeleccionCancion(int desplazamiento)
@@ -2069,6 +2087,9 @@ EjecutarAccion(AccionTeclado.Cancelar);
                                 imagen.Image = null;
                             }
                         }
+                        string carpetaLiberada = i < carpetasTarjetas.Count ? carpetasTarjetas[i] : null;
+                        if (!String.IsNullOrEmpty(carpetaLiberada))
+                            miniaturasSolicitadas.Remove(carpetaLiberada);
                         tarjeta.Dispose();
                         tarjetas[i] = null;
                     }
