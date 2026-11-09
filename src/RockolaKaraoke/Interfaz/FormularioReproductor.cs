@@ -424,7 +424,9 @@ namespace RockolaKaraoke.Interfaz
             pictureBoxPortada = new PictureBox
             {
                 SizeMode = PictureBoxSizeMode.Zoom,
-                BackColor = Color.Transparent,
+                // PictureBox no debe usar transparencia: en algunas versiones de
+                // Windows Forms provoca que la aplicación falle al iniciar.
+                BackColor = panelPortadaPrincipal.BackColor,
                 Anchor = AnchorStyles.Top
             };
             lblTituloPortada = new Label
