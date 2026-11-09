@@ -520,7 +520,8 @@ namespace RockolaKaraoke.Interfaz
             {
                 temporizadorInactividad.Stop();
                 // Durante la reproducción, volver a mostrar la portada roja de la caja del CD.
-                if (!String.IsNullOrWhiteSpace(rutaActualReproduccion))
+                if (!String.IsNullOrWhiteSpace(rutaActualReproduccion) &&
+                    reproductor != null && reproductor.State != VLCState.Paused)
                     MostrarPortadaCancion();
             };
 
@@ -2077,6 +2078,10 @@ namespace RockolaKaraoke.Interfaz
         private void LiberarMotor()
         {
             reloj.Stop();
+            reloj.Dispose();
+            temporizadorAvisoAgregar.Stop();
+            temporizadorAvisoAgregar.Dispose();
+            if (temporizadorInactividad != null) { temporizadorInactividad.Stop(); temporizadorInactividad.Dispose(); temporizadorInactividad = null; }
             if (temporizadorAbecedario != null) { temporizadorAbecedario.Stop(); temporizadorAbecedario.Dispose(); temporizadorAbecedario = null; }
             if (reproductor != null) { reproductor.Stop(); reproductor.Dispose(); reproductor = null; }
             if (medioActual != null) { medioActual.Dispose(); medioActual = null; }
