@@ -345,7 +345,7 @@ namespace RockolaKaraoke.Interfaz
             panelPublicidad = new Panel { Dock = DockStyle.Fill, BackColor = Color.Black, BorderStyle = BorderStyle.None };
             pantalla.Dock = DockStyle.Fill; pantalla.BackColor = Color.Black;
             panelPublicidad.Controls.Add(pantalla);
-            panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(145, 95, 0, 0) };
+            panelCola = new PanelTransparente { Dock = DockStyle.Fill, BackColor = Color.FromArgb(145, 95, 0, 0) };
             panelCola.Padding = new Padding(8);
             etiquetaCola.Text = "LISTA DE REPRODUCCIÓN • VACÍA"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 38;
             etiquetaCola.TextAlign = ContentAlignment.MiddleLeft; etiquetaCola.Padding = new Padding(9, 0, 0, 0); etiquetaCola.ForeColor = Color.Gold;
@@ -530,7 +530,16 @@ namespace RockolaKaraoke.Interfaz
             // El movimiento del mouse ya no cambia de vista.
         }
 
-private static Color LeerColor(string html, Color porDefecto)
+private sealed class PanelTransparente : Panel
+        {
+            public PanelTransparente()
+            {
+                SetStyle(ControlStyles.SupportsTransparentBackColor | ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+                BackColor = Color.FromArgb(150, 70, 0, 0);
+            }
+        }
+
+        private static Color LeerColor(string html, Color porDefecto)
         {
             try { return ColorTranslator.FromHtml(html); }
             catch { return porDefecto; }
@@ -1284,6 +1293,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
                 contenidoCentral.Visible = true;
                 contenidoCentral.BringToFront();
             }
+            if (franjaListaCompleta != null) franjaListaCompleta.BringToFront();
         }
 
         private void AjustarComposicionPortada()
@@ -2147,7 +2157,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
                         if (lista.SelectedItem != null) { selector.DialogResult = DialogResult.OK; selector.Close(); }
                         e.Handled = true; e.SuppressKeyPress = true;
                     }
-                    else if (e.KeyCode == Keys.Escape)
+                    else if (cancelarSelector)
                     {
                         selector.DialogResult = DialogResult.Cancel; selector.Close();
                         e.Handled = true; e.SuppressKeyPress = true;
