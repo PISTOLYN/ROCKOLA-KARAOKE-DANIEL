@@ -1846,8 +1846,19 @@ EjecutarAccion(AccionTeclado.Cancelar);
         {
             if (panelCola == null || panelPublicidad == null) return;
             panelCola.Visible = !panelCola.Visible;
-            if (panelCola.Visible) { panelCola.BringToFront(); cola.Focus(); }
-            else { panelPublicidad.Visible = true; panelPublicidad.BringToFront(); }
+            if (panelCola.Visible)
+            {
+                if (panelPortadaPrincipal.Visible) MostrarContenidoReproductor();
+                panelCola.BringToFront();
+                cola.Focus();
+            }
+            else
+            {
+                panelPublicidad.Visible = true;
+                panelPublicidad.BringToFront();
+                if (!String.IsNullOrWhiteSpace(rutaActualReproduccion) && !reproduccionActualEsVideo)
+                    MostrarPortadaCancion();
+            }
         }
 
         private bool EsArchivoVideo(string ruta)
@@ -1971,6 +1982,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
         private void AlternarAbc()
         {
             if (barraAbc.Visible) { CerrarAbc(); return; }
+            if (panelPortadaPrincipal.Visible) MostrarContenidoReproductor();
             barraAbc.Visible = true;
             barraAbc.BringToFront();
             indiceAbc = 0;
