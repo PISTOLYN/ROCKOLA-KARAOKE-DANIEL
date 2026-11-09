@@ -68,6 +68,7 @@ namespace RockolaKaraoke.Interfaz
         private readonly List<string> carpetasTarjetas = new List<string>();
         private readonly HashSet<string> miniaturasSolicitadas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private Image imagenBaseCajaCD;
+        private readonly object candadoImagenCajaCD = new object();
         private int indicePortada;
         private int inicioPaginaPortadas;
         private const int PortadasPorPagina = 7;
@@ -1121,21 +1122,12 @@ namespace RockolaKaraoke.Interfaz
                 lblArtistaPortada.Text = artista;
                 
                 string carpetaCancion = Path.GetDirectoryName(ruta);
-                // Si el tema no tiene una portada válida, usar siempre la imagen del León.
-                // Ambas imágenes se liberan al terminar de componer la caja del CD.
-                using (Image caratulaEncontrada = BuscarPortada(carpetaCancion))
-                using (Image portadaLeon = caratulaEncontrada == null ? CargarImagenLeon() : null)
-                {
-                    Image portadaFinal = caratulaEncontrada ?? portadaLeon;
-                    EstablecerImagenCajaCD(portadaFinal);
-                }
-
-                // Mostrar inmediatamente: no esperar a que VLC actualice IsPlaying.
-                // Si el usuario navega con las flechas, NotificarActividadUsuario la oculta
-                // y el temporizador la vuelve a mostrar tras 3 segundos sin actividad.
+                // Mostrar primero la pantalla roja. La búsqueda y composición de la portada
+                // se realizan en segundo plano para que el inicio visual no espere al disco.
                 MostrarPortadaCancion();
                 temporizadorInactividad.Stop();
                 temporizadorInactividad.Start();
+                CargarPortadaCancionAsync(rutaActualReproduccion, carpetaCancion);
             }
             catch (Exception ex) { MessageBox.Show(this, "No se pudo reproducir el archivo.\n" + ex.Message, "Error de reproducción", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
@@ -1147,38 +1139,61 @@ namespace RockolaKaraoke.Interfaz
                 return new Bitmap(origen);
         }
 
-        private void EstablecerImagenCajaCD(Image caratula)
+        private void CargarPortadaCancionAsync(string rutaCancion, string carpetaCancion)
         {
-            if (!File.Exists(rutaCajaVacia))
+            Task.Run(() =>
             {
-                throw new FileNotFoundException("No se encontró PortadaVacia.png.png junto al programa.", rutaCajaVacia);
-            }
-
-            Image caja = ObtenerImagenBaseCajaCD();
-            using (Bitmap resultado = new Bitmap(caja.Width, caja.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
-            using (Graphics g = Graphics.FromImage(resultado))
+                using (Image caratulaEncontrada = BuscarPortada(carpetaCancion))
+                using (Image portadaLeon = caratulaEncontrada == null ? CargarImagenLeon() : null)
+                    return CrearImagenCajaCD(caratulaEncontrada ?? portadaLeon);
+            }).ContinueWith(tarea =>
             {
-                // El PNG de la caja tiene zonas transparentes: rellenarlas con rojo
-                // antes de dibujar conserva el fondo rojo visible alrededor del CD.
-                g.Clear(Color.FromArgb(190, 0, 0));
-                g.DrawImage(caja, 0, 0, caja.Width, caja.Height);
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
-
-                if (caratula != null)
+                if (tarea.IsFaulted || tarea.IsCanceled) return;
+                Bitmap nueva = tarea.Result;
+                if (IsDisposed || !IsHandleCreated) { nueva.Dispose(); return; }
+                try
                 {
-                    // La portada ocupa el espacio negro izquierdo; no invade el CD arcoíris.
-                    Rectangle destino = new Rectangle(
-                        (int)(caja.Width * 0.055),
-                        (int)(caja.Height * 0.018),
-                        (int)(caja.Width * 0.505),
-                        (int)(caja.Height * 0.964));
-                    g.DrawImage(caratula, destino);
+                    BeginInvoke((Action)delegate
+                    {
+                        if (IsDisposed || pictureBoxPortada == null || pictureBoxPortada.IsDisposed ||
+                            !String.Equals(rutaActualReproduccion, rutaCancion, StringComparison.OrdinalIgnoreCase))
+                        {
+                            nueva.Dispose();
+                            return;
+                        }
+                        Image anterior = pictureBoxPortada.Image;
+                        pictureBoxPortada.Image = nueva;
+                        if (anterior != null) anterior.Dispose();
+                        AjustarComposicionPortada();
+                    });
                 }
-                Image imagenAnterior = pictureBoxPortada.Image;
-                pictureBoxPortada.Image = new Bitmap(resultado);
-                if (imagenAnterior != null) imagenAnterior.Dispose();
+                catch { nueva.Dispose(); }
+            }, TaskScheduler.Default);
+        }
+
+        private Bitmap CrearImagenCajaCD(Image caratula)
+        {
+            lock (candadoImagenCajaCD)
+            {
+                Image caja = ObtenerImagenBaseCajaCD();
+                using (Bitmap resultado = new Bitmap(caja.Width, caja.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+                using (Graphics g = Graphics.FromImage(resultado))
+                {
+                    g.Clear(Color.FromArgb(190, 0, 0));
+                    g.DrawImage(caja, 0, 0, caja.Width, caja.Height);
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
+                    if (caratula != null)
+                    {
+                        Rectangle destino = new Rectangle(
+                            (int)(caja.Width * 0.055),
+                            (int)(caja.Height * 0.018),
+                            (int)(caja.Width * 0.505),
+                            (int)(caja.Height * 0.964));
+                        g.DrawImage(caratula, destino);
+                    }
+                    return new Bitmap(resultado);
+                }
             }
-            AjustarComposicionPortada();
         }
 
         private Image ObtenerImagenBaseCajaCD()
@@ -2066,10 +2081,13 @@ namespace RockolaKaraoke.Interfaz
                 pictureBoxPortada.Image.Dispose();
                 pictureBoxPortada.Image = null;
             }
-            if (imagenBaseCajaCD != null)
+            lock (candadoImagenCajaCD)
             {
-                imagenBaseCajaCD.Dispose();
-                imagenBaseCajaCD = null;
+                if (imagenBaseCajaCD != null)
+                {
+                    imagenBaseCajaCD.Dispose();
+                    imagenBaseCajaCD = null;
+                }
             }
             foreach (Control tarjeta in mosaico.Controls)
             {
