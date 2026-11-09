@@ -78,7 +78,6 @@ namespace RockolaKaraoke.Interfaz
             {
                 { "CONFIGURAR MUSICA", "MUSICA" },
                 { "CONFIGURAR LETREROS LED", "LETREROS" },
-                { "SKINS - VISUALIZACION", "SKIN" },
                 { "CONFIGURAR TECLADO", "TECLADO" },
                 { "CERRAR", "CERRAR" },
                 { "CERRAR PROGRAMA", "SALIR" },
