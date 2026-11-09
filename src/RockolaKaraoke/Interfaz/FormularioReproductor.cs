@@ -878,6 +878,7 @@ private sealed class EqualizadorVisual : Control
             miniaturasSolicitadas.Clear();
             tarjetas.Clear();
             carpetasTarjetas.Clear();
+
             string texto = TextoBuscado().Trim();
             Dictionary<string, ListViewItem> albumes = new Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, int> conteo = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -902,47 +903,103 @@ private sealed class EqualizadorVisual : Control
             }
             orden.Sort(delegate(string a, string b) { return String.Compare(NombreAlbum(a), NombreAlbum(b), StringComparison.CurrentCultureIgnoreCase); });
 
+            // Mantener el índice de todos los álbumes, pero crear controles solo
+            // para las seis portadas visibles. Así una biblioteca grande no bloquea
+            // el inicio ni consume memoria creando cientos o miles de paneles.
             foreach (string carpeta in orden)
             {
-                ListViewItem primerTema = albumes[carpeta];
-                int cantidad;
-                conteo.TryGetValue(carpeta, out cantidad);
-                int posicion = tarjetas.Count;
-
-                Panel tarjeta = new Panel { Width = 178, Height = 205, Margin = new Padding(9, 5, 9, 5), BackColor = Color.FromArgb(0, 62, 125), Cursor = Cursors.Hand, Tag = posicion };
-                tarjeta.Paint += delegate(object sender, PaintEventArgs e)
-                {
-                    Panel p = (Panel)sender;
-                    bool elegida = Convert.ToInt32(p.Tag) == indicePortada;
-                    using (Pen borde = new Pen(elegida ? Color.FromArgb(255, 215, 0) : colorInterfaz, elegida ? 5F : 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
-                };
-                PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 145, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
-                portada.Tag = carpeta;
-                portada.Paint += delegate(object sender, PaintEventArgs e)
-                {
-                    PictureBox cuadro = (PictureBox)sender;
-                    if (cuadro.Image != null) return;
-                    Rectangle r = cuadro.ClientRectangle;
-                    using (System.Drawing.Drawing2D.LinearGradientBrush grad = new System.Drawing.Drawing2D.LinearGradientBrush(r, Color.FromArgb(18, 38, 105), Color.FromArgb(135, 25, 115), 35F))
-                        e.Graphics.FillRectangle(grad, r);
-                    using (Font f = new Font("Segoe UI Symbol", 48F, FontStyle.Bold))
-                    using (SolidBrush b = new SolidBrush(Color.White))
-                        e.Graphics.DrawString("♫", f, b, 58, 28);
-                };
-                Label nombre = new Label { Text = NombreAlbum(carpeta), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 10F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
-                Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 25, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 9F, FontStyle.Bold), Cursor = Cursors.Hand };
-                tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
-                EventHandler elegir = delegate { SeleccionarPortada(posicion); };
-                tarjeta.Click += elegir; portada.Click += elegir; nombre.Click += elegir; total.Click += elegir;
-                mosaico.Controls.Add(tarjeta);
-                tarjetas.Add(tarjeta);
                 carpetasTarjetas.Add(carpeta);
+                tarjetas.Add(null);
             }
+
             mosaico.ResumeLayout();
             ResaltarTipos();
             indicePortada = 0;
             inicioPaginaPortadas = 0;
+            ActualizarPaginaPortadas();
             SeleccionarPortada(0);
+        }
+
+        private Panel CrearTarjetaPortada(int posicion)
+        {
+            if (posicion < 0 || posicion >= carpetasTarjetas.Count) return null;
+            string carpeta = carpetasTarjetas[posicion];
+            int cantidad = 0;
+            foreach (ListViewItem elemento in todosLosElementos)
+            {
+                string carpetaTema = Path.GetDirectoryName(Convert.ToString(elemento.Tag)) ?? "";
+                if (String.Equals(carpetaTema, carpeta, StringComparison.OrdinalIgnoreCase))
+                    cantidad++;
+            }
+
+            Panel tarjeta = new Panel
+            {
+                Width = 178,
+                Height = 205,
+                Margin = new Padding(9, 5, 9, 5),
+                BackColor = Color.FromArgb(0, 62, 125),
+                Cursor = Cursors.Hand,
+                Tag = posicion
+            };
+            tarjeta.Paint += delegate(object sender, PaintEventArgs e)
+            {
+                Panel p = (Panel)sender;
+                bool elegida = Convert.ToInt32(p.Tag) == indicePortada;
+                using (Pen borde = new Pen(elegida ? Color.FromArgb(255, 215, 0) : colorInterfaz, elegida ? 5F : 3F))
+                    e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
+            };
+            PictureBox portada = new PictureBox
+            {
+                Dock = DockStyle.Top,
+                Height = 145,
+                BackColor = Color.FromArgb(13, 32, 75),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Cursor = Cursors.Hand
+            };
+            portada.Tag = carpeta;
+            portada.Paint += delegate(object sender, PaintEventArgs e)
+            {
+                PictureBox cuadro = (PictureBox)sender;
+                if (cuadro.Image != null) return;
+                Rectangle r = cuadro.ClientRectangle;
+                using (System.Drawing.Drawing2D.LinearGradientBrush grad =
+                    new System.Drawing.Drawing2D.LinearGradientBrush(r, Color.FromArgb(18, 38, 105), Color.FromArgb(135, 25, 115), 35F))
+                    e.Graphics.FillRectangle(grad, r);
+                using (Font f = new Font("Segoe UI Symbol", 48F, FontStyle.Bold))
+                using (SolidBrush pincel = new SolidBrush(Color.White))
+                    e.Graphics.DrawString("♫", f, pincel, 58, 28);
+            };
+            Label nombre = new Label
+            {
+                Text = NombreAlbum(carpeta),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                BackColor = Color.FromArgb(0, 95, 175),
+                AutoEllipsis = true,
+                Cursor = Cursors.Hand
+            };
+            Label total = new Label
+            {
+                Text = cantidad + " TEMAS",
+                Dock = DockStyle.Bottom,
+                Height = 25,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(0, 75, 145),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            tarjeta.Controls.Add(nombre);
+            tarjeta.Controls.Add(total);
+            tarjeta.Controls.Add(portada);
+            EventHandler elegir = delegate { SeleccionarPortada(posicion); };
+            tarjeta.Click += elegir;
+            portada.Click += elegir;
+            nombre.Click += elegir;
+            total.Click += elegir;
+            return tarjeta;
         }
 
         private void ResaltarPortadas()
@@ -950,17 +1007,27 @@ private sealed class EqualizadorVisual : Control
             int fin = Math.Min(tarjetas.Count, inicioPaginaPortadas + PortadasPorPagina);
             for (int i = inicioPaginaPortadas; i < fin; i++)
             {
+                Panel tarjeta = tarjetas[i];
+                if (tarjeta == null) continue;
                 bool elegida = i == indicePortada;
-                tarjetas[i].BackColor = elegida ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 62, 125);
-                foreach (Control c in tarjetas[i].Controls)
+                tarjeta.BackColor = elegida ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 62, 125);
+                foreach (Control c in tarjeta.Controls)
                 {
                     Label etiqueta = c as Label;
                     if (etiqueta == null) continue;
                     bool principal = etiqueta.Dock == DockStyle.Fill;
-                    if (elegida) { etiqueta.BackColor = principal ? Color.FromArgb(245, 190, 0) : Color.FromArgb(215, 160, 0); etiqueta.ForeColor = Color.Black; }
-                    else { etiqueta.BackColor = principal ? Color.FromArgb(0, 95, 175) : Color.FromArgb(0, 75, 145); etiqueta.ForeColor = Color.White; }
+                    if (elegida)
+                    {
+                        etiqueta.BackColor = principal ? Color.FromArgb(245, 190, 0) : Color.FromArgb(215, 160, 0);
+                        etiqueta.ForeColor = Color.Black;
+                    }
+                    else
+                    {
+                        etiqueta.BackColor = principal ? Color.FromArgb(0, 95, 175) : Color.FromArgb(0, 75, 145);
+                        etiqueta.ForeColor = Color.White;
+                    }
                 }
-                tarjetas[i].Invalidate();
+                tarjeta.Invalidate();
             }
         }
 
@@ -1980,26 +2047,57 @@ EjecutarAccion(AccionTeclado.Cancelar);
             int disponibles = Math.Max(1, mosaico.ClientSize.Width - mosaico.Padding.Horizontal - 14);
             int anchoTarjeta = Math.Max(105, Math.Min(290, (disponibles - PortadasPorPagina * 12) / PortadasPorPagina));
             int altoImagen = Math.Max(185, Math.Min(350, (int)(anchoTarjeta * 1.42)));
+            int fin = Math.Min(tarjetas.Count, inicioPaginaPortadas + PortadasPorPagina);
+
+            mosaico.SuspendLayout();
             for (int i = 0; i < tarjetas.Count; i++)
             {
+                bool debeMostrarse = i >= inicioPaginaPortadas && i < fin;
                 Panel tarjeta = tarjetas[i];
-                tarjeta.Visible = i >= inicioPaginaPortadas && i < inicioPaginaPortadas + PortadasPorPagina;
-                if (tarjeta.Visible)
+
+                if (!debeMostrarse)
                 {
-                    tarjeta.Width = anchoTarjeta;
-                    tarjeta.Height = altoImagen + 65;
-                    foreach (Control control in tarjeta.Controls)
+                    if (tarjeta != null)
                     {
-                        PictureBox imagen = control as PictureBox;
-                        if (imagen != null)
+                        mosaico.Controls.Remove(tarjeta);
+                        foreach (Control hijo in tarjeta.Controls)
                         {
-                            imagen.Height = altoImagen;
-                            if (imagen.Image == null)
-                                CargarMiniaturaPortadaAsync(imagen, carpetasTarjetas[i]);
+                            PictureBox imagen = hijo as PictureBox;
+                            if (imagen != null && imagen.Image != null)
+                            {
+                                imagen.Image.Dispose();
+                                imagen.Image = null;
+                            }
                         }
+                        tarjeta.Dispose();
+                        tarjetas[i] = null;
+                    }
+                    continue;
+                }
+
+                if (tarjeta == null)
+                {
+                    tarjeta = CrearTarjetaPortada(i);
+                    tarjetas[i] = tarjeta;
+                    mosaico.Controls.Add(tarjeta);
+                }
+
+                tarjeta.Visible = true;
+                tarjeta.Width = anchoTarjeta;
+                tarjeta.Height = altoImagen + 65;
+                foreach (Control control in tarjeta.Controls)
+                {
+                    PictureBox imagen = control as PictureBox;
+                    if (imagen != null)
+                    {
+                        imagen.Height = altoImagen;
+                        if (imagen.Image == null)
+                            CargarMiniaturaPortadaAsync(imagen, carpetasTarjetas[i]);
                     }
                 }
             }
+            mosaico.ResumeLayout();
+
             if (tituloPortadas != null)
             {
                 int primero = tarjetas.Count == 0 ? 0 : inicioPaginaPortadas + 1;
