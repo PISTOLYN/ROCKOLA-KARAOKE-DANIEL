@@ -348,13 +348,14 @@ namespace RockolaKaraoke.Interfaz
             altoFilasCola.Images.Add(new Bitmap(1, 44));
             cola.SmallImageList = altoFilasCola;
             cola.Columns.Clear(); cola.Columns.Add("TEMA", 205); cola.Columns.Add("ARTISTA", 125); cola.Columns.Add("ESTADO", 115);
+            cola.Resize += delegate { AjustarColumnasCola(); };
             cola.DoubleClick += delegate { ReproducirElementoDeCola(); };
-            FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding(2) };
-            Button agregar = new Button { Text = "+ AGREGAR", Width = 92, Height = 32 };
-            Button quitar = new Button { Text = "QUITAR", Width = 78, Height = 32 };
-            Button subir = new Button { Text = "▲", Width = 42, Height = 32 };
-            Button bajar = new Button { Text = "▼", Width = 42, Height = 32 };
-            Button vaciar = new Button { Text = "VACIAR", Width = 78, Height = 32 };
+            FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoScroll = true, Padding = new Padding(2) };
+            Button agregar = new Button { Text = "+ AGREGAR", Width = 82, Height = 32 };
+            Button quitar = new Button { Text = "QUITAR", Width = 66, Height = 32 };
+            Button subir = new Button { Text = "▲", Width = 34, Height = 32 };
+            Button bajar = new Button { Text = "▼", Width = 34, Height = 32 };
+            Button vaciar = new Button { Text = "VACIAR", Width = 66, Height = 32 };
             foreach (Button b in new Button[] { agregar, quitar, subir, bajar, vaciar }) { Estilizar(b); accionesCola.Controls.Add(b); }
             agregar.Click += delegate { AgregarSeleccionALaCola(); }; quitar.Click += delegate { QuitarDeLaCola(); }; subir.Click += delegate { MoverEnCola(-1); };
             bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { VaciarPendientes(); };
@@ -1702,6 +1703,17 @@ EjecutarAccion(AccionTeclado.Cancelar);
             int ancho = Math.Max(320, biblioteca.ClientSize.Width - 18);
             biblioteca.Columns[1].Width = Math.Max(110, (int)(ancho * 0.30));
             biblioteca.Columns[0].Width = Math.Max(180, ancho - biblioteca.Columns[1].Width);
+        }
+
+        private void AjustarColumnasCola()
+        {
+            if (cola.Columns.Count < 3) return;
+            int ancho = Math.Max(180, cola.ClientSize.Width - 12);
+            int tema = Math.Max(90, (int)(ancho * 0.44));
+            int artista = Math.Max(65, (int)(ancho * 0.30));
+            cola.Columns[0].Width = tema;
+            cola.Columns[1].Width = artista;
+            cola.Columns[2].Width = Math.Max(55, ancho - tema - artista);
         }
 
         private void MoverPortada(int paso)
