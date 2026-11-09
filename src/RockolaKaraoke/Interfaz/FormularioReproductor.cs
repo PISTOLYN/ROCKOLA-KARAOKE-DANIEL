@@ -1318,12 +1318,15 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
             panelPortadaPrincipal.Dock = DockStyle.Fill;
             panelPortadaPrincipal.Visible = true;
+            if (equalizadorPortada != null) equalizadorPortada.Visible = true;
             if (contenidoCentral != null) contenidoCentral.Visible = false;
             franjaListaCompleta.Visible = false;
             panelPortadaPrincipal.BringToFront();
             panelCola.Visible = mostrarColaEnPortada && cola.Items.Count > 0;
             panelPortadaPrincipal.PerformLayout();
             pictureBoxPortada.BringToFront();
+            equalizadorPortada.Visible = true;
+            equalizadorPortada.BringToFront();
             lblTituloPortada.BringToFront();
             lblArtistaPortada.BringToFront();
             lblDuracionPortada.BringToFront();
@@ -1346,6 +1349,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
         private void MostrarContenidoReproductor()
         {
             if (franjaListaCompleta != null) franjaListaCompleta.Visible = true;
+            if (equalizadorPortada != null) equalizadorPortada.Visible = false;
             panelPortadaPrincipal.Visible = false;
             if (panelCola != null) panelCola.Visible = false;
             if (contenidoCentral != null)
