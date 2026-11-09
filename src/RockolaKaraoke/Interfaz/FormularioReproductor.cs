@@ -546,7 +546,7 @@ private sealed class ListViewDobleBuffer : ListView
             public ListViewDobleBuffer()
             {
                 DoubleBuffered = true;
-                SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+                SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
                 UpdateStyles();
             }
         }
