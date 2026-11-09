@@ -1281,6 +1281,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             if (biblioteca.SelectedIndices.Count == 0 && biblioteca.FocusedItem != null)
                 biblioteca.FocusedItem.Selected = true;
             if (biblioteca.SelectedIndices.Count == 0) return;
+            CerrarAbc();
 
             int agregadas = 0;
             foreach (int indice in biblioteca.SelectedIndices)
