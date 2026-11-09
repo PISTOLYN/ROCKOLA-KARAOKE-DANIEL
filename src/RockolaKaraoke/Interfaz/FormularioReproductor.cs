@@ -473,9 +473,7 @@ namespace RockolaKaraoke.Interfaz
             // El movimiento del mouse ya no cambia de vista.
         }
 
-        private void NotificarActividadUsuario() { }
-
-        private static Color LeerColor(string html, Color porDefecto)
+private static Color LeerColor(string html, Color porDefecto)
         {
             try { return ColorTranslator.FromHtml(html); }
             catch { return porDefecto; }
@@ -725,7 +723,6 @@ namespace RockolaKaraoke.Interfaz
                 tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
                 EventHandler elegir = delegate { SeleccionarPortada(posicion); };
                 tarjeta.Click += elegir; portada.Click += elegir; nombre.Click += elegir; total.Click += elegir;
-                RegistrarMovimientoMouse(tarjeta);
                 mosaico.Controls.Add(tarjeta);
                 tarjetas.Add(tarjeta);
                 carpetasTarjetas.Add(carpeta);
@@ -900,20 +897,20 @@ namespace RockolaKaraoke.Interfaz
             ActualizarEncabezadoLista();
         }
 
-        private static void AplicarMarcoNeon(Panel panel)
+        private void AplicarMarcoNeon(Panel panel)
         {
             panel.Paint += delegate(object sender, PaintEventArgs e)
             {
                 Panel p = (Panel)sender;
                 Rectangle r = new Rectangle(1, 1, Math.Max(1, p.Width - 3), Math.Max(1, p.Height - 3));
-                using (Pen resplandor = new Pen(Color.FromArgb(65, 0, 235, 245), 7F)) e.Graphics.DrawRectangle(resplandor, r);
-                using (Pen borde = new Pen(Color.FromArgb(0, 225, 240), 2F)) e.Graphics.DrawRectangle(borde, r);
+                using (Pen resplandor = new Pen(Color.FromArgb(65, colorInterfaz), 7F)) e.Graphics.DrawRectangle(resplandor, r);
+                using (Pen borde = new Pen(colorInterfaz, 2F)) e.Graphics.DrawRectangle(borde, r);
             };
         }
 
-        private static void Estilizar(Button boton)
+        private void Estilizar(Button boton)
         {
-            boton.FlatStyle = FlatStyle.Flat; boton.FlatAppearance.BorderSize = 0;
+            boton.FlatStyle = FlatStyle.Flat; boton.FlatAppearance.BorderSize = 1; boton.FlatAppearance.BorderColor = colorInterfaz;
             boton.BackColor = Color.FromArgb(30, 105, 170); boton.ForeColor = Color.White;
             boton.Font = new Font("Segoe UI", 9F, FontStyle.Bold); boton.Cursor = Cursors.Hand;
         }
@@ -995,17 +992,7 @@ namespace RockolaKaraoke.Interfaz
         {
             if (biblioteca.Items.Count == 0) return;
             
-            if (panelPortadaPrincipal.Visible)
-            {
-                MostrarContenidoReproductor();
-            }
-            if (temporizadorInactividad != null)
-            {
-                temporizadorInactividad.Stop();
-                temporizadorInactividad.Start();
-            }
-
-            int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] : 0;
+int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0] : 0;
             indice = Math.Max(0, Math.Min(biblioteca.Items.Count - 1, indice + desplazamiento));
             LimpiarSeleccionBiblioteca();
             biblioteca.Items[indice].Selected = true;
@@ -1533,8 +1520,7 @@ namespace RockolaKaraoke.Interfaz
                 AccionTeclado? accionEnBusqueda = ConfiguracionTeclado.Buscar(teclaBase);
                 if (accionEnBusqueda == AccionTeclado.Cancelar)
                 {
-                    NotificarActividadUsuario();
-                    EjecutarAccion(AccionTeclado.Cancelar);
+EjecutarAccion(AccionTeclado.Cancelar);
                     return true;
                 }
                 if (teclaBase == Keys.Escape)
@@ -1850,6 +1836,74 @@ namespace RockolaKaraoke.Interfaz
                 par.Key.ForeColor = elegido ? Color.Black : Color.White;
             }
             ActualizarTituloPortadas();
+        }
+
+        private void AlternarListaReproduccion()
+        {
+            if (panelCola == null || panelPublicidad == null) return;
+            panelCola.Visible = !panelCola.Visible;
+            if (panelCola.Visible) { panelCola.BringToFront(); cola.Focus(); }
+            else { panelPublicidad.Visible = true; panelPublicidad.BringToFront(); }
+        }
+
+        private bool EsArchivoVideo(string ruta)
+        {
+            string extension = Path.GetExtension(ruta ?? "").ToLowerInvariant();
+            return extension == ".mp4" || extension == ".mkv" || extension == ".avi" ||
+                extension == ".mov" || extension == ".wmv" || extension == ".webm" ||
+                extension == ".mpeg" || extension == ".mpg" || extension == ".m4v" ||
+                extension == ".ts" || extension == ".ogv" || extension == ".3gp";
+        }
+
+        private string ArchivoColorInterfaz
+        {
+            get { return Path.Combine(Application.UserAppDataPath, "color-interfaz.txt"); }
+        }
+
+        private void CargarColorInterfaz()
+        {
+            try { if (File.Exists(ArchivoColorInterfaz)) colorInterfaz = ColorTranslator.FromHtml(File.ReadAllText(ArchivoColorInterfaz).Trim()); }
+            catch { colorInterfaz = Color.FromArgb(0, 220, 240); }
+        }
+
+        private void CambiarColorInterfaz()
+        {
+            using (ColorDialog selector = new ColorDialog { Color = colorInterfaz, FullOpen = true })
+            {
+                if (selector.ShowDialog(this) != DialogResult.OK) return;
+                colorInterfaz = selector.Color;
+                try
+                {
+                    string carpeta = Path.GetDirectoryName(ArchivoColorInterfaz);
+                    if (!Directory.Exists(carpeta)) Directory.CreateDirectory(carpeta);
+                    File.WriteAllText(ArchivoColorInterfaz, ColorTranslator.ToHtml(colorInterfaz));
+                }
+                catch (Exception ex) { MessageBox.Show(this, "No se pudo guardar el color: " + ex.Message, "Color de interfaz", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+                AplicarTemaInterfaz();
+            }
+        }
+
+        private void AplicarTemaInterfaz()
+        {
+            if (tituloPortadas != null) tituloPortadas.ForeColor = colorInterfaz;
+            if (etiquetaCola != null) etiquetaCola.ForeColor = colorInterfaz;
+            if (letreroLed != null) letreroLed.ForeColor = colorInterfaz;
+            foreach (KeyValuePair<Button, string> par in botonesTipo)
+                if (par.Key != null && !par.Key.IsDisposed) par.Key.FlatAppearance.BorderColor = colorInterfaz;
+            AplicarColorAControles(this);
+            foreach (Panel tarjeta in tarjetas) tarjeta.Invalidate();
+            Invalidate(true);
+        }
+
+        private void AplicarColorAControles(Control raiz)
+        {
+            foreach (Control control in raiz.Controls)
+            {
+                Button boton = control as Button;
+                if (boton != null) boton.FlatAppearance.BorderColor = colorInterfaz;
+                if (control is Panel) control.Invalidate();
+                AplicarColorAControles(control);
+            }
         }
 
         private void CambiarGenero()
