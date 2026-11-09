@@ -547,20 +547,52 @@ namespace RockolaKaraoke.Interfaz
 
 private sealed class EqualizadorVisual : Control
         {
-            private readonly int[] niveles = { 4, 7, 5, 9, 12, 8, 11, 14, 10, 16, 13, 18, 15, 20, 17, 14, 19, 16, 12, 10, 14, 18, 13, 9, 12, 7, 5, 3 };
+            private readonly int[] niveles = { 5, 8, 4, 10, 13, 7, 11, 15, 9, 17, 12, 19, 14, 21, 16, 12, 18, 15, 10, 8, 13, 17, 11, 7, 10, 6, 4, 3 };
+            private readonly int[] objetivos = new int[28];
             private readonly Color[] paleta = { Color.Magenta, Color.DeepPink, Color.BlueViolet, Color.Blue, Color.DodgerBlue, Color.DeepSkyBlue, Color.Cyan, Color.MediumTurquoise, Color.LimeGreen, Color.Lime, Color.Yellow, Color.Orange, Color.OrangeRed };
+            private readonly Random aleatorio = new Random();
+            private readonly System.Windows.Forms.Timer animacion;
 
             public EqualizadorVisual()
             {
-                SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.SupportsTransparentBackColor, true);
+                BackColor = Color.Transparent;
+                SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                    ControlStyles.OptimizedDoubleBuffer | ControlStyles.SupportsTransparentBackColor, true);
+                for (int i = 0; i < objetivos.Length; i++) objetivos[i] = aleatorio.Next(2, 19);
+
+                animacion = new System.Windows.Forms.Timer();
+                animacion.Interval = 65;
+                animacion.Tick += (sender, args) =>
+                {
+                    for (int i = 0; i < niveles.Length; i++)
+                    {
+                        if (aleatorio.Next(0, 3) == 0) objetivos[i] = aleatorio.Next(2, 21);
+                        if (niveles[i] < objetivos[i]) niveles[i] = Math.Min(objetivos[i], niveles[i] + aleatorio.Next(1, 4));
+                        else if (niveles[i] > objetivos[i]) niveles[i] = Math.Max(objetivos[i], niveles[i] - aleatorio.Next(1, 4));
+                    }
+                    Invalidate();
+                };
+            }
+
+            protected override void OnVisibleChanged(EventArgs e)
+            {
+                base.OnVisibleChanged(e);
+                if (animacion == null) return;
+                if (Visible) animacion.Start();
+                else animacion.Stop();
+            }
+
+            protected override void OnPaintBackground(PaintEventArgs e)
+            {
+                // WinForms simula transparencia pintando el fondo del panel rojo padre.
+                base.OnPaintBackground(e);
             }
 
             protected override void OnPaint(PaintEventArgs e)
             {
                 base.OnPaint(e);
-                e.Graphics.Clear(Color.Transparent);
                 e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-                int barraAncho = Math.Max(3, Math.Min(7, (ClientSize.Width - 70) / (niveles.Length * 2)));
+                int barraAncho = Math.Max(3, Math.Min(8, (ClientSize.Width - 45) / (niveles.Length * 2)));
                 int espacio = Math.Max(2, barraAncho / 2);
                 int altoSegmento = Math.Max(3, Math.Min(7, ClientSize.Height / 17));
                 int paso = altoSegmento + 2;
@@ -574,10 +606,17 @@ private sealed class EqualizadorVisual : Control
                         for (int j = 0; j < niveles[i]; j++)
                         {
                             int y = ClientSize.Height - (j + 1) * paso;
+                            if (y < 0) break;
                             e.Graphics.FillRectangle(pincel, xInicio + i * (barraAncho + espacio), y, barraAncho, altoSegmento);
                         }
                     }
                 }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing && animacion != null) animacion.Dispose();
+                base.Dispose(disposing);
             }
         }
 
@@ -1370,8 +1409,8 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             int alto = Math.Max(230, (int)(panelPortadaPrincipal.ClientSize.Height * 0.69));
             ancho = Math.Min(ancho, anchoDisponible - 30);
             alto = Math.Min(alto, panelPortadaPrincipal.ClientSize.Height - 110);
-            int anchoEcualizador = Math.Min(260, Math.Max(180, (int)(anchoDisponible * 0.32)));
-            int altoEcualizador = anchoEcualizador / 2;
+            int anchoEcualizador = Math.Min(340, Math.Max(240, (int)(anchoDisponible * 0.38)));
+            int altoEcualizador = Math.Min(118, Math.Max(88, anchoEcualizador / 3));
             equalizadorPortada.Bounds = new Rectangle((anchoDisponible - anchoEcualizador) / 2, 10, anchoEcualizador, altoEcualizador);
             int yPortada = Math.Max(altoEcualizador + 20, (panelPortadaPrincipal.ClientSize.Height - alto) / 2 - 18);
             alto = Math.Min(alto, Math.Max(180, panelPortadaPrincipal.ClientSize.Height - yPortada - 100));
