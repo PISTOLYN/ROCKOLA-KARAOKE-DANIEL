@@ -73,7 +73,7 @@ namespace RockolaKaraoke.Interfaz
         private readonly object candadoImagenCajaCD = new object();
         private int indicePortada;
         private int inicioPaginaPortadas;
-        private const int PortadasPorPagina = 7;
+        private const int PortadasPorPagina = 5;
         private Dictionary<string, string> aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // --- VARIABLES PARA LA PORTADA ---
@@ -86,6 +86,7 @@ namespace RockolaKaraoke.Interfaz
         private string rutaCajaVacia = Path.Combine(Application.StartupPath, "PortadaVacia.png.png");
         private string rutaLeonDefecto = Path.Combine(Application.StartupPath, "LeonDefault.jpg.jpg");
         private Timer temporizadorAbecedario;
+        private readonly Timer temporizadorRegresoPortada = new Timer();
         private AccionTeclado? direccionFlechaPendiente;
         private bool abecedarioAbiertoPorEspera;
 
@@ -111,6 +112,19 @@ namespace RockolaKaraoke.Interfaz
             Resize += delegate { CentrarAvisoAgregar(); };
             CargarColorInterfaz();
             CrearInterfaz();
+
+            // Durante la reproducción, la portada roja se oculta al usar el teclado
+            // para que se pueda seguir explorando la biblioteca. Al dejar de usarlo,
+            // vuelve automáticamente después de un breve periodo de inactividad.
+            temporizadorRegresoPortada.Interval = 1800;
+            temporizadorRegresoPortada.Tick += delegate
+            {
+                temporizadorRegresoPortada.Stop();
+                if (!IsDisposed && !String.IsNullOrWhiteSpace(rutaActualReproduccion) &&
+                    !reproduccionActualEsVideo && reproductor != null &&
+                    (reproductor.State == VLCState.Playing || reproductor.State == VLCState.Paused))
+                    MostrarPortadaCancion();
+            };
 
             temporizadorAbecedario = new Timer();
             temporizadorAbecedario.Interval = ConfiguracionTeclado.TiempoEsperaAbecedario * 1000;
@@ -1161,6 +1175,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
         private void MostrarPortadaCancion()
         {
             if (String.IsNullOrWhiteSpace(rutaActualReproduccion) || reproduccionActualEsVideo) return;
+            temporizadorRegresoPortada.Stop();
 
             panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
             panelPortadaPrincipal.Dock = DockStyle.Fill;
@@ -1173,6 +1188,18 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             lblArtistaPortada.BringToFront();
             lblDuracionPortada.BringToFront();
             AjustarComposicionPortada();
+        }
+
+        private void MostrarBibliotecaMientrasSeUsaElTeclado()
+        {
+            if (String.IsNullOrWhiteSpace(rutaActualReproduccion) || reproduccionActualEsVideo ||
+                reproductor == null ||
+                (reproductor.State != VLCState.Playing && reproductor.State != VLCState.Paused))
+                return;
+
+            temporizadorRegresoPortada.Stop();
+            MostrarContenidoReproductor();
+            temporizadorRegresoPortada.Start();
         }
 
         private void MostrarContenidoReproductor()
@@ -1519,6 +1546,11 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
                 return true;
             }
 
+            // Cualquier actividad del teclado devuelve temporalmente la biblioteca.
+            // El temporizador se reinicia con cada tecla y recupera la portada roja
+            // solo cuando el usuario deja de navegar.
+            MostrarBibliotecaMientrasSeUsaElTeclado();
+
             // Detectar también cuadros de texto dentro de paneles y contenedores.
             // Si el usuario está escribiendo una búsqueda, no convertir sus letras
             // en atajos del reproductor.
@@ -1681,7 +1713,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
             if (mosaico == null) return;
             int disponibles = Math.Max(1, mosaico.ClientSize.Width - mosaico.Padding.Horizontal - 14);
             int anchoTarjeta = Math.Max(105, Math.Min(270, (disponibles - PortadasPorPagina * 12) / PortadasPorPagina));
-            int altoImagen = Math.Max(145, Math.Min(285, (int)(anchoTarjeta * 1.25)));
+            int altoImagen = Math.Max(175, Math.Min(330, (int)(anchoTarjeta * 1.35)));
             for (int i = 0; i < tarjetas.Count; i++)
             {
                 Panel tarjeta = tarjetas[i];
