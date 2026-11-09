@@ -64,9 +64,14 @@ namespace RockolaKaraoke
         {
             Text = "LEON ROCKOLAS";
             FormBorderStyle = FormBorderStyle.None;
-            StartPosition = FormStartPosition.CenterScreen;
+            // Fijar directamente el tamaño de pantalla evita la animación
+            // de maximizar/restaurar que hace que la portada de inicio "brinque".
+            StartPosition = FormStartPosition.Manual;
             FormBorderStyle = FormBorderStyle.None;
-            WindowState = FormWindowState.Maximized;
+            WindowState = FormWindowState.Normal;
+            Bounds = Screen.FromPoint(Cursor.Position).Bounds;
+            MinimumSize = Size;
+            MaximumSize = Size;
             BackColor = Color.FromArgb(8, 12, 22);
             ShowInTaskbar = false;
             ShowIcon = false;
