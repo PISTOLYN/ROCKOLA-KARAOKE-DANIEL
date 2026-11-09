@@ -86,6 +86,7 @@ namespace RockolaKaraoke.Interfaz
         private Panel panelPortadaPrincipal;
         private Control contenidoCentral;
         private PictureBox pictureBoxPortada;
+        private EqualizadorVisual equalizadorPortada;
         private Label lblTituloPortada;
         private Label lblArtistaPortada;
         private Label lblDuracionPortada;
@@ -400,6 +401,7 @@ namespace RockolaKaraoke.Interfaz
                 Visible = false
             };
 
+            equalizadorPortada = new EqualizadorVisual { BackColor = Color.Transparent, Anchor = AnchorStyles.Top };
             pictureBoxPortada = new PictureBox
             {
                 SizeMode = PictureBoxSizeMode.Zoom,
@@ -440,6 +442,7 @@ namespace RockolaKaraoke.Interfaz
             panelCola.MaximumSize = new Size(560, 0);
             panelCola.BackColor = Color.FromArgb(18, 10, 18, 30);
             panelCola.Visible = false;
+            panelPortadaPrincipal.Controls.Add(equalizadorPortada);
             panelPortadaPrincipal.Controls.Add(pictureBoxPortada);
             panelPortadaPrincipal.Controls.Add(panelCola);
             panelCola.BringToFront();
@@ -448,6 +451,7 @@ namespace RockolaKaraoke.Interfaz
             panelPortadaPrincipal.Controls.Add(lblDuracionPortada);
 
             pictureBoxPortada.BringToFront();
+            equalizadorPortada.BringToFront();
             lblTituloPortada.BringToFront();
             lblArtistaPortada.BringToFront();
             lblDuracionPortada.BringToFront();
@@ -541,7 +545,43 @@ namespace RockolaKaraoke.Interfaz
             // El movimiento del mouse ya no cambia de vista.
         }
 
-private sealed class ListViewDobleBuffer : ListView
+private sealed class EqualizadorVisual : Control
+        {
+            private readonly int[] niveles = { 4, 7, 5, 9, 12, 8, 11, 14, 10, 16, 13, 18, 15, 20, 17, 14, 19, 16, 12, 10, 14, 18, 13, 9, 12, 7, 5, 3 };
+            private readonly Color[] paleta = { Color.Magenta, Color.DeepPink, Color.BlueViolet, Color.Blue, Color.DodgerBlue, Color.DeepSkyBlue, Color.Cyan, Color.MediumTurquoise, Color.LimeGreen, Color.Lime, Color.Yellow, Color.Orange, Color.OrangeRed };
+
+            public EqualizadorVisual()
+            {
+                SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.SupportsTransparentBackColor, true);
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+                e.Graphics.Clear(Color.Transparent);
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+                int barraAncho = Math.Max(3, Math.Min(7, (ClientSize.Width - 70) / (niveles.Length * 2)));
+                int espacio = Math.Max(2, barraAncho / 2);
+                int altoSegmento = Math.Max(3, Math.Min(7, ClientSize.Height / 17));
+                int paso = altoSegmento + 2;
+                int total = niveles.Length * (barraAncho + espacio) - espacio;
+                int xInicio = Math.Max(0, (ClientSize.Width - total) / 2);
+                for (int i = 0; i < niveles.Length; i++)
+                {
+                    Color color = paleta[Math.Min(paleta.Length - 1, i * paleta.Length / niveles.Length)];
+                    using (SolidBrush pincel = new SolidBrush(color))
+                    {
+                        for (int j = 0; j < niveles[i]; j++)
+                        {
+                            int y = ClientSize.Height - (j + 1) * paso;
+                            e.Graphics.FillRectangle(pincel, xInicio + i * (barraAncho + espacio), y, barraAncho, altoSegmento);
+                        }
+                    }
+                }
+            }
+        }
+
+        private sealed class ListViewDobleBuffer : ListView
         {
             public ListViewDobleBuffer()
             {
@@ -1326,10 +1366,12 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             int alto = Math.Max(230, (int)(panelPortadaPrincipal.ClientSize.Height * 0.69));
             ancho = Math.Min(ancho, anchoDisponible - 30);
             alto = Math.Min(alto, panelPortadaPrincipal.ClientSize.Height - 110);
-            pictureBoxPortada.Bounds = new Rectangle(
-                (anchoDisponible - ancho) / 2,
-                Math.Max(8, (panelPortadaPrincipal.ClientSize.Height - alto) / 2 - 18),
-                ancho, alto);
+            int anchoEcualizador = Math.Min(260, Math.Max(180, (int)(anchoDisponible * 0.32)));
+            int altoEcualizador = anchoEcualizador / 2;
+            equalizadorPortada.Bounds = new Rectangle((anchoDisponible - anchoEcualizador) / 2, 10, anchoEcualizador, altoEcualizador);
+            int yPortada = Math.Max(altoEcualizador + 20, (panelPortadaPrincipal.ClientSize.Height - alto) / 2 - 18);
+            alto = Math.Min(alto, Math.Max(180, panelPortadaPrincipal.ClientSize.Height - yPortada - 100));
+            pictureBoxPortada.Bounds = new Rectangle((anchoDisponible - ancho) / 2, yPortada, ancho, alto);
 
             int margen = Math.Max(24, (int)(panelPortadaPrincipal.ClientSize.Width * 0.025));
             int y = panelPortadaPrincipal.ClientSize.Height - 82;
