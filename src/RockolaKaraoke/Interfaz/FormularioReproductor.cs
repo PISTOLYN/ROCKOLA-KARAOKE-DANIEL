@@ -1203,12 +1203,12 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             if (contenidoCentral != null) contenidoCentral.Visible = false;
             panelPortadaPrincipal.BringToFront();
             panelCola.Visible = mostrarColaEnPortada && cola.Items.Count > 0;
-            if (panelCola.Visible) panelCola.BringToFront();
             panelPortadaPrincipal.PerformLayout();
             pictureBoxPortada.BringToFront();
             lblTituloPortada.BringToFront();
             lblArtistaPortada.BringToFront();
             lblDuracionPortada.BringToFront();
+            if (panelCola.Visible) panelCola.BringToFront();
             AjustarComposicionPortada();
         }
 
