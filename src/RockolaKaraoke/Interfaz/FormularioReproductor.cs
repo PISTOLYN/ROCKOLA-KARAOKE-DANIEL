@@ -80,6 +80,8 @@ namespace RockolaKaraoke.Interfaz
         private int inicioPaginaPortadas;
         private const int PortadasPorPagina = 6;
         private bool mostrarColaEnPortada = true;
+        private PictureBox fondoPantallaInferior;
+        private Image imagenFondoPantalla;
         private Dictionary<string, string> aliasCarpetas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // --- VARIABLES PARA LA PORTADA ---
@@ -175,6 +177,7 @@ namespace RockolaKaraoke.Interfaz
                 MostrarPortadaEnEspera();
                 ActiveControl = biblioteca;
             };
+            CargarFondoPantalla();
             FormClosing += delegate { LiberarMotor(); };
             Activated += delegate { AplicarVisibilidadGeneros(); };
             reloj.Interval = 500;
@@ -249,6 +252,9 @@ namespace RockolaKaraoke.Interfaz
             centro.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
             Panel marcoSuperior = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 8, 24), Padding = new Padding(5), Margin = new Padding(3) };
             Panel filaInferior = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(1, 5, 18), Margin = new Padding(3) };
+            fondoPantallaInferior = new PictureBox { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.StretchImage, BackColor = Color.FromArgb(15, 24, 42) };
+            filaInferior.Controls.Add(fondoPantallaInferior);
+            fondoPantallaInferior.SendToBack();
             TableLayoutPanel distribucionInferior = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 1, BackColor = Color.FromArgb(1, 5, 18) };
             distribucionInferior.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             Panel lado = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 30), Padding = new Padding(5) };
@@ -2135,6 +2141,103 @@ EjecutarAccion(AccionTeclado.Cancelar);
                 extension == ".ts" || extension == ".ogv" || extension == ".3gp";
         }
 
+        private string ArchivoFondoPantalla
+        {
+            get { return Path.Combine(Application.UserAppDataPath, "fondo-pantalla.txt"); }
+        }
+
+        private void CargarFondoPantalla()
+        {
+            string ruta = rutaLeonDefecto;
+            try
+            {
+                if (File.Exists(ArchivoFondoPantalla))
+                    ruta = File.ReadAllText(ArchivoFondoPantalla).Trim();
+            }
+            catch { ruta = rutaLeonDefecto; }
+            AplicarFondoPantalla(ruta);
+        }
+
+        private void AplicarFondoPantalla(string ruta)
+        {
+            if (fondoPantallaInferior == null) return;
+            try
+            {
+                Image nueva = null;
+                if (!String.IsNullOrWhiteSpace(ruta) && File.Exists(ruta))
+                {
+                    using (Image origen = Image.FromFile(ruta))
+                        nueva = new Bitmap(origen);
+                }
+                Image anterior = imagenFondoPantalla;
+                imagenFondoPantalla = nueva;
+                fondoPantallaInferior.Image = nueva;
+                if (anterior != null) anterior.Dispose();
+                fondoPantallaInferior.Visible = nueva != null;
+                if (nueva == null) fondoPantallaInferior.BackColor = Color.FromArgb(18, 28, 48);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "No se pudo cargar el fondo de pantalla.\n" + ex.Message, "Fondo de pantalla", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void ConfigurarFondoPantalla()
+        {
+            using (Form ventana = new Form())
+            {
+                ventana.Text = "FONDO DE PANTALLA";
+                ventana.StartPosition = FormStartPosition.CenterParent;
+                ventana.FormBorderStyle = FormBorderStyle.FixedDialog;
+                ventana.MaximizeBox = false; ventana.MinimizeBox = false;
+                ventana.ClientSize = new Size(460, 250);
+                ventana.BackColor = Color.FromArgb(5, 14, 32);
+                ventana.ForeColor = Color.White;
+                Label titulo = new Label { Text = "PERSONALIZA EL FONDO DE LA BIBLIOTECA", Dock = DockStyle.Top, Height = 62, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 13F, FontStyle.Bold) };
+                Label ayuda = new Label { Text = "La imagen se ajusta al cuadro inferior sin estirar las letras ni cambiar el tamaño de los controles.", Dock = DockStyle.Top, Height = 54, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 9F) };
+                FlowLayoutPanel botones = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(65, 8, 20, 8) };
+                Button elegir = new Button { Text = "ELEGIR IMAGEN", Width = 310, Height = 38 };
+                Button quitar = new Button { Text = "QUITAR FONDO", Width = 310, Height = 38 };
+                Button defecto = new Button { Text = "USAR FONDO POR DEFECTO", Width = 310, Height = 38 };
+                Button cerrar = new Button { Text = "CERRAR", Width = 310, Height = 34 };
+                foreach (Button b in new Button[] { elegir, quitar, defecto, cerrar }) Estilizar(b);
+                elegir.Click += delegate
+                {
+                    using (OpenFileDialog dialogo = new OpenFileDialog { Title = "Selecciona una imagen de fondo", Filter = "Imágenes|*.jpg;*.jpeg;*.png;*.bmp;*.gif" })
+                    {
+                        if (dialogo.ShowDialog(ventana) != DialogResult.OK) return;
+                        try
+                        {
+                            string carpeta = Application.UserAppDataPath;
+                            if (!Directory.Exists(carpeta)) Directory.CreateDirectory(carpeta);
+                            string extension = Path.GetExtension(dialogo.FileName);
+                            string destino = Path.Combine(carpeta, "fondo-rockola" + extension);
+                            File.Copy(dialogo.FileName, destino, true);
+                            File.WriteAllText(ArchivoFondoPantalla, destino);
+                            AplicarFondoPantalla(destino);
+                        }
+                        catch (Exception ex) { MessageBox.Show(ventana, "No se pudo guardar la imagen.\n" + ex.Message, "Fondo de pantalla", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+                    }
+                };
+                quitar.Click += delegate
+                {
+                    try { if (File.Exists(ArchivoFondoPantalla)) File.Delete(ArchivoFondoPantalla); }
+                    catch { }
+                    AplicarFondoPantalla("");
+                };
+                defecto.Click += delegate
+                {
+                    try { if (File.Exists(ArchivoFondoPantalla)) File.Delete(ArchivoFondoPantalla); }
+                    catch { }
+                    AplicarFondoPantalla(rutaLeonDefecto);
+                };
+                cerrar.Click += delegate { ventana.Close(); };
+                botones.Controls.Add(elegir); botones.Controls.Add(quitar); botones.Controls.Add(defecto); botones.Controls.Add(cerrar);
+                ventana.Controls.Add(botones); ventana.Controls.Add(ayuda); ventana.Controls.Add(titulo);
+                ventana.ShowDialog(this);
+            }
+        }
+
         private string ArchivoColorInterfaz
         {
             get { return Path.Combine(Application.UserAppDataPath, "color-interfaz.txt"); }
@@ -2410,6 +2513,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
                         break;
                     }
                 case "LETREROS": MostrarConfigLetreros(); break;
+                case "FONDO": ConfigurarFondoPantalla(); break;
                 case "COLOR": CambiarColorInterfaz(); break;
                 case "SELECCION": CambiarColorSeleccion(); break;
                 case "TECLADO":
