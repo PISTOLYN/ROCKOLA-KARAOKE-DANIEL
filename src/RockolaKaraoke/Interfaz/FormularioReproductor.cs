@@ -217,14 +217,19 @@ namespace RockolaKaraoke.Interfaz
                 else ReproducirSeleccion();
             };
             
-            detener.Click += delegate 
-            { 
-                if (reproductor != null) reproductor.Stop(); 
+            detener.Click += delegate
+            {
+                if (reproductor != null) reproductor.Stop();
+                if (temaActualLista != null)
+                {
+                    EstablecerEstadoTema(temaActualLista, "DETENIDA");
+                    temaActualLista = null;
+                }
                 rutaActualReproduccion = "";
                 reproducir.Text = "▶ REPRODUCIR";
                 if (temporizadorInactividad != null) temporizadorInactividad.Stop();
                 MostrarPortadaEnEspera();
-                ActualizarLetreroInferior(); 
+                ActualizarLetreroInferior();
             };
 
             volumen.Scroll += delegate { if (reproductor != null) reproductor.Volume = volumen.Value; };
@@ -1321,7 +1326,7 @@ namespace RockolaKaraoke.Interfaz
                 if (cancionesPendientes.Count > 0) ReproducirSiguiente();
             }
 
-            if (mostrarMensaje && agregadas > 0)
+            if (mostrarMensaje && ConfiguracionTeclado.MostrarMensajeAlAgregar && agregadas > 0)
                 MostrarAvisoTemaAgregado();
         }
 
