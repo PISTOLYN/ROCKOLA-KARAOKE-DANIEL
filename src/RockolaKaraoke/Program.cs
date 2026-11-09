@@ -39,12 +39,20 @@ namespace RockolaKaraoke
 
                     inicio.Actualizar(96, "FINALIZANDO CARGA...");
                     Application.DoEvents();
-                    System.Threading.Thread.Sleep(180);
+
+                    // Mostrar el reproductor mientras la pantalla de inicio sigue
+                    // encima. Esto fuerza a WinForms a ejecutar Load/Shown y termina
+                    // la configuración visual antes de retirar la pantalla del león.
+                    reproductor.Show();
+                    reproductor.Refresh();
+                    Application.DoEvents();
+
                     inicio.Actualizar(100, "¡LEON ROCKOLAS ESTA LISTO!");
                     Application.DoEvents();
-                    System.Threading.Thread.Sleep(250);
+                    System.Threading.Thread.Sleep(700);
                 }
 
+                reproductor.Activate();
                 Application.Run(reproductor);
             }
             catch (Exception ex)
