@@ -275,7 +275,7 @@ namespace RockolaKaraoke.Interfaz
             biblioteca.Columns.Clear(); biblioteca.Columns.Add("ÁLBUM SELECCIONADO  •  CANCIÓN 1 DE 15", 620); biblioteca.Columns.Add("ARTISTA", 260);
             biblioteca.OwnerDraw = true;
             biblioteca.DrawColumnHeader += delegate(object sender, DrawListViewColumnHeaderEventArgs e) { e.Graphics.FillRectangle(new SolidBrush(colorInterfaz), e.Bounds); TextRenderer.DrawText(e.Graphics, e.Header.Text, new Font("Segoe UI", 15F, FontStyle.Bold), e.Bounds, Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis); };
-            biblioteca.DrawItem += delegate(object sender, DrawListViewItemEventArgs e) { e.DrawDefault = true; };
+            biblioteca.DrawItem += delegate(object sender, DrawListViewItemEventArgs e) { e.DrawDefault = false; };
             // Cada clic sobre una canción la agrega a la lista de reproducción,
             // incluso si ya estaba seleccionada o si aparece repetida en la cola.
             // MouseUp permite volver a pulsar la misma fila y agregar otra copia.
@@ -296,12 +296,13 @@ namespace RockolaKaraoke.Interfaz
                 bool marcada = e.Item.Selected;
                 Color tinta = Color.White;
                 Rectangle area = e.Bounds;
-                int sangria = e.ColumnIndex == 0 ? 44 : 0;
+                int sangria = 0;
                 using (SolidBrush fondoBase = new SolidBrush(basico)) { e.Graphics.FillRectangle(fondoBase, area); }
                 if (marcada)
                 {
-                    // Franja gris de selección: sigue la canción al navegar arriba y abajo.
-                    using (SolidBrush franjaSeleccion = new SolidBrush(colorSeleccion)) { e.Graphics.FillRectangle(franjaSeleccion, area.X + sangria, area.Y + 2, area.Width - sangria, area.Height - 4); }
+                    // Resaltar toda la fila, incluso cuando el foco cambia entre controles.
+                    using (SolidBrush franjaSeleccion = new SolidBrush(Color.FromArgb(255, colorSeleccion))) { e.Graphics.FillRectangle(franjaSeleccion, area.X, area.Y + 1, area.Width, area.Height - 2); }
+                    using (Pen bordeSeleccion = new Pen(colorInterfaz, 2F)) { e.Graphics.DrawRectangle(bordeSeleccion, area.X + 1, area.Y + 1, Math.Max(1, area.Width - 3), Math.Max(1, area.Height - 3)); }
                 }
                 if (e.ColumnIndex == 0)
                 {
@@ -340,17 +341,18 @@ namespace RockolaKaraoke.Interfaz
             panelPublicidad = new Panel { Dock = DockStyle.Fill, BackColor = Color.Black, BorderStyle = BorderStyle.None };
             pantalla.Dock = DockStyle.Fill; pantalla.BackColor = Color.Black;
             panelPublicidad.Controls.Add(pantalla);
-            panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 25) };
+            panelCola = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(145, 95, 0, 0) };
+            panelCola.Padding = new Padding(8);
             etiquetaCola.Text = "LISTA DE REPRODUCCIÓN • VACÍA"; etiquetaCola.Dock = DockStyle.Top; etiquetaCola.Height = 38;
             etiquetaCola.TextAlign = ContentAlignment.MiddleLeft; etiquetaCola.Padding = new Padding(9, 0, 0, 0); etiquetaCola.ForeColor = Color.Gold;
             etiquetaCola.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             cola.Dock = DockStyle.Fill; cola.View = View.Details; cola.FullRowSelect = true; cola.GridLines = false;
-            cola.HideSelection = false; cola.BackColor = Color.FromArgb(4, 12, 25); cola.ForeColor = Color.White;
-            cola.Font = new Font("Segoe UI", 15F, FontStyle.Bold);
-            ImageList altoFilasCola = new ImageList { ImageSize = new Size(1, 44), ColorDepth = ColorDepth.Depth32Bit };
-            altoFilasCola.Images.Add(new Bitmap(1, 44));
+            cola.HideSelection = false; cola.BackColor = Color.FromArgb(82, 18, 0); cola.ForeColor = Color.White;
+            cola.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            ImageList altoFilasCola = new ImageList { ImageSize = new Size(1, 52), ColorDepth = ColorDepth.Depth32Bit };
+            altoFilasCola.Images.Add(new Bitmap(1, 52));
             cola.SmallImageList = altoFilasCola;
-            cola.Columns.Clear(); cola.Columns.Add("TEMA", 205); cola.Columns.Add("ARTISTA", 125); cola.Columns.Add("ESTADO", 115);
+            cola.Columns.Clear(); cola.Columns.Add("#", 42); cola.Columns.Add("CANCIÓN", 205); cola.Columns.Add("ARTISTA", 145); cola.Columns.Add("", 0);
             cola.Resize += delegate { AjustarColumnasCola(); };
             cola.DoubleClick += delegate { ReproducirElementoDeCola(); };
             FlowLayoutPanel accionesCola = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoScroll = true, Padding = new Padding(2) };
@@ -579,7 +581,7 @@ private static Color LeerColor(string html, Color porDefecto)
             {
                 List<string> partes = new List<string>();
                 for (int i = 0; i < cola.Items.Count; i++)
-                    partes.Add((i + 1) + ". " + cola.Items[i].Text + " - " + cola.Items[i].SubItems[1].Text);
+                    partes.Add((i + 1) + ". " + cola.Items[i].SubItems[1].Text + " - " + cola.Items[i].SubItems[2].Text);
                 letreroInferior.Texto = "EN ESPERA:  " + String.Join("   •   ", partes.ToArray());
             }
         }
@@ -1031,6 +1033,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             LimpiarSeleccionBiblioteca();
             biblioteca.Items[indice].Selected = true;
             biblioteca.Items[indice].Focused = true;
+            biblioteca.Focus();
             MantenerSeleccionVisible(indice);
             // Las flechas solo cambian la selección. Para agregar o reproducir
             // una canción se utiliza exclusivamente la tecla configurada como REPRODUCIR.
@@ -1296,7 +1299,8 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
                 catch { rutaNormalizada = ruta; }
 
                 // Cada OK agrega una entrada nueva; se permiten canciones repetidas.
-                ListViewItem nuevo = new ListViewItem(origen.Text);
+                ListViewItem nuevo = new ListViewItem((cola.Items.Count + 1).ToString());
+                nuevo.SubItems.Add(origen.Text);
                 nuevo.SubItems.Add(origen.SubItems[1].Text);
                 nuevo.SubItems.Add("EN ESPERA");
                 nuevo.Tag = rutaNormalizada;
@@ -1362,8 +1366,8 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
         private void EstablecerEstadoTema(ListViewItem tema, string estado)
         {
             if (tema == null || tema.ListView != cola) return;
-            while (tema.SubItems.Count < 3) tema.SubItems.Add("");
-            tema.SubItems[2].Text = estado;
+            while (tema.SubItems.Count < 4) tema.SubItems.Add("");
+            tema.SubItems[3].Text = estado;
             tema.ForeColor = estado == "SONANDO" ? Color.Lime :
                 estado == "EN ESPERA" ? Color.White :
                 estado == "CANCELADA" ? Color.OrangeRed : Color.Silver;
@@ -1437,7 +1441,12 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
 
         private void ActualizarContadorCola()
         {
-            etiquetaCola.Text = "LISTA DE REPRODUCCIÓN (" + cola.Items.Count + ") • EN ESPERA: " + cancionesPendientes.Count;
+            etiquetaCola.Text = "LISTA DE REPRODUCCIÓN";
+            for (int i = 0; i < cola.Items.Count; i++)
+            {
+                cola.Items[i].Text = (i + 1).ToString();
+                cola.Items[i].ForeColor = cola.Items[i].SubItems.Count > 3 && cola.Items[i].SubItems[3].Text == "SONANDO" ? Color.Lime : Color.White;
+            }
             if (panelPortadaPrincipal != null && panelPortadaPrincipal.Visible)
             {
                 panelCola.Visible = mostrarColaEnPortada && cola.Items.Count > 0;
@@ -1496,7 +1505,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
                 temaActualLista = elemento;
                 EstablecerEstadoTema(elemento, "SONANDO");
                 ActualizarContadorCola();
-                ReproducirArchivo(ruta, elemento.Text, elemento.SubItems[1].Text);
+                ReproducirArchivo(ruta, elemento.SubItems[1].Text, elemento.SubItems[2].Text);
                 SeleccionarEnBiblioteca(ruta);
                 return;
             }
@@ -1815,13 +1824,12 @@ EjecutarAccion(AccionTeclado.Cancelar);
 
         private void AjustarColumnasCola()
         {
-            if (cola.Columns.Count < 3) return;
+            if (cola.Columns.Count < 4) return;
             int ancho = Math.Max(180, cola.ClientSize.Width - 12);
-            int tema = Math.Max(90, (int)(ancho * 0.44));
-            int artista = Math.Max(65, (int)(ancho * 0.30));
-            cola.Columns[0].Width = tema;
-            cola.Columns[1].Width = artista;
-            cola.Columns[2].Width = Math.Max(55, ancho - tema - artista);
+            cola.Columns[0].Width = 42;
+            cola.Columns[1].Width = Math.Max(100, (int)(ancho * 0.56));
+            cola.Columns[2].Width = Math.Max(85, ancho - cola.Columns[0].Width - cola.Columns[1].Width);
+            cola.Columns[3].Width = 0;
         }
 
         private void MoverPortada(int paso)
@@ -2074,6 +2082,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
                 selector.MinimizeBox = false; selector.MaximizeBox = false;
                 selector.ClientSize = new Size(390, 440);
                 selector.BackColor = Color.FromArgb(8, 16, 32);
+                selector.KeyPreview = true;
                 Label titulo = new Label { Text = "ELIGE UN GÉNERO", Dock = DockStyle.Top, Height = 55, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.Gold, Font = new Font("Segoe UI", 16F, FontStyle.Bold) };
                 ListBox lista = new ListBox { Dock = DockStyle.Fill, BackColor = Color.FromArgb(12, 25, 45), ForeColor = Color.White, Font = new Font("Segoe UI", 14F, FontStyle.Bold), IntegralHeight = false };
                 foreach (string modo in modos) lista.Items.Add(modo);
@@ -2085,6 +2094,31 @@ EjecutarAccion(AccionTeclado.Cancelar);
                 Estilizar(aceptar); Estilizar(cancelar); pie.Controls.Add(aceptar); pie.Controls.Add(cancelar);
                 selector.Controls.Add(lista); selector.Controls.Add(pie); selector.Controls.Add(titulo);
                 selector.AcceptButton = aceptar; selector.CancelButton = cancelar;
+                lista.TabStop = true;
+                lista.Focus();
+                selector.Shown += delegate { lista.Focus(); };
+                selector.KeyDown += delegate(object sender, KeyEventArgs e)
+                {
+                    if (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down)
+                    {
+                        if (lista.Items.Count > 0)
+                        {
+                            int paso = e.KeyCode == Keys.Up ? -1 : 1;
+                            lista.SelectedIndex = Math.Max(0, Math.Min(lista.Items.Count - 1, lista.SelectedIndex + paso));
+                        }
+                        e.Handled = true; e.SuppressKeyPress = true;
+                    }
+                    else if (e.KeyCode == Keys.Enter)
+                    {
+                        if (lista.SelectedItem != null) { selector.DialogResult = DialogResult.OK; selector.Close(); }
+                        e.Handled = true; e.SuppressKeyPress = true;
+                    }
+                    else if (e.KeyCode == Keys.Escape)
+                    {
+                        selector.DialogResult = DialogResult.Cancel; selector.Close();
+                        e.Handled = true; e.SuppressKeyPress = true;
+                    }
+                };
                 if (selector.ShowDialog(this) == DialogResult.OK && lista.SelectedItem != null)
                 { filtroTipo = Convert.ToString(lista.SelectedItem); ConstruirMosaico(); ResaltarTipos(); }
             }
