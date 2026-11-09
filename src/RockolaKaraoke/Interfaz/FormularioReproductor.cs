@@ -957,7 +957,11 @@ private static Color LeerColor(string html, Color porDefecto)
                 {
                     if (!IsDisposed && IsHandleCreated) BeginInvoke((Action)delegate
                     {
-                        if (temaActualLista != null) EstablecerEstadoTema(temaActualLista, "REPRODUCIDA");
+                        if (temaActualLista != null)
+                        {
+                            EstablecerEstadoTema(temaActualLista, "REPRODUCIDA");
+                            cola.Items.Remove(temaActualLista);
+                        }
                         temaActualLista = null;
                         rutaActualReproduccion = "";
                         if (cancionesPendientes.Count > 0) ReproducirSiguiente();
@@ -1380,6 +1384,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             ListViewItem elegido = cola.SelectedItems[0];
             if (!cancionesPendientes.Remove(elegido)) return;
             EstablecerEstadoTema(elegido, "QUITADA");
+            cola.Items.Remove(elegido);
             ActualizarContadorCola();
         }
 
@@ -1400,7 +1405,10 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
         private void VaciarPendientes()
         {
             foreach (ListViewItem tema in cancionesPendientes)
+            {
                 EstablecerEstadoTema(tema, "QUITADA");
+                cola.Items.Remove(tema);
+            }
             cancionesPendientes.Clear();
             ActualizarContadorCola();
         }
@@ -1408,6 +1416,11 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
         private void ActualizarContadorCola()
         {
             etiquetaCola.Text = "LISTA DE REPRODUCCIÓN (" + cola.Items.Count + ") • EN ESPERA: " + cancionesPendientes.Count;
+            if (panelPortadaPrincipal != null && panelPortadaPrincipal.Visible)
+            {
+                panelCola.Visible = mostrarColaEnPortada && cola.Items.Count > 0;
+                if (panelCola.Visible) panelCola.BringToFront();
+            }
             ActualizarLetreroInferior();
         }
 
@@ -1451,6 +1464,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
                 if (String.IsNullOrWhiteSpace(ruta) || !File.Exists(ruta))
                 {
                     EstablecerEstadoTema(elemento, "NO DISPONIBLE");
+                    cola.Items.Remove(elemento);
                     continue;
                 }
 
@@ -1466,7 +1480,10 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             }
 
             if (temaActualLista != null)
+            {
                 EstablecerEstadoTema(temaActualLista, "REPRODUCIDA");
+                cola.Items.Remove(temaActualLista);
+            }
             temaActualLista = null;
             if (reproductor != null) reproductor.Stop();
             rutaActualReproduccion = "";
@@ -1490,6 +1507,7 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
                     // Respaldo por si VLC no entrega EndReached: al finalizar,
                     // quitar siempre la pantalla roja y dejar disponible la biblioteca.
                     rutaActualReproduccion = "";
+                    if (temaActualLista != null) { cola.Items.Remove(temaActualLista); temaActualLista = null; }
                     MostrarPortadaEnEspera();
                     ActualizarLetreroInferior();
                     reproducir.Text = "▶ REPRODUCIR";
@@ -1712,6 +1730,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
                 ListViewItem ultimo = cancionesPendientes[cancionesPendientes.Count - 1];
                 cancionesPendientes.RemoveAt(cancionesPendientes.Count - 1);
                 EstablecerEstadoTema(ultimo, "CANCELADA");
+                cola.Items.Remove(ultimo);
                 ActualizarContadorCola();
                 return;
             }
@@ -2192,6 +2211,8 @@ EjecutarAccion(AccionTeclado.Cancelar);
             reloj.Dispose();
             temporizadorAvisoAgregar.Stop();
             temporizadorAvisoAgregar.Dispose();
+            temporizadorParpadeoAviso.Stop();
+            temporizadorParpadeoAviso.Dispose();
 if (temporizadorAbecedario != null) { temporizadorAbecedario.Stop(); temporizadorAbecedario.Dispose(); temporizadorAbecedario = null; }
             if (reproductor != null) { reproductor.Stop(); reproductor.Dispose(); reproductor = null; }
             if (medioActual != null) { medioActual.Dispose(); medioActual = null; }
