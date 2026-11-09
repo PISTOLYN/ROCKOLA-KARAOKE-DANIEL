@@ -763,11 +763,11 @@ namespace RockolaKaraoke.Interfaz
                 conteo.TryGetValue(carpeta, out cantidad);
                 int posicion = tarjetas.Count;
 
-                Panel tarjeta = new Panel { Width = 178, Height = 205, Margin = new Padding(9, 5, 9, 5), BackColor = Color.FromArgb(0, 62, 125), Cursor = Cursors.Hand, Tag = primerTema };
+                Panel tarjeta = new Panel { Width = 178, Height = 205, Margin = new Padding(9, 5, 9, 5), BackColor = Color.FromArgb(0, 62, 125), Cursor = Cursors.Hand, Tag = posicion };
                 tarjeta.Paint += delegate(object sender, PaintEventArgs e)
                 {
                     Panel p = (Panel)sender;
-                    bool elegida = tarjetas.IndexOf(p) == indicePortada;
+                    bool elegida = Convert.ToInt32(p.Tag) == indicePortada;
                     using (Pen borde = new Pen(elegida ? Color.FromArgb(255, 215, 0) : Color.FromArgb(0, 220, 245), elegida ? 5F : 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
                 };
                 PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 145, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
@@ -788,6 +788,7 @@ namespace RockolaKaraoke.Interfaz
                 tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
                 EventHandler elegir = delegate { SeleccionarPortada(posicion); };
                 tarjeta.Click += elegir; portada.Click += elegir; nombre.Click += elegir; total.Click += elegir;
+                RegistrarMovimientoMouse(tarjeta);
                 mosaico.Controls.Add(tarjeta);
                 tarjetas.Add(tarjeta);
                 carpetasTarjetas.Add(carpeta);
@@ -796,13 +797,13 @@ namespace RockolaKaraoke.Interfaz
             ResaltarTipos();
             indicePortada = 0;
             inicioPaginaPortadas = 0;
-            ActualizarPaginaPortadas();
             SeleccionarPortada(0);
         }
 
         private void ResaltarPortadas()
         {
-            for (int i = 0; i < tarjetas.Count; i++)
+            int fin = Math.Min(tarjetas.Count, inicioPaginaPortadas + PortadasPorPagina);
+            for (int i = inicioPaginaPortadas; i < fin; i++)
             {
                 bool elegida = i == indicePortada;
                 tarjetas[i].BackColor = elegida ? Color.FromArgb(245, 190, 0) : Color.FromArgb(0, 62, 125);
@@ -830,7 +831,7 @@ namespace RockolaKaraoke.Interfaz
                     if (File.Exists(archivo))
                     {
                         using (FileStream fs = new FileStream(archivo, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                        using (Image original = Image.FromStream(fs)) return new Bitmap(original);
+                        using (Image original = Image.FromStream(fs)) return CrearPortadaOptimizada(original);
                     }
                 }
                 foreach (string archivo in Directory.GetFiles(carpeta))
@@ -839,12 +840,27 @@ namespace RockolaKaraoke.Interfaz
                     if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp")
                     {
                         using (FileStream fs = new FileStream(archivo, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                        using (Image original = Image.FromStream(fs)) return new Bitmap(original);
+                        using (Image original = Image.FromStream(fs)) return CrearPortadaOptimizada(original);
                     }
                 }
             }
             catch { }
             return null;
+        }
+
+        private static Image CrearPortadaOptimizada(Image original)
+        {
+            double escala = Math.Min(1.0, 1000.0 / Math.Max(original.Width, original.Height));
+            int ancho = Math.Max(1, (int)Math.Round(original.Width * escala));
+            int alto = Math.Max(1, (int)Math.Round(original.Height * escala));
+            Bitmap reducida = new Bitmap(ancho, alto, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            using (Graphics g = Graphics.FromImage(reducida))
+            {
+                g.Clear(Color.Transparent);
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
+                g.DrawImage(original, new Rectangle(0, 0, ancho, alto));
+            }
+            return reducida;
         }
 
         // Decodifica las miniaturas en segundo plano y las reduce para el mosaico.
@@ -1700,7 +1716,6 @@ namespace RockolaKaraoke.Interfaz
             int ultimaPagina = ((tarjetas.Count - 1) / PortadasPorPagina) * PortadasPorPagina;
             inicioPaginaPortadas = Math.Max(0, Math.Min(ultimaPagina, inicioPaginaPortadas + direccion * PortadasPorPagina));
             indicePortada = inicioPaginaPortadas;
-            ActualizarPaginaPortadas();
             SeleccionarPortada(indicePortada);
         }
 
@@ -1716,19 +1731,18 @@ namespace RockolaKaraoke.Interfaz
                 tarjeta.Visible = i >= inicioPaginaPortadas && i < inicioPaginaPortadas + PortadasPorPagina;
                 if (tarjeta.Visible)
                 {
-                    foreach (Control hijo in tarjeta.Controls)
+                    tarjeta.Width = anchoTarjeta;
+                    tarjeta.Height = altoImagen + 65;
+                    foreach (Control control in tarjeta.Controls)
                     {
-                        PictureBox cuadro = hijo as PictureBox;
-                        if (cuadro != null && cuadro.Image == null)
-                            CargarMiniaturaPortadaAsync(cuadro, carpetasTarjetas[i]);
+                        PictureBox imagen = control as PictureBox;
+                        if (imagen != null)
+                        {
+                            imagen.Height = altoImagen;
+                            if (imagen.Image == null)
+                                CargarMiniaturaPortadaAsync(imagen, carpetasTarjetas[i]);
+                        }
                     }
-                }
-                tarjeta.Width = anchoTarjeta;
-                tarjeta.Height = altoImagen + 65;
-                foreach (Control control in tarjeta.Controls)
-                {
-                    PictureBox imagen = control as PictureBox;
-                    if (imagen != null) imagen.Height = altoImagen;
                 }
             }
             if (tituloPortadas != null)
