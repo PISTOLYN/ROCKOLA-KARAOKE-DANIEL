@@ -83,7 +83,7 @@ namespace RockolaKaraoke
             BackColor = Color.FromArgb(8, 12, 22);
             ShowInTaskbar = false;
             ShowIcon = false;
-            TopMost = true;
+            // No usar TopMost: podría ocultar un aviso modal del reproductor\n            // y dar la impresión de que la aplicación se quedó en la carga.
 
             PictureBox leon = new PictureBox
             {
