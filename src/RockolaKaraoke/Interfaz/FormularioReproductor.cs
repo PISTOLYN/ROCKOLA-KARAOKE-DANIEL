@@ -1239,12 +1239,14 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
         private void AjustarComposicionPortada()
         {
             if (panelPortadaPrincipal == null || pictureBoxPortada == null) return;
-            int ancho = Math.Max(420, (int)(panelPortadaPrincipal.ClientSize.Width * 0.62));
+            int espacioVisual = panelCola != null && panelCola.Visible ? Math.Max(0, panelCola.Width) : 0;
+            int anchoDisponible = Math.Max(360, panelPortadaPrincipal.ClientSize.Width - espacioVisual);
+            int ancho = Math.Max(420, (int)(anchoDisponible * 0.68));
             int alto = Math.Max(230, (int)(panelPortadaPrincipal.ClientSize.Height * 0.69));
-            ancho = Math.Min(ancho, panelPortadaPrincipal.ClientSize.Width - 30);
+            ancho = Math.Min(ancho, anchoDisponible - 30);
             alto = Math.Min(alto, panelPortadaPrincipal.ClientSize.Height - 110);
             pictureBoxPortada.Bounds = new Rectangle(
-                (panelPortadaPrincipal.ClientSize.Width - ancho) / 2,
+                (anchoDisponible - ancho) / 2,
                 Math.Max(8, (panelPortadaPrincipal.ClientSize.Height - alto) / 2 - 18),
                 ancho, alto);
 
@@ -1712,6 +1714,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
             {
                 reproductor.Stop();
                 EstablecerEstadoTema(temaActualLista, "CANCELADA");
+                cola.Items.Remove(temaActualLista);
                 temaActualLista = null;
                 rutaActualReproduccion = "";
                 if (cancionesPendientes.Count > 0) ReproducirSiguiente();
