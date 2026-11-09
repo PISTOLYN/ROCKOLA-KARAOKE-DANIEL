@@ -391,9 +391,12 @@ namespace RockolaKaraoke.Interfaz
             agregar.Click += delegate { AgregarSeleccionALaCola(); }; quitar.Click += delegate { QuitarDeLaCola(); }; subir.Click += delegate { MoverEnCola(-1); };
             bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { VaciarPendientes(); };
             panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
-            // El listado ocupa ambos lados del espacio inferior; no queda una
-            // columna negra vacía reservada a la derecha.
+            // El listado ocupa ambos lados del espacio inferior; el video se
+            // conserva como una capa que solo aparece al reproducir un archivo de video.
+            panelPublicidad.Visible = false;
+            filaInferior.Controls.Add(panelPublicidad);
             filaInferior.Controls.Add(distribucionInferior);
+            distribucionInferior.SendToBack();
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
 
@@ -1391,6 +1394,12 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
 
         private void MostrarContenidoReproductor()
         {
+            if (panelPublicidad != null)
+            {
+                panelPublicidad.Visible = reproduccionActualEsVideo;
+                if (reproduccionActualEsVideo) panelPublicidad.BringToFront();
+                else panelPublicidad.SendToBack();
+            }
             if (franjaListaCompleta != null) franjaListaCompleta.Visible = true;
             if (equalizadorPortada != null) equalizadorPortada.Visible = false;
             panelPortadaPrincipal.Visible = false;
