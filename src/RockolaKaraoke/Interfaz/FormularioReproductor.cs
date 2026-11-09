@@ -266,10 +266,11 @@ namespace RockolaKaraoke.Interfaz
 
             biblioteca.Visible = true; biblioteca.Dock = DockStyle.Fill; biblioteca.View = View.Details;
             biblioteca.FullRowSelect = true; biblioteca.HideSelection = false; biblioteca.GridLines = false;
+            biblioteca.MultiSelect = false;
             biblioteca.BackColor = Color.FromArgb(2, 7, 17); biblioteca.ForeColor = Color.White;
-            biblioteca.Font = new Font("Segoe UI", 19F, FontStyle.Bold);
-            ImageList altoFilas = new ImageList { ImageSize = new Size(1, 50), ColorDepth = ColorDepth.Depth32Bit };
-            altoFilas.Images.Add(new Bitmap(1, 50));
+            biblioteca.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
+            ImageList altoFilas = new ImageList { ImageSize = new Size(1, 64), ColorDepth = ColorDepth.Depth32Bit };
+            altoFilas.Images.Add(new Bitmap(1, 64));
             biblioteca.SmallImageList = altoFilas;
             biblioteca.Columns.Clear(); biblioteca.Columns.Add("ÁLBUM SELECCIONADO  •  CANCIÓN 1 DE 15", 620); biblioteca.Columns.Add("ARTISTA", 260);
             biblioteca.OwnerDraw = true;
@@ -286,6 +287,7 @@ namespace RockolaKaraoke.Interfaz
                 LimpiarSeleccionBiblioteca();
                 temaPulsado.Selected = true;
                 temaPulsado.Focused = true;
+                CerrarAbc();
                 AgregarSeleccionALaCola(false);
             };
             biblioteca.DrawSubItem += delegate(object sender, DrawListViewSubItemEventArgs e)
@@ -1029,9 +1031,25 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             LimpiarSeleccionBiblioteca();
             biblioteca.Items[indice].Selected = true;
             biblioteca.Items[indice].Focused = true;
-            biblioteca.Items[indice].EnsureVisible();
+            MantenerSeleccionVisible(indice);
             // Las flechas solo cambian la selección. Para agregar o reproducir
             // una canción se utiliza exclusivamente la tecla configurada como REPRODUCIR.
+        }
+
+        private void MantenerSeleccionVisible(int indice)
+        {
+            if (indice < 0 || indice >= biblioteca.Items.Count) return;
+            biblioteca.Items[indice].EnsureVisible();
+            try
+            {
+                int altoFila = Math.Max(1, biblioteca.Font.Height + 40);
+                int filasVisibles = Math.Max(1, biblioteca.ClientSize.Height / altoFila);
+                int primera = Math.Max(0, indice - filasVisibles / 2);
+                if (biblioteca.TopItem == null || indice < biblioteca.TopItem.Index || indice >= biblioteca.TopItem.Index + filasVisibles)
+                    biblioteca.TopItem = biblioteca.Items[primera];
+            }
+            catch { biblioteca.Items[indice].EnsureVisible(); }
+            biblioteca.Invalidate();
         }
 
         private void ReproducirSeleccion()
@@ -1047,13 +1065,13 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
             ReproducirArchivo(Convert.ToString(elemento.Tag), elemento.Text, elemento.SubItems[1].Text);
             if (biblioteca.Items[indice].Selected)
             {
-                biblioteca.Items[indice].EnsureVisible();
+                MantenerSeleccionVisible(indice);
             }
             else
             {
                 LimpiarSeleccionBiblioteca();
                 biblioteca.Items[indice].Selected = true;
-                biblioteca.Items[indice].EnsureVisible();
+                MantenerSeleccionVisible(indice);
             }
         }
 
@@ -2084,7 +2102,7 @@ EjecutarAccion(AccionTeclado.Cancelar);
 
         private void CrearBarraAbc()
         {
-            barraAbc = new Panel { Dock = DockStyle.Bottom, Height = 170, BackColor = Color.FromArgb(2, 10, 30), Visible = false, Padding = new Padding(6) };
+            barraAbc = new Panel { Size = new Size(900, 220), BackColor = Color.FromArgb(2, 10, 30), Visible = false, Padding = new Padding(10), Anchor = AnchorStyles.None };
             AplicarMarcoNeon(barraAbc);
             flujoAbc = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, FlowDirection = FlowDirection.LeftToRight, BackColor = Color.FromArgb(2, 10, 30) };
             List<string> teclas = new List<string>();
@@ -2095,12 +2113,16 @@ EjecutarAccion(AccionTeclado.Cancelar);
                 string valor = tecla;
                 Button boton = new Button { Text = tecla, Width = tecla.Length > 1 ? 120 : 48, Height = 46, Margin = new Padding(3), TabStop = false };
                 Estilizar(boton);
-                boton.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+                boton.Font = new Font("Segoe UI", 17F, FontStyle.Bold);
+                boton.Width = tecla.Length > 1 ? 135 : 54;
+                boton.Height = 52;
                 boton.Click += delegate { indiceAbc = botonesAbc.IndexOf(boton); PulsarTeclaAbc(valor); ResaltarAbc(); };
                 flujoAbc.Controls.Add(boton);
                 botonesAbc.Add(boton);
             }
             barraAbc.Controls.Add(flujoAbc);
+            Resize += delegate { CentrarAbecedario(); };
+            CentrarAbecedario();
             ResaltarAbc();
         }
 
@@ -2120,15 +2142,25 @@ EjecutarAccion(AccionTeclado.Cancelar);
             if (panelPortadaPrincipal.Visible) MostrarContenidoReproductor();
             if (panelCola != null) panelCola.Visible = false;
             barraAbc.Visible = true;
+            CentrarAbecedario();
             barraAbc.BringToFront();
             indiceAbc = 0;
             ResaltarAbc();
             biblioteca.Focus();
         }
 
+        private void CentrarAbecedario()
+        {
+            if (barraAbc == null) return;
+            int ancho = Math.Min(980, Math.Max(560, ClientSize.Width - 80));
+            int alto = Math.Min(270, Math.Max(210, ClientSize.Height - 100));
+            barraAbc.Size = new Size(ancho, alto);
+            barraAbc.Location = new Point(Math.Max(0, (ClientSize.Width - ancho) / 2), Math.Max(0, (ClientSize.Height - alto) / 2));
+        }
+
         private void CerrarAbc()
         {
-            barraAbc.Visible = false;
+            if (barraAbc != null) barraAbc.Visible = false;
             ActiveControl = biblioteca;
         }
 
