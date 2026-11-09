@@ -77,6 +77,7 @@ namespace RockolaKaraoke.Interfaz
             string[,] datos = new string[,]
             {
                 { "CONFIGURAR MUSICA", "MUSICA" },
+                { "CAMBIAR COLOR DE INTERFAZ", "COLOR" },
                 { "CONFIGURAR LETREROS LED", "LETREROS" },
                 { "CONFIGURAR TECLADO", "TECLADO" },
                 { "CERRAR", "CERRAR" },
