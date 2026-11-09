@@ -409,7 +409,6 @@ namespace RockolaKaraoke.Interfaz
             panelPublicidad.Visible = false;
             filaInferior.Controls.Add(panelPublicidad);
             filaInferior.Controls.Add(distribucionInferior);
-            distribucionInferior.SendToBack();
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
 
