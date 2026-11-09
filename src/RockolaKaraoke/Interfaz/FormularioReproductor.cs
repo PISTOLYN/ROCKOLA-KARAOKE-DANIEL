@@ -248,16 +248,17 @@ namespace RockolaKaraoke.Interfaz
 
             TableLayoutPanel centro = new TableLayoutPanel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(1, 5, 18), ColumnCount = 1, RowCount = 2, Padding = new Padding(5) };
             centro.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            centro.BackColor = Color.Transparent;
             centro.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
             centro.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
-            Panel marcoSuperior = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 8, 24), Padding = new Padding(5), Margin = new Padding(3) };
-            Panel filaInferior = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(1, 5, 18), Margin = new Padding(3) };
+            Panel marcoSuperior = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = new Padding(5), Margin = new Padding(3) };
+            Panel filaInferior = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(3) };
             fondoPantallaInferior = new PictureBox { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.StretchImage, BackColor = Color.FromArgb(15, 24, 42) };
             filaInferior.Controls.Add(fondoPantallaInferior);
             fondoPantallaInferior.SendToBack();
-            TableLayoutPanel distribucionInferior = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 1, BackColor = Color.FromArgb(1, 5, 18) };
+            TableLayoutPanel distribucionInferior = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 1, BackColor = Color.Transparent };
             distribucionInferior.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            Panel lado = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 30), Padding = new Padding(5) };
+            Panel lado = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = new Padding(5) };
             AplicarMarcoNeon(marcoSuperior);
             AplicarMarcoNeon(lado);
 
@@ -348,8 +349,8 @@ namespace RockolaKaraoke.Interfaz
 
             lado.Controls.Add(biblioteca); lado.Controls.Add(busquedaMosaico);
             
-            Panel zonaSuperior = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 8, 24), Padding = new Padding(4) };
-            Panel cuadroPortadas = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(3, 10, 27), Padding = new Padding(4), Margin = new Padding(3) };
+            Panel zonaSuperior = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = new Padding(4) };
+            Panel cuadroPortadas = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = new Padding(4), Margin = new Padding(3) };
             AplicarMarcoNeon(cuadroPortadas);
             tituloPortadas = new Label { Text = "PORTADAS", Dock = DockStyle.Top, Height = 27, TextAlign = ContentAlignment.MiddleCenter, ForeColor = colorInterfaz, Font = new Font("Segoe UI", 12F, FontStyle.Bold) };
             listaEstilos = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoScroll = true, Padding = new Padding(5, 4, 5, 2), BackColor = Color.FromArgb(3, 10, 27) };
@@ -503,7 +504,7 @@ namespace RockolaKaraoke.Interfaz
             Panel contenedorCentral = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(190, 0, 0),
+                BackColor = Color.Transparent,
                 Margin = Padding.Empty
             };
             // Alternar dos vistas hermanas: nunca superponer dos controles Fill.
@@ -515,7 +516,7 @@ namespace RockolaKaraoke.Interfaz
 
             panelPortadaPrincipal.Dock = DockStyle.Fill;
             panelPortadaPrincipal.Margin = Padding.Empty;
-            panelPortadaPrincipal.BackColor = Color.FromArgb(190, 0, 0);
+            panelPortadaPrincipal.BackColor = Color.Transparent;
             panelPortadaPrincipal.Visible = true;
             contenedorCentral.Controls.Add(panelPortadaPrincipal);
             franjaListaCompleta = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Color.FromArgb(225, 0, 0), Padding = new Padding(12, 0, 12, 0) };
@@ -2197,9 +2198,16 @@ EjecutarAccion(AccionTeclado.Cancelar);
                 Image anterior = imagenFondoPantalla;
                 imagenFondoPantalla = nueva;
                 fondoPantallaInferior.Image = nueva;
+                BackgroundImage = nueva;
+                BackgroundImageLayout = ImageLayout.Stretch;
                 if (anterior != null) anterior.Dispose();
                 fondoPantallaInferior.Visible = nueva != null;
-                if (nueva == null) fondoPantallaInferior.BackColor = Color.FromArgb(18, 28, 48);
+                if (nueva == null)
+                {
+                    fondoPantallaInferior.BackColor = Color.Transparent;
+                    BackgroundImage = null;
+                    BackgroundImageLayout = ImageLayout.None;
+                }
             }
             catch (Exception ex)
             {
