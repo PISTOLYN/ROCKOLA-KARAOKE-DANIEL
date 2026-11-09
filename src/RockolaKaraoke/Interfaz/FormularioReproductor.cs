@@ -1303,7 +1303,9 @@ int indice = biblioteca.SelectedIndices.Count > 0 ? biblioteca.SelectedIndices[0
         private void MoverSeleccionCola(int desplazamiento)
         {
             if (cola.Items.Count == 0) return;
-            int indice = cola.SelectedIndices.Count > 0 ? cola.SelectedIndices[0] : 0;
+            int indice = cola.SelectedIndices.Count > 0
+                ? cola.SelectedIndices[0]
+                : (desplazamiento > 0 ? -1 : 1);
             indice = Math.Max(0, Math.Min(cola.Items.Count - 1, indice + desplazamiento));
             foreach (ListViewItem item in cola.Items) item.Selected = false;
             ListViewItem seleccionado = cola.Items[indice];
