@@ -5,6 +5,7 @@ using System.Data.SQLite;
 using System.Drawing;
 using System.IO;
 using System.Globalization;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
 using LibVLCSharp.WinForms;
@@ -65,6 +66,8 @@ namespace RockolaKaraoke.Interfaz
         private readonly List<string> nombresGenero = new List<string>();
         private readonly List<Panel> tarjetas = new List<Panel>();
         private readonly List<string> carpetasTarjetas = new List<string>();
+        private readonly HashSet<string> miniaturasSolicitadas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private Image imagenBaseCajaCD;
         private int indicePortada;
         private int inicioPaginaPortadas;
         private const int PortadasPorPagina = 7;
@@ -506,13 +509,12 @@ namespace RockolaKaraoke.Interfaz
 
             // --- CONFIGURACIÓN DEL TEMPORIZADOR DE INACTIVIDAD ---
             temporizadorInactividad = new Timer();
-            temporizadorInactividad.Interval = 3000; // 3 segundos sin actividad
+            temporizadorInactividad.Interval = 1500; // Mostrar la caja roja 1.5 segundos después de la última actividad
             temporizadorInactividad.Tick += delegate
             {
                 temporizadorInactividad.Stop();
                 // Durante la reproducción, volver a mostrar la portada roja de la caja del CD.
-                if (reproductor != null && reproductor.IsPlaying &&
-                    !String.IsNullOrWhiteSpace(rutaActualReproduccion))
+                if (!String.IsNullOrWhiteSpace(rutaActualReproduccion))
                     MostrarPortadaCancion();
             };
 
@@ -714,7 +716,21 @@ namespace RockolaKaraoke.Interfaz
         private void ConstruirMosaico()
         {
             mosaico.SuspendLayout();
+            foreach (Control controlAnterior in mosaico.Controls)
+            {
+                foreach (Control hijo in controlAnterior.Controls)
+                {
+                    PictureBox imagenAnterior = hijo as PictureBox;
+                    if (imagenAnterior != null && imagenAnterior.Image != null)
+                    {
+                        imagenAnterior.Image.Dispose();
+                        imagenAnterior.Image = null;
+                    }
+                }
+                controlAnterior.Dispose();
+            }
             mosaico.Controls.Clear();
+            miniaturasSolicitadas.Clear();
             tarjetas.Clear();
             carpetasTarjetas.Clear();
             string texto = TextoBuscado().Trim();
@@ -755,18 +771,18 @@ namespace RockolaKaraoke.Interfaz
                     using (Pen borde = new Pen(elegida ? Color.FromArgb(255, 215, 0) : Color.FromArgb(0, 220, 245), elegida ? 5F : 3F)) e.Graphics.DrawRectangle(borde, 1, 1, p.Width - 3, p.Height - 3);
                 };
                 PictureBox portada = new PictureBox { Dock = DockStyle.Top, Height = 145, BackColor = Color.FromArgb(13, 32, 75), SizeMode = PictureBoxSizeMode.Zoom, Cursor = Cursors.Hand };
-                Image imagen = BuscarPortada(carpeta);
-                if (imagen != null) portada.Image = imagen;
-                else
+                portada.Tag = carpeta;
+                portada.Paint += delegate(object sender, PaintEventArgs e)
                 {
-                    portada.Paint += delegate(object sender, PaintEventArgs e)
-                    {
-                        Rectangle r = ((PictureBox)sender).ClientRectangle;
-                        using (System.Drawing.Drawing2D.LinearGradientBrush grad = new System.Drawing.Drawing2D.LinearGradientBrush(r, Color.FromArgb(18, 38, 105), Color.FromArgb(135, 25, 115), 35F)) e.Graphics.FillRectangle(grad, r);
-                        using (Font f = new Font("Segoe UI Symbol", 48F, FontStyle.Bold))
-                        using (SolidBrush b = new SolidBrush(Color.White)) e.Graphics.DrawString("♫", f, b, 58, 28);
-                    };
-                }
+                    PictureBox cuadro = (PictureBox)sender;
+                    if (cuadro.Image != null) return;
+                    Rectangle r = cuadro.ClientRectangle;
+                    using (System.Drawing.Drawing2D.LinearGradientBrush grad = new System.Drawing.Drawing2D.LinearGradientBrush(r, Color.FromArgb(18, 38, 105), Color.FromArgb(135, 25, 115), 35F))
+                        e.Graphics.FillRectangle(grad, r);
+                    using (Font f = new Font("Segoe UI Symbol", 48F, FontStyle.Bold))
+                    using (SolidBrush b = new SolidBrush(Color.White))
+                        e.Graphics.DrawString("♫", f, b, 58, 28);
+                };
                 Label nombre = new Label { Text = NombreAlbum(carpeta), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 10F, FontStyle.Bold), BackColor = Color.FromArgb(0, 95, 175), AutoEllipsis = true, Cursor = Cursors.Hand };
                 Label total = new Label { Text = cantidad + " TEMAS", Dock = DockStyle.Bottom, Height = 25, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, BackColor = Color.FromArgb(0, 75, 145), Font = new Font("Segoe UI", 9F, FontStyle.Bold), Cursor = Cursors.Hand };
                 tarjeta.Controls.Add(nombre); tarjeta.Controls.Add(total); tarjeta.Controls.Add(portada);
@@ -829,6 +845,78 @@ namespace RockolaKaraoke.Interfaz
             }
             catch { }
             return null;
+        }
+
+        // Decodifica las miniaturas en segundo plano y las reduce para el mosaico.
+        private Image BuscarMiniaturaPortada(string carpeta)
+        {
+            try
+            {
+                if (String.IsNullOrWhiteSpace(carpeta) || !Directory.Exists(carpeta)) return null;
+                string[] nombres = new string[] { "cover.jpg", "cover.png", "folder.jpg", "folder.png", "front.jpg", "front.png", "caratula.jpg", "caratula.png", "album.jpg", "album.png" };
+                string archivoElegido = null;
+                foreach (string nombre in nombres)
+                {
+                    string candidato = Path.Combine(carpeta, nombre);
+                    if (File.Exists(candidato)) { archivoElegido = candidato; break; }
+                }
+                if (archivoElegido == null)
+                {
+                    foreach (string candidato in Directory.GetFiles(carpeta))
+                    {
+                        string ext = Path.GetExtension(candidato).ToLowerInvariant();
+                        if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp")
+                        { archivoElegido = candidato; break; }
+                    }
+                }
+                if (archivoElegido == null) return null;
+                using (FileStream fs = new FileStream(archivoElegido, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (Image original = Image.FromStream(fs))
+                {
+                    double escala = Math.Min(320.0 / original.Width, 220.0 / original.Height);
+                    int ancho = Math.Max(1, (int)Math.Round(original.Width * escala));
+                    int alto = Math.Max(1, (int)Math.Round(original.Height * escala));
+                    Bitmap miniatura = new Bitmap(ancho, alto, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    using (Graphics g = Graphics.FromImage(miniatura))
+                    {
+                        g.Clear(Color.Transparent);
+                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
+                        g.DrawImage(original, new Rectangle(0, 0, ancho, alto));
+                    }
+                    return miniatura;
+                }
+            }
+            catch { return null; }
+        }
+
+        private void CargarMiniaturaPortadaAsync(PictureBox cuadro, string carpeta)
+        {
+            if (cuadro == null || cuadro.IsDisposed || !miniaturasSolicitadas.Add(carpeta)) return;
+            cuadro.Tag = carpeta;
+            Task.Run(() => BuscarMiniaturaPortada(carpeta)).ContinueWith(tarea =>
+            {
+                if (tarea.IsFaulted || tarea.IsCanceled) return;
+                Image miniatura = tarea.Result;
+                if (miniatura == null) return;
+                if (IsDisposed || !IsHandleCreated) { miniatura.Dispose(); return; }
+                try
+                {
+                    BeginInvoke((Action)delegate
+                    {
+                        if (IsDisposed || cuadro.IsDisposed ||
+                            !String.Equals(Convert.ToString(cuadro.Tag), carpeta, StringComparison.OrdinalIgnoreCase))
+                        {
+                            miniatura.Dispose();
+                            return;
+                        }
+                        Image anterior = cuadro.Image;
+                        cuadro.Image = miniatura;
+                        if (anterior != null) anterior.Dispose();
+                        cuadro.Invalidate();
+                    });
+                }
+                catch { miniatura.Dispose(); }
+            }, TaskScheduler.Default);
         }
 
         private void SeleccionarElemento(ListViewItem elemento)
@@ -1050,16 +1138,15 @@ namespace RockolaKaraoke.Interfaz
                 throw new FileNotFoundException("No se encontró PortadaVacia.png.png junto al programa.", rutaCajaVacia);
             }
 
-            using (Image caja = Image.FromFile(rutaCajaVacia))
+            Image caja = ObtenerImagenBaseCajaCD();
             using (Bitmap resultado = new Bitmap(caja.Width, caja.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
             using (Graphics g = Graphics.FromImage(resultado))
             {
                 // El PNG de la caja tiene zonas transparentes: rellenarlas con rojo
                 // antes de dibujar conserva el fondo rojo visible alrededor del CD.
                 g.Clear(Color.FromArgb(190, 0, 0));
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 g.DrawImage(caja, 0, 0, caja.Width, caja.Height);
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
 
                 if (caratula != null)
                 {
@@ -1071,9 +1158,33 @@ namespace RockolaKaraoke.Interfaz
                         (int)(caja.Height * 0.964));
                     g.DrawImage(caratula, destino);
                 }
+                Image imagenAnterior = pictureBoxPortada.Image;
                 pictureBoxPortada.Image = new Bitmap(resultado);
+                if (imagenAnterior != null) imagenAnterior.Dispose();
             }
             AjustarComposicionPortada();
+        }
+
+        private Image ObtenerImagenBaseCajaCD()
+        {
+            if (imagenBaseCajaCD != null) return imagenBaseCajaCD;
+            if (!File.Exists(rutaCajaVacia))
+                throw new FileNotFoundException("No se encontró PortadaVacia.png.png junto al programa.", rutaCajaVacia);
+            using (Image original = Image.FromFile(rutaCajaVacia))
+            {
+                double escala = Math.Min(1.0, 1400.0 / Math.Max(original.Width, original.Height));
+                int ancho = Math.Max(1, (int)Math.Round(original.Width * escala));
+                int alto = Math.Max(1, (int)Math.Round(original.Height * escala));
+                Bitmap baseReducida = new Bitmap(ancho, alto, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                using (Graphics g = Graphics.FromImage(baseReducida))
+                {
+                    g.Clear(Color.FromArgb(190, 0, 0));
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
+                    g.DrawImage(original, new Rectangle(0, 0, ancho, alto));
+                }
+                imagenBaseCajaCD = baseReducida;
+            }
+            return imagenBaseCajaCD;
         }
 
         private void MostrarPortadaEnEspera()
@@ -1603,6 +1714,15 @@ namespace RockolaKaraoke.Interfaz
             {
                 Panel tarjeta = tarjetas[i];
                 tarjeta.Visible = i >= inicioPaginaPortadas && i < inicioPaginaPortadas + PortadasPorPagina;
+                if (tarjeta.Visible)
+                {
+                    foreach (Control hijo in tarjeta.Controls)
+                    {
+                        PictureBox cuadro = hijo as PictureBox;
+                        if (cuadro != null && cuadro.Image == null)
+                            CargarMiniaturaPortadaAsync(cuadro, carpetasTarjetas[i]);
+                    }
+                }
                 tarjeta.Width = anchoTarjeta;
                 tarjeta.Height = altoImagen + 65;
                 foreach (Control control in tarjeta.Controls)
@@ -1927,6 +2047,28 @@ namespace RockolaKaraoke.Interfaz
             if (reproductor != null) { reproductor.Stop(); reproductor.Dispose(); reproductor = null; }
             if (medioActual != null) { medioActual.Dispose(); medioActual = null; }
             if (motor != null) { motor.Dispose(); motor = null; }
+            if (pictureBoxPortada != null && pictureBoxPortada.Image != null)
+            {
+                pictureBoxPortada.Image.Dispose();
+                pictureBoxPortada.Image = null;
+            }
+            if (imagenBaseCajaCD != null)
+            {
+                imagenBaseCajaCD.Dispose();
+                imagenBaseCajaCD = null;
+            }
+            foreach (Control tarjeta in mosaico.Controls)
+            {
+                foreach (Control hijo in tarjeta.Controls)
+                {
+                    PictureBox cuadro = hijo as PictureBox;
+                    if (cuadro != null && cuadro.Image != null)
+                    {
+                        cuadro.Image.Dispose();
+                        cuadro.Image = null;
+                    }
+                }
+            }
         }
     }
 }
