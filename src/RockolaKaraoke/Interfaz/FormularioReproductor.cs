@@ -249,9 +249,8 @@ namespace RockolaKaraoke.Interfaz
             centro.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
             Panel marcoSuperior = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 8, 24), Padding = new Padding(5), Margin = new Padding(3) };
             Panel filaInferior = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(1, 5, 18), Margin = new Padding(3) };
-            TableLayoutPanel distribucionInferior = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, BackColor = Color.FromArgb(1, 5, 18) };
-            distribucionInferior.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 66F));
-            distribucionInferior.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34F));
+            TableLayoutPanel distribucionInferior = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 1, BackColor = Color.FromArgb(1, 5, 18) };
+            distribucionInferior.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             Panel lado = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(4, 12, 30), Padding = new Padding(5) };
             AplicarMarcoNeon(marcoSuperior);
             AplicarMarcoNeon(lado);
@@ -342,7 +341,8 @@ namespace RockolaKaraoke.Interfaz
             zonaSuperior.Controls.Add(cuadroPortadas);
             marcoSuperior.Controls.Add(zonaSuperior);
             distribucionInferior.Controls.Add(lado, 0, 0);
-            Panel panelDerecho = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(2, 7, 17), Padding = new Padding(7) };
+            // El reproductor de video permanece inicializado aunque la biblioteca
+            // use ahora todo el ancho disponible.
             panelPublicidad = new Panel { Dock = DockStyle.Fill, BackColor = Color.Black, BorderStyle = BorderStyle.None };
             pantalla.Dock = DockStyle.Fill; pantalla.BackColor = Color.Black;
             panelPublicidad.Controls.Add(pantalla);
@@ -385,10 +385,8 @@ namespace RockolaKaraoke.Interfaz
             agregar.Click += delegate { AgregarSeleccionALaCola(); }; quitar.Click += delegate { QuitarDeLaCola(); }; subir.Click += delegate { MoverEnCola(-1); };
             bajar.Click += delegate { MoverEnCola(1); }; vaciar.Click += delegate { VaciarPendientes(); };
             panelCola.Controls.Add(cola); panelCola.Controls.Add(accionesCola); panelCola.Controls.Add(etiquetaCola);
-            // La lista inicia oculta y se despliega desde el panel derecho al pulsar su tecla configurable.
-            panelDerecho.Controls.Add(panelPublicidad);
-            panelPublicidad.BringToFront();
-            distribucionInferior.Controls.Add(panelDerecho, 1, 0);
+            // El listado ocupa ambos lados del espacio inferior; no queda una
+            // columna negra vacía reservada a la derecha.
             filaInferior.Controls.Add(distribucionInferior);
             centro.Controls.Add(marcoSuperior, 0, 0);
             centro.Controls.Add(filaInferior, 0, 1);
